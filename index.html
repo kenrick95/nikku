@@ -8,43 +8,6 @@
   </head>
   <body>
     <input type="file" id="file" />
-    <script>
-
-      // File description: https://wiibrew.org/wiki/BRSTM_file 
-    
-      document.addEventListener('DOMContentLoaded', () => {
-        const fileElement = document.getElementById('file');
-        fileElement.addEventListener('input', () => {
-          const file = fileElement.files[0];
-          const headerReader = new FileReader();
-          headerReader.addEventListener('loadend', (ev) => {
-            const result = headerReader.result;
-            const dataView = new DataView(result);
-            console.log('dataView', dataView);
-
-            processBuffer(dataView);
-          });
-          headerReader.readAsArrayBuffer(file);
-        });
-      });
-
-      function getSlice(dataView, start, length) {
-        const result = [];
-        for (let i = start; i < start + length; i++) {
-          result.push(dataView.getInt8(i));
-        }
-        return result;
-      }
-      function getSliceAsString(dataView, start, length) {
-        const resArr = getSlice(dataView, start, length);
-        return String.fromCharCode(...resArr);
-      }
-
-      function processBuffer(dataView) {
-        if (getSliceAsString(dataView, 0, 4) === 'RSTM') {
-          // Should be a valid BRSTM file
-        }
-      }
-    </script>
+    <script src="script.js"></script>
   </body>
 </html>
