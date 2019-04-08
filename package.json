@@ -9,10 +9,6 @@
   },
   "license": "MIT",
   "scripts": {
-    "start": "node index.js"
-  },
-  "dependencies": {
-    "fast-get": "^1.0.5",
-    "fluent-ffmpeg": "^2.1.2"
+    "start": "hs"
   }
 }
