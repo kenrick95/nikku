@@ -19,7 +19,8 @@ document.addEventListener('DOMContentLoaded', () => {
 function getSlice(dataView, start, length) {
   const result = [];
   for (let i = start; i < start + length; i++) {
-    result.push(dataView.getInt8(i));
+    // Apparently unsigned
+    result.push(dataView.getUint8(i));
   }
   return result;
 }
@@ -47,8 +48,7 @@ function processBuffer(dataView) {
   const offsetToHead = getSliceAsNumber(dataView, 16, 4);
   console.log('offsetToHead', offsetToHead);
   // getSliceAsString(dataView, offsetToHead, 4) === 'HEAD'
-  const offsetToHeadChunk1 = getSliceAsNumber(dataView, offsetToHead + 0x0c, 4);
-  console.log('offsetToHeadChunk1', offsetToHeadChunk1, getSlice(dataView, offsetToHead, 100));
+  const offsetToHeadChunk1 = 32;
   /**
    * Codec:
    * 0 - 8-bit PCM
@@ -79,4 +79,64 @@ function processBuffer(dataView) {
     2
   );
   console.log('sampleRate', sampleRate);
+
+  const loopStartSample = getSliceAsNumber(
+    dataView,
+    offsetToHead + offsetToHeadChunk1 + 0x0008,
+    4
+  );
+  console.log('loopStartSample', loopStartSample);
+
+
+  const totalSample = getSliceAsNumber(
+    dataView,
+    offsetToHead + offsetToHeadChunk1 + 0x000C,
+    4
+  );
+  console.log('totalSample', totalSample);
+
+  
+  const totalBlocks = getSliceAsNumber(
+    dataView,
+    offsetToHead + offsetToHeadChunk1 + 0x0014,
+    4
+  );
+  console.log('totalBlocks', totalBlocks);
+
+  
+  const blockSize = getSliceAsNumber(
+    dataView,
+    offsetToHead + offsetToHeadChunk1 + 0x0018,
+    4
+  );
+  console.log('blockSize', blockSize);
+
+
+  const samplesPerBlock = getSliceAsNumber(
+    dataView,
+    offsetToHead + offsetToHeadChunk1 + 0x001C,
+    4
+  );
+  console.log('samplesPerBlock', samplesPerBlock);
 }
+
+/*
+Notes
+
+Information from opening music.brstm on BrawlBox
+
+music.brstm currently contains
+
+Encoding: ADPCM
+Channels: 2
+isLooped: true
+sampleRate: 44100
+loopStartSample: 573440
+numSamples: 3749414
+numBlocks: 262
+blockSize: 8192
+bitsPerSample: 4
+
+versionMajor: 1
+versionMinor: 0
+*/
