@@ -66,7 +66,7 @@ export function getMetadata(uint8Array) {
       offsetToHead + offsetToHeadChunk1 + 0x0008,
       4
     ),
-    totalSample: getSliceAsNumber(
+    totalSamples: getSliceAsNumber(
       uint8Array,
       offsetToHead + offsetToHeadChunk1 + 0x000c,
       4
@@ -84,6 +84,21 @@ export function getMetadata(uint8Array) {
     samplesPerBlock: getSliceAsNumber(
       uint8Array,
       offsetToHead + offsetToHeadChunk1 + 0x001c,
+      4
+    ),
+    finalBlockSize: getSliceAsNumber(
+      uint8Array,
+      offsetToHead + offsetToHeadChunk1 + 0x0020,
+      4
+    ),
+    finalBlockSizeWithPadding: getSliceAsNumber(
+      uint8Array,
+      offsetToHead + offsetToHeadChunk1 + 0x0028,
+      4
+    ),
+    totalSamplesInFinalBlock: getSliceAsNumber(
+      uint8Array,
+      offsetToHead + offsetToHeadChunk1 + 0x0024,
       4
     ),
 

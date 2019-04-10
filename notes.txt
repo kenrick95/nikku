@@ -1,0 +1,42 @@
+For music.brstm (not included in repo)
+
+File metadata from header:
+
+audioDataSize: 4285088
+blockSize: 8192
+codec: 2
+fileSize: 4287520
+finalBlockSize: 4411
+finalBlockSizeWithPadding: 4416
+loopFlag: 1
+loopStartSample: 573440
+numberChannels: 2
+offsetToData: 2432
+sampleRate: 44100
+samplesPerBlock: 14336
+totalBlocks: 262
+totalSamples: 3749414
+totalSamplesInFinalBlock: 7718
+
+----
+
+Data (bytes) 4285056
+
+by right this should be 2 channels
+
+so one channel:
+
+4285056 / 2 = 2142528 bytes
+
+---
+totalBlocks: 262
+both channel, incl final block; so non-final, per-channel block = 130
+
+finalBlockSize: 4411
+finalBlockSizeWithPadding: 4416
+
+2142528 - 4416 = 2138112 bytes in all non-final blocks in one channel
+
+2138112 / 130 = 16447 bytes per block! WHY??
+
+blockSize: 8192 ??? WHY??

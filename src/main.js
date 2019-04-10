@@ -14,17 +14,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const metadata = getMetadata(uint8Array);
 
+      // number of seconds: totalSamples / sampleRate
+
       console.log('metadata', metadata);
-      const audioPlayer = new AudioPlayer({
-        sampleRate: metadata.sampleRate
-      });
+      const audioPlayer = new AudioPlayer(metadata);
 
-      // const audioBuffer = buffer.slice(
-      //   metadata.offsetToData,
-      //   metadata.offsetToData + metadata.audioDataSize
-      // );
+      const rawData = uint8Array.slice(
+        metadata.offsetToData + 0x20,
+        metadata.offsetToData + 0x20 + metadata.audioDataSize
+      );
+      console.log('rawData', rawData);
 
-      // audioPlayer.decode(audioBuffer)
+      audioPlayer.decode(rawData);
     });
     headerReader.readAsArrayBuffer(file);
   });
