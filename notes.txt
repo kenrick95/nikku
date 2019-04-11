@@ -14,9 +14,11 @@ numberChannels: 2
 offsetToData: 2432
 sampleRate: 44100
 samplesPerBlock: 14336
-totalBlocks: 262
+totalBlocks: 262 --> in one channel
 totalSamples: 3749414
 totalSamplesInFinalBlock: 7718
+
+totalSamples / samplesPerBlock = 261 
 
 ----
 
@@ -30,13 +32,15 @@ so one channel:
 
 ---
 totalBlocks: 262
-both channel, incl final block; so non-final, per-channel block = 130
+~~both channel, incl final block; so non-final, per-channel block = 130~~
 
 finalBlockSize: 4411
 finalBlockSizeWithPadding: 4416
 
 2142528 - 4416 = 2138112 bytes in all non-final blocks in one channel
 
-2138112 / 130 = 16447 bytes per block! WHY??
+~~2138112 / 130 = 16447.015 bytes per block! WHY??~~
+
+2138112 / 261 = 8192 !!!!
 
 blockSize: 8192 ??? WHY??

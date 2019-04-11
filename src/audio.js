@@ -10,32 +10,83 @@ export class AudioPlayer {
     this.bufferSource = this.audioContext.createBufferSource();
   }
 
-  async decode(rawData) {
-    // block? sample? ???
-    // partition per channel???
+  /**
+   *
+   * @returns {Array<Uint8Array>} array of non-interlaced raw data; each array represents one channel
+   * @param {Uint8Array} rawData
+   */
+  partition(rawData) {
+    let result = [];
+    const {
+      blockSize,
+      totalBlocks,
+      numberChannels,
+      finalBlockSize
+    } = this.metadata;
+    for (let c = 0; c < numberChannels; c++) {
+      result.push(new Uint8Array(rawData.length / numberChannels));
+    }
+    for (let b = 0; b < totalBlocks; b++) {
+      for (let c = 0; c < numberChannels; c++) {
+        const rawDataOffset = (b * numberChannels + c) * blockSize;
+        const rawDataEnd =
+          b + 1 === totalBlocks
+            ? rawDataOffset + finalBlockSize
+            : rawDataOffset + blockSize;
+        const resultOffset = b * blockSize;
+        const slice = rawData.slice(rawDataOffset, rawDataEnd);
+        result[c].set(slice, resultOffset);
+      }
+    }
+    return result;
+  }
 
-    const pcmSamples = imaadpcm.decode(rawData, this.metadata.blockSize);
+  /**
+   *
+   * @returns {Float32Array} audio buffer's channel data
+   * @param {Uint8Array} adpcmSamples
+   */
+  convertToPcm(adpcmSamples) {
+    const pcmSamples = imaadpcm.decode(adpcmSamples, this.metadata.blockSize);
     // {Int16Array} samples 16-bit PCM samples
     console.log('pcmSamples', pcmSamples);
-    // const decodedData = await this.audioContext.decodeAudioData(audioData);
 
     // https://stackoverflow.com/a/17888298/917957
     const floats = new Float32Array(pcmSamples.length);
     pcmSamples.forEach(function(sample, i) {
-      floats[i] = sample < 0 ? sample / 0x80 : sample / 0x7f;
+      floats[i] = sample < 0 ? sample / 0x8000 : sample / 0x7fff; // normalize [-32767..32768] (Int16) to [-1..1] (Float32)
+    });
+    console.log('floats', floats);
+    return floats;
+  }
+
+  /**
+   *
+   * @param {Uint8Array} rawData
+   */
+  async decode(rawData) {
+    const partitionedData = this.partition(rawData);
+
+    const { numberChannels } = this.metadata;
+
+    const floatsArray = partitionedData.map((channelRawData) => {
+      return this.convertToPcm(channelRawData);
     });
 
     const audioBuffer = this.audioContext.createBuffer(
-      1,
-      floats.length,
+      numberChannels,
+      numberChannels * floatsArray[0].length,
       this.audioContext.sampleRate
     );
-    audioBuffer.getChannelData(0).set(floats);
+    for (let c = 0; c < numberChannels; c++) {
+      audioBuffer.getChannelData(c).set(floatsArray[c]);
+    }
 
     this.bufferSource.buffer = audioBuffer;
     this.bufferSource.connect(this.audioContext.destination);
     // this.bufferSource.loop = true;
-    // this.bufferSource.start(0);
+    this.bufferSource.start(0);
+    // OMG I HAVE A SOUND PLAYING!!! BUT IT'S FULL OF STATIC NOISES!!!
 
     console.log(this.audioContext, this.bufferSource);
   }
