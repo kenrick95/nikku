@@ -1,5 +1,5 @@
 // File description: https://wiibrew.org/wiki/BRSTM_file
-import { getMetadata } from './metadata.js';
+import { Brstm } from './brstm.js';
 import { AudioPlayer } from './audio.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -10,18 +10,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const headerReader = new FileReader();
     headerReader.addEventListener('loadend', (ev) => {
       const buffer = headerReader.result;
-      const uint8Array = new Uint8Array(buffer);
+      const brstm = new Brstm(buffer);
 
-      const metadata = getMetadata(uint8Array);
 
-      // number of seconds: totalSamples / sampleRate
+      console.log('brstm', brstm);
+      const audioPlayer = new AudioPlayer(brstm.metadata);
 
-      console.log('metadata', metadata);
-      const audioPlayer = new AudioPlayer(metadata);
-
-      const rawData = uint8Array.slice(
-        metadata.offsetToData + 0x20,
-        metadata.offsetToData + 0x20 + metadata.audioDataSize
+      const rawData = brstm.rawData.slice(
+        brstm.offsetToData + 0x20,
+        brstm.offsetToData + 0x20 + brstm.metadata.audioDataSize
       );
       console.log('rawData', rawData);
 
