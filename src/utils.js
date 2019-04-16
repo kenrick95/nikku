@@ -18,3 +18,11 @@ export function getSliceAsNumber(uint8Array, start, length) {
 export function clamp(value, min, max) {
   return value <= min ? min : value >= max ? max : value;
 }
+
+/**
+ * 
+ * @param {number} num Uint16 
+ */
+export function getInt16(num) {
+  return num >= 0x8000 ? num - 0x10000 : num
+}

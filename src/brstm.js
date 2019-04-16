@@ -1,19 +1,16 @@
-import { getSliceAsString, getSliceAsNumber } from './utils.js';
+import { getSliceAsString, getSliceAsNumber, getInt16 } from './utils.js';
 /**
- * @field {Uint8Array} rawData
+ * @class
  */
 export class Brstm {
   /**
    *
    * @param {ArrayBuffer} arrayBuffer
-   * @param {number} offsetToHead Offset to HEAD chunk, relative to beginning of file
-   * @param {number} offsetToHeadChunk1 Offset to HEAD chunk part 1, relative to beginning of file
-   * @param {number} offsetToHeadChunk2 Offset to HEAD chunk part 2, relative to beginning of file
-   * @param {number} offsetToHeadChunk3 Offset to HEAD chunk part 3, relative to beginning of file
-   * @param {number} offsetToAdpc Offset to ADPC chunk, relative to beginning of file
-   * @param {number} offsetToData Offset to DATA, relative to beginning of file
    */
   constructor(arrayBuffer) {
+    /**
+     * @member {Uint8Array} rawData
+     */
     this.rawData = new Uint8Array(arrayBuffer);
 
     if (getSliceAsString(this.rawData, 0, 4) !== 'RSTM') {
@@ -21,22 +18,56 @@ export class Brstm {
     }
     // number of seconds: totalSamples / sampleRate
 
+    /**
+     * @member {number} offsetToHead Offset to HEAD chunk, relative to beginning of file
+     */
     this.offsetToHead = getSliceAsNumber(this.rawData, 0x10, 4);
+    /**
+     * @member {number} offsetToHeadChunk1 Offset to HEAD chunk part 1, relative to beginning of file
+     */
     this.offsetToHeadChunk1 =
       this.offsetToHead +
       getSliceAsNumber(this.rawData, this.offsetToHead + 0x0c, 4) +
       0x08;
+    /**
+     * @member {number} offsetToHeadChunk2 Offset to HEAD chunk part 2, relative to beginning of file
+     */
     this.offsetToHeadChunk2 =
       this.offsetToHead +
       getSliceAsNumber(this.rawData, this.offsetToHead + 0x14, 4) +
       0x08;
+    /**
+     * @member {number} offsetToHeadChunk3 Offset to HEAD chunk part 3, relative to beginning of file
+     */
     this.offsetToHeadChunk3 =
       this.offsetToHead +
       getSliceAsNumber(this.rawData, this.offsetToHead + 0x1c, 4) +
       0x08;
+    /**
+     * @member {number} offsetToAdpc Offset to ADPC chunk, relative to beginning of file
+     */
     this.offsetToAdpc = getSliceAsNumber(this.rawData, 0x18, 4);
+    /**
+     * @member {number} offsetToData Offset to DATA, relative to beginning of file
+     */
     this.offsetToData = getSliceAsNumber(this.rawData, 0x20, 4);
 
+    /**
+     * @member {Object} metadata
+     */
+    this.metadata = this._getMetadata();
+
+    /**
+     * @member {Array<Array<{yn1: number, yn2: number}>>} adpcChunkData array of numberChannels x totalBlocks, each containing yn1 and yn2, representing the history sample 1 and 2 of that channel & block
+     */
+    this.adpcChunkData = this._getPartitionedAdpcChunkData();
+    /**
+     * @member {Array<Uint8Array>} dataChunkData array of non-interlaced raw data; each array represents one channel
+     */
+    this.dataChunkData = this._getPartitionedDataChunkData();
+  }
+
+  _getMetadata() {
     const numberChannels = getSliceAsNumber(
       this.rawData,
       this.offsetToHeadChunk1 + 0x0002,
@@ -62,7 +93,7 @@ export class Brstm {
           2
         );
         // Covert number to int16
-        adpcmCoefficients.push(num >= 0x8000 ? num - 0x10000 : num);
+        adpcmCoefficients.push(getInt16(num));
       }
 
       channelInfo.push({
@@ -216,11 +247,87 @@ export class Brstm {
 
       channelInfo,
 
-      audioDataSize: getSliceAsNumber(this.rawData, this.offsetToData + 0x04, 4)
+      adpcDataSize: getSliceAsNumber(this.rawData, this.offsetToAdpc + 0x04, 4),
+      dataDataSize: getSliceAsNumber(this.rawData, this.offsetToData + 0x04, 4)
     };
 
-    this.metadata = metadata;
+    return metadata;
+  }
 
-    // Extract ADPC chunk data
+  /**
+   *
+   * @returns {Array<Uint8Array>} array of non-interlaced raw data; each array represents one channel
+   */
+  _getPartitionedDataChunkData() {
+    const {
+      blockSize,
+      totalBlocks,
+      numberChannels,
+      finalBlockSize,
+      dataDataSize
+    } = this.metadata;
+
+    // `rawData` here is data chunk's raw data
+    const rawData = this.rawData.slice(
+      this.offsetToData + 0x20,
+      this.offsetToData + 0x20 + dataDataSize
+    );
+    let result = [];
+    for (let c = 0; c < numberChannels; c++) {
+      result.push(new Uint8Array(rawData.length / numberChannels));
+    }
+    for (let b = 0; b < totalBlocks; b++) {
+      for (let c = 0; c < numberChannels; c++) {
+        const rawDataOffset = (b * numberChannels + c) * blockSize;
+        const rawDataEnd =
+          b + 1 === totalBlocks
+            ? rawDataOffset + finalBlockSize
+            : rawDataOffset + blockSize;
+        const resultOffset = b * blockSize;
+        const slice = rawData.slice(rawDataOffset, rawDataEnd);
+        result[c].set(slice, resultOffset);
+      }
+    }
+    return result;
+  }
+
+  _getPartitionedAdpcChunkData() {
+    const { totalBlocks, numberChannels, adpcDataSize } = this.metadata;
+
+    // `rawData` here is adpc chunk's raw data
+    const rawData = this.rawData.slice(
+      this.offsetToAdpc + 0x08,
+      this.offsetToAdpc + 0x08 + adpcDataSize
+    );
+    let result = [];
+    let offset = 0;
+    let yn1 = 0;
+    let yn2 = 0;
+    for (let c = 0; c < numberChannels; c++) {
+      result.push([]);
+      for (let b = 0; b < totalBlocks; b++) {
+        result[c].push([]);
+      }
+      yn1 = getInt16(getSliceAsNumber(rawData, offset, 2));
+      offset += 2;
+      yn2 = getInt16(getSliceAsNumber(rawData, offset, 2));
+      offset += 2;
+    }
+    for (let b = 0; b < totalBlocks; b++) {
+      for (let c = 0; c < numberChannels; c++) {
+        if (b > 0) {
+          yn1 = getInt16(getSliceAsNumber(rawData, offset, 2));
+          offset += 2;
+          yn2 = getInt16(getSliceAsNumber(rawData, offset, 2));
+          offset += 2;
+        }
+
+        result[c][b] = {
+          yn1,
+          yn2
+        };
+      }
+    }
+    return result;
   }
 }

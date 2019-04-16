@@ -1,5 +1,3 @@
-import imaadpcm from 'https://dev.jspm.io/imaadpcm';
-
 export class AudioPlayer {
   constructor(metadata) {
     this.metadata = metadata;
@@ -10,36 +8,6 @@ export class AudioPlayer {
     this.bufferSource = this.audioContext.createBufferSource();
   }
 
-  /**
-   *
-   * @returns {Array<Uint8Array>} array of non-interlaced raw data; each array represents one channel
-   * @param {Uint8Array} rawData
-   */
-  partition(rawData) {
-    let result = [];
-    const {
-      blockSize,
-      totalBlocks,
-      numberChannels,
-      finalBlockSize
-    } = this.metadata;
-    for (let c = 0; c < numberChannels; c++) {
-      result.push(new Uint8Array(rawData.length / numberChannels));
-    }
-    for (let b = 0; b < totalBlocks; b++) {
-      for (let c = 0; c < numberChannels; c++) {
-        const rawDataOffset = (b * numberChannels + c) * blockSize;
-        const rawDataEnd =
-          b + 1 === totalBlocks
-            ? rawDataOffset + finalBlockSize
-            : rawDataOffset + blockSize;
-        const resultOffset = b * blockSize;
-        const slice = rawData.slice(rawDataOffset, rawDataEnd);
-        result[c].set(slice, resultOffset);
-      }
-    }
-    return result;
-  }
 
   /**
    *
@@ -49,7 +17,7 @@ export class AudioPlayer {
   convertToPcm(adpcmSamples) {
     console.log('adpcmSamples', adpcmSamples);
     // TODO: From reading BrawlLib's source code, looks like "decoding" should not use this "decode" function, but a custom implementation, because many of the coefficients are encoded in the metadata
-    const pcmSamples = imaadpcm.decode(adpcmSamples, this.metadata.blockSize);
+    const pcmSamples = new Int16Array(this.metadata.totalSamples);
     // {Int16Array} samples 16-bit PCM samples
     console.log('pcmSamples', pcmSamples);
 

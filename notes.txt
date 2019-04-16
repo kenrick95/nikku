@@ -44,3 +44,185 @@ finalBlockSizeWithPadding: 4416
 2138112 / 261 = 8192 !!!!
 
 blockSize: 8192 ??? WHY??
+
+
+
+----
+
+
+_blockStates array of 2 x 262 (numberChannels x totalBlocks)
+
+_blockStates[0, 0]
+{BrawlLib.Wii.Audio.ADPCMState}
+    _coefs: {short[16]}
+    _cps: 23
+    _cyn1: 0
+    _cyn2: 0
+    _lps: 23
+    _lyn1: 0
+    _lyn2: 0
+    _ps: 23
+    _sampleIndex: 0
+    _srcPtr: 0x0b0409a0
+    _yn1: 0
+    _yn2: 0
+_blockStates[0, 1]
+{BrawlLib.Wii.Audio.ADPCMState}
+    _coefs: {short[16]}
+    _cps: 52
+    _cyn1: -1121
+    _cyn2: -1371
+    _lps: 52
+    _lyn1: -1121
+    _lyn2: -1371
+    _ps: 52
+    _sampleIndex: 0
+    _srcPtr: 0x0b0449a0
+    _yn1: -1121
+    _yn2: -1371
+_blockStates[0, 2]
+{BrawlLib.Wii.Audio.ADPCMState}
+    _coefs: {short[16]}
+    _cps: 85
+    _cyn1: -450
+    _cyn2: -946
+    _lps: 85
+    _lyn1: -450
+    _lyn2: -946
+    _ps: 85
+    _sampleIndex: 0
+    _srcPtr: 0x0b0489a0
+    _yn1: -450
+    _yn2: -946
+_blockStates[0, 3]
+{BrawlLib.Wii.Audio.ADPCMState}
+    _coefs: {short[16]}
+    _cps: 117
+    _cyn1: 3535
+    _cyn2: 3121
+    _lps: 117
+    _lyn1: 3535
+    _lyn2: 3121
+    _ps: 117
+    _sampleIndex: 0
+    _srcPtr: 0x0b04c9a0
+    _yn1: 3535
+    _yn2: 3121
+_blockStates[1, 0]
+{BrawlLib.Wii.Audio.ADPCMState}
+    _coefs: {short[16]}
+    _cps: 54
+    _cyn1: 0
+    _cyn2: 0
+    _lps: 54
+    _lyn1: 0
+    _lyn2: 0
+    _ps: 54
+    _sampleIndex: 0
+    _srcPtr: 0x0b0429a0
+    _yn1: 0
+    _yn2: 0
+_blockStates[1, 1]
+{BrawlLib.Wii.Audio.ADPCMState}
+    _coefs: {short[16]}
+    _cps: 52
+    _cyn1: 1009
+    _cyn2: 743
+    _lps: 52
+    _lyn1: 1009
+    _lyn2: 743
+    _ps: 52
+    _sampleIndex: 0
+    _srcPtr: 0x0b0469a0
+    _yn1: 1009
+    _yn2: 743
+_blockStates[1, 2
+error CS1003: Syntax error, ']' expected
+_blockStates[1, 2]
+{BrawlLib.Wii.Audio.ADPCMState}
+    _coefs: {short[16]}
+    _cps: 116
+    _cyn1: -90
+    _cyn2: -587
+    _lps: 116
+    _lyn1: -90
+    _lyn2: -587
+    _ps: 116
+    _sampleIndex: 0
+    _srcPtr: 0x0b04a9a0
+    _yn1: -90
+    _yn2: -587
+_blockStates[1, 3]
+{BrawlLib.Wii.Audio.ADPCMState}
+    _coefs: {short[16]}
+    _cps: 54
+    _cyn1: 8283
+    _cyn2: 7632
+    _lps: 54
+    _lyn1: 8283
+    _lyn2: 7632
+    _ps: 54
+    _sampleIndex: 0
+    _srcPtr: 0x0b04e9a0
+    _yn1: 8283
+    _yn2: 7632
+_blockStates[0, 261]
+{BrawlLib.Wii.Audio.ADPCMState}
+    _coefs: {short[16]}
+    _cps: 53
+    _cyn1: 90
+    _cyn2: -241
+    _lps: 53
+    _lyn1: 90
+    _lyn2: -241
+    _ps: 53
+    _sampleIndex: 0
+    _srcPtr: 0x0b4549a0
+    _yn1: 90
+    _yn2: -241
+_blockStates[1, 261]
+{BrawlLib.Wii.Audio.ADPCMState}
+    _coefs: {short[16]}
+    _cps: 117
+    _cyn1: 1846
+    _cyn2: 1656
+    _lps: 117
+    _lyn1: 1846
+    _lyn2: 1656
+    _ps: 117
+    _sampleIndex: 0
+    _srcPtr: 0x0b455ae0
+    _yn1: 1846
+    _yn2: 1656
+_loopStates
+{BrawlLib.Wii.Audio.ADPCMState[2]}
+    [0]: {BrawlLib.Wii.Audio.ADPCMState}
+    [1]: {BrawlLib.Wii.Audio.ADPCMState}
+_loopStates[0]
+{BrawlLib.Wii.Audio.ADPCMState}
+    _coefs: {short[16]}
+    _cps: 23
+    _cyn1: 5315
+    _cyn2: 5949
+    _lps: 23
+    _lyn1: 5315
+    _lyn2: 5949
+    _ps: 23
+    _sampleIndex: 0
+    _srcPtr: 0x0b0e09a0
+    _yn1: 5315
+    _yn2: 5949
+_loopStates[1]
+{BrawlLib.Wii.Audio.ADPCMState}
+    _coefs: {short[16]}
+    _cps: 86
+    _cyn1: 3785
+    _cyn2: 4219
+    _lps: 86
+    _lyn1: 3785
+    _lyn2: 4219
+    _ps: 86
+    _sampleIndex: 0
+    _srcPtr: 0x0b0e29a0
+    _yn1: 3785
+    _yn2: 4219

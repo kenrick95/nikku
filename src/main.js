@@ -16,13 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
       console.log('brstm', brstm);
       const audioPlayer = new AudioPlayer(brstm.metadata);
 
-      const rawData = brstm.rawData.slice(
-        brstm.offsetToData + 0x20,
-        brstm.offsetToData + 0x20 + brstm.metadata.audioDataSize
-      );
-      console.log('rawData', rawData);
-
-      audioPlayer.decode(rawData);
+      // audioPlayer.decode(rawData);
     });
     headerReader.readAsArrayBuffer(file);
   });
