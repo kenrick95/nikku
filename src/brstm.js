@@ -337,7 +337,6 @@ export class Brstm {
   }
 
   /**
-   * TODO: It's playing sound, but it's even more static now; the music "structure" can be heard dimly if you focus enough
    * @returns {Array<Int16Array>} per-channel samples
    */
   getAllSamples() {

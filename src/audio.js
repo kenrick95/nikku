@@ -48,7 +48,7 @@ export class AudioPlayer {
     this.bufferSource.buffer = audioBuffer;
     this.bufferSource.connect(this.audioContext.destination);
     // this.bufferSource.loop = true;
-    // this.bufferSource.start(0);
+    this.bufferSource.start(0);
 
     console.log(this.audioContext, this.bufferSource);
   }
