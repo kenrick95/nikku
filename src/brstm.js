@@ -1,4 +1,9 @@
-import { getSliceAsString, getSliceAsNumber, getInt16 } from './utils.js';
+import {
+  getSliceAsString,
+  getSliceAsNumber,
+  getInt16,
+  clamp
+} from './utils.js';
 /**
  * @class
  */
@@ -328,6 +333,105 @@ export class Brstm {
         };
       }
     }
+    return result;
+  }
+
+  /**
+   * TODO: It's playing sound, but it's even more static now; the music "structure" can be heard dimly if you focus enough
+   * @returns {Array<Int16Array>} per-channel samples
+   */
+  getAllSamples() {
+    const {
+      numberChannels,
+      totalSamples,
+      totalBlocks,
+      channelInfo,
+      blockSize,
+      finalBlockSize,
+      totalSamplesInFinalBlock,
+      samplesPerBlock
+    } = this.metadata;
+
+    const result = [];
+    for (let c = 0; c < numberChannels; c++) {
+      result.push(new Int16Array(totalSamples));
+    }
+
+    for (let c = 0; c < numberChannels; c++) {
+      const {
+        adpcmCoefficients
+        // initialPredictorScale,
+        // historySample1,
+        // historySample2,
+        // loopPredictorScale,
+        // loopHistorySample1,
+        // loopHistorySample2
+      } = channelInfo[c];
+
+      // Length should be = (totalBlocks - 1) * blockSize + finalBlockSize
+      const channelDataChunkData = this.dataChunkData[c];
+
+      for (let b = 0; b < totalBlocks; b++) {
+        const { yn1, yn2 } = this.adpcChunkData[c][b];
+        const blockData =
+          b === totalBlocks - 1
+            ? channelDataChunkData.slice(
+                b * blockSize,
+                b * blockSize + finalBlockSize
+              )
+            : channelDataChunkData.slice(b * blockSize, (b + 1) * blockSize);
+        const ps = blockData[0];
+
+        // More or less based on brawllib's ADPCMState.cs
+
+        const sampleResult = [];
+
+        let cps = ps,
+          cyn1 = yn1,
+          cyn2 = yn2,
+          dataIndex = 0;
+        const totalSamplesInBlock =
+          b === totalBlocks - 1 ? totalSamplesInFinalBlock : samplesPerBlock;
+
+        for (
+          let sampleIndex = 0;
+          sampleIndex < totalSamplesInBlock;
+          sampleIndex++
+        ) {
+          let outSample = 0;
+          if (sampleIndex % 14 === 0) {
+            cps = blockData[dataIndex];
+            dataIndex++;
+          }
+          if (sampleIndex & (1 === 0)) {
+            outSample = blockData[dataIndex] >> 4;
+          } else {
+            outSample = blockData[dataIndex] & 0x0f;
+          }
+          if (outSample >= 8) {
+            outSample -= 16;
+          }
+          const scale = 1 << (cps & 0x0f);
+          const cIndex = (cps >> 4) << 1;
+
+          outSample =
+            (0x400 +
+              ((scale * outSample) << 11) +
+              adpcmCoefficients[clamp(cIndex, 0, 15)] * cyn1 +
+              adpcmCoefficients[clamp(cIndex + 1, 0, 15)] * cyn2) >>
+            11;
+
+          cyn2 = cyn1;
+          cyn1 = clamp(outSample, -32768, 32767);
+
+          sampleResult.push(cyn1);
+        }
+
+        result[c].set(sampleResult, b * samplesPerBlock);
+        // console.log('>>', c, b, yn1, yn2, ps, blockData, sampleResult);
+      }
+    }
+
     return result;
   }
 }

@@ -12,15 +12,9 @@ export class AudioPlayer {
   /**
    *
    * @returns {Float32Array} audio buffer's channel data
-   * @param {Uint8Array} adpcmSamples
+   * @param {Int16Array} pcmSamples
    */
-  convertToPcm(adpcmSamples) {
-    console.log('adpcmSamples', adpcmSamples);
-    // TODO: From reading BrawlLib's source code, looks like "decoding" should not use this "decode" function, but a custom implementation, because many of the coefficients are encoded in the metadata
-    const pcmSamples = new Int16Array(this.metadata.totalSamples);
-    // {Int16Array} samples 16-bit PCM samples
-    console.log('pcmSamples', pcmSamples);
-
+  convertToAudioBufferData(pcmSamples) {
     // https://stackoverflow.com/a/17888298/917957
     const floats = new Float32Array(pcmSamples.length);
     pcmSamples.forEach(function(sample, i) {
@@ -33,15 +27,13 @@ export class AudioPlayer {
 
   /**
    *
-   * @param {Uint8Array} rawData
+   * @param {Array<Int16Array>} samples per-channel PCM samples
    */
-  async decode(rawData) {
-    const partitionedData = this.partition(rawData);
-
+  async play(samples) {
     const { numberChannels } = this.metadata;
 
-    const floatsArray = partitionedData.map((channelRawData) => {
-      return this.convertToPcm(channelRawData);
+    const floatsArray = samples.map((sample) => {
+      return this.convertToAudioBufferData(sample);
     });
 
     const audioBuffer = this.audioContext.createBuffer(
@@ -57,7 +49,6 @@ export class AudioPlayer {
     this.bufferSource.connect(this.audioContext.destination);
     // this.bufferSource.loop = true;
     // this.bufferSource.start(0);
-    // OMG I HAVE A SOUND PLAYING!!! BUT IT'S FULL OF STATIC NOISES!!!
 
     console.log(this.audioContext, this.bufferSource);
   }
