@@ -393,20 +393,15 @@ export class Brstm {
         const totalSamplesInBlock =
           b === totalBlocks - 1 ? totalSamplesInFinalBlock : samplesPerBlock;
 
-        for (
-          let sampleIndex = 0;
-          sampleIndex < totalSamplesInBlock;
-          sampleIndex++
-        ) {
+        for (let sampleIndex = 0; sampleIndex < totalSamplesInBlock; ) {
           let outSample = 0;
           if (sampleIndex % 14 === 0) {
-            cps = blockData[dataIndex];
-            dataIndex++;
+            cps = blockData[dataIndex++];
           }
-          if (sampleIndex & (1 === 0)) {
+          if ((sampleIndex++ & 1) === 0) {
             outSample = blockData[dataIndex] >> 4;
           } else {
-            outSample = blockData[dataIndex] & 0x0f;
+            outSample = blockData[dataIndex++] & 0x0f;
           }
           if (outSample >= 8) {
             outSample -= 16;
