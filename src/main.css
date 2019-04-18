@@ -1,0 +1,24 @@
+body {
+  max-width: 40rem;
+  padding: 2rem;
+  margin: auto;
+}
+body,
+p,
+div,
+tr {
+  font-family: sans-serif;
+  line-height: 1.6;
+}
+#metadata-container {
+  display: none;
+}
+#metadata {
+  width: 100%;
+}
+.section + .section {
+  margin-top: 1.6rem;
+}
+#controls-loop-container {
+  display: none;
+}

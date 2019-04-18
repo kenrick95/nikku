@@ -1,6 +1,6 @@
 # nikku
 
-BRSTM player
+Web-based BRSTM player
 
 Just open index.html in modern browser, select .brstm file, and enjoy!
 
@@ -11,4 +11,4 @@ The BRSTM decoder is very much adapted from the codes of [BrawlLib](https://gith
 TODO
 
 - [ ] Figure out looping
-- [ ] Simple UI (play, pause, loop)
+- [x] Simple UI (play, pause, loop)

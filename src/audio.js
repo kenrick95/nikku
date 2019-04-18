@@ -6,6 +6,8 @@ export class AudioPlayer {
       sampleRate: metadata.sampleRate
     });
     this.bufferSource = this.audioContext.createBufferSource();
+
+    this.samples = [];
   }
 
 
@@ -29,7 +31,7 @@ export class AudioPlayer {
    *
    * @param {Array<Int16Array>} samples per-channel PCM samples
    */
-  async play(samples) {
+  async load(samples) {
     const { numberChannels } = this.metadata;
 
     const floatsArray = samples.map((sample) => {
@@ -47,9 +49,13 @@ export class AudioPlayer {
 
     this.bufferSource.buffer = audioBuffer;
     this.bufferSource.connect(this.audioContext.destination);
-    // this.bufferSource.loop = true;
     this.bufferSource.start(0);
+  }
 
-    console.log(this.audioContext, this.bufferSource);
+  async play() {
+    await this.audioContext.resume();
+  }
+  async pause() {
+    await this.audioContext.suspend();
   }
 }

@@ -4,10 +4,53 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <title>Test</title>
+    <title>Nikku - Web-based BRSTM player</title>
+    <link rel="stylesheet" href="./src/main.css" />
   </head>
   <body>
-    <input type="file" id="file" />
+    <header id="header">
+      <h1>Nikku</h1>
+
+      <p>
+        Web-based BRSTM player
+      </p>
+    </header>
+    <main id="main">
+      <div class="section">
+        <label for="file">
+          Select a BRSTM file:
+        </label>
+        <input type="file" id="file" />
+      </div>
+
+      <form class="section" id="controls-form" action="#">
+        <fieldset>
+          <legend>Controls</legend>
+          <button id="controls-play">Play</button>
+          <button id="controls-pause">Pause</button>
+          <label id="controls-loop-container">
+            <input type="checkbox" id="controls-loop" />
+            Loop
+          </label>
+        </fieldset>
+      </form>
+
+      <div class="section" id="metadata-container">
+        <table id="metadata">
+          <caption>
+            File metadata
+          </caption>
+          <tbody id="metadata-body"></tbody>
+        </table>
+      </div>
+
+      <template id="metadata-row">
+        <tr>
+          <td class="metadata-row-key"></td>
+          <td class="metadata-row-value"></td>
+        </tr>
+      </template>
+    </main>
     <script type="module" src="./src/main.js"></script>
   </body>
 </html>
