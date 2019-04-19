@@ -1,7 +1,7 @@
 {
   "name": "nikku",
   "version": "0.1.0",
-  "description": "BRSTM Looper",
+  "description": "BRSTM Decoder",
   "main": "index.js",
   "author": {
     "name": "Kenrick",

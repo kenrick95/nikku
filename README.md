@@ -10,5 +10,9 @@ The BRSTM decoder is very much adapted from the codes of [BrawlLib](https://gith
 
 TODO
 
-- [ ] Figure out looping
+- [x] Figure out looping
 - [x] Simple UI (play, pause, loop)
+- [ ] Figure out gapless looping
+- [ ] UI: Progress bar
+- [ ] Perf: move brstm decoder to worker
+- [ ] Publish brstm decoder as npm package?
