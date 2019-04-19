@@ -10,7 +10,6 @@ export class AudioPlayer {
     this.samples = [];
   }
 
-
   /**
    *
    * @returns {Float32Array} audio buffer's channel data
@@ -21,9 +20,9 @@ export class AudioPlayer {
     const floats = new Float32Array(pcmSamples.length);
     pcmSamples.forEach(function(sample, i) {
       // normalize [-32768..32767] (Int16) to [-1..1] (Float32)
-      floats[i] = sample < 0 ? sample / 0x8000 : sample / 0x7fff; 
+      floats[i] = sample < 0 ? sample / 0x8000 : sample / 0x7fff;
     });
-    console.log('floats', floats);
+    // console.log('floats', floats);
     return floats;
   }
 
@@ -32,7 +31,7 @@ export class AudioPlayer {
    * @param {Array<Int16Array>} samples per-channel PCM samples
    */
   async load(samples) {
-    const { numberChannels } = this.metadata;
+    const { numberChannels, loopStartSample, totalSamples, sampleRate } = this.metadata;
 
     const floatsArray = samples.map((sample) => {
       return this.convertToAudioBufferData(sample);
@@ -50,6 +49,9 @@ export class AudioPlayer {
     this.bufferSource.buffer = audioBuffer;
     this.bufferSource.connect(this.audioContext.destination);
     this.bufferSource.start(0);
+
+    this.bufferSource.loopStart = loopStartSample / sampleRate;
+    this.bufferSource.loopEnd = totalSamples / sampleRate;
   }
 
   async play() {
@@ -57,5 +59,13 @@ export class AudioPlayer {
   }
   async pause() {
     await this.audioContext.suspend();
+  }
+
+  setLoop(value) {
+    if (value) {
+      this.bufferSource.loop = true;
+    } else {
+      this.bufferSource.loop = false;
+    }
   }
 }

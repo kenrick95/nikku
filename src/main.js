@@ -19,10 +19,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const samples = brstm.getAllSamples();
 
-      console.log('samples', samples);
+      // console.log('samples', samples);
       audioPlayer = new AudioPlayer(brstm.metadata);
 
       audioPlayer.load(samples);
+
+      document.getElementById('controls-play').removeAttribute('disabled');
+      document.getElementById('controls-pause').removeAttribute('disabled');
+      document.getElementById('controls-loop').removeAttribute('disabled');
+
+      audioPlayer.setLoop(document.getElementById('controls-loop').checked);
     });
     headerReader.readAsArrayBuffer(file);
   });
@@ -61,5 +67,12 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     audioPlayer.pause();
+  });
+
+  document.getElementById('controls-loop').addEventListener('input', (e) => {
+    if (!audioPlayer) {
+      return;
+    }
+    audioPlayer.setLoop(e.target.checked);
   });
 });
