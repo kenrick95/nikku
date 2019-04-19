@@ -5,6 +5,9 @@ import { AudioPlayer } from './audio.js';
 document.addEventListener('DOMContentLoaded', () => {
   const fileElement = document.getElementById('file');
   let audioPlayer = null;
+  document.getElementById('controls-play').setAttribute('disabled', 'disabled');
+  document.getElementById('controls-pause').setAttribute('disabled', 'disabled');
+  document.getElementById('controls-loop').setAttribute('disabled', 'disabled');
 
   fileElement.addEventListener('input', () => {
     const file = fileElement.files[0];
