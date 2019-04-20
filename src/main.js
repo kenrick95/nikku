@@ -59,13 +59,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  document.getElementById('controls-play').addEventListener('click', () => {
+  document.getElementById('controls-play').addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (!audioPlayer) {
       return;
     }
     audioPlayer.play();
   });
-  document.getElementById('controls-pause').addEventListener('click', () => {
+  document.getElementById('controls-pause').addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (!audioPlayer) {
       return;
     }
@@ -73,6 +77,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('controls-loop').addEventListener('input', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (!audioPlayer) {
       return;
     }
