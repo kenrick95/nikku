@@ -4,7 +4,7 @@ Web-based BRSTM player
 
 Just open [the demo](https://kenrick95.github.io/nikku/) in modern browser, select .brstm file, and enjoy!
 
-## What is BRSTM?
+## What Is BRSTM?
 
 BRSTM is a file format that contains [lossless](https://sound.stackexchange.com/a/40879) audio data that's being used for some Nintendo consoles. One of the differences with the usual audio format (MP3, etc) is that this format can contain a loop point, making it suitable for usage in games.
 
@@ -15,7 +15,7 @@ Some places to look for BRSTM files:
 - [Smash Custom Music](http://smashcustommusic.com/)
 - [Reddit](https://www.reddit.com/r/BRSTM/)
 
-## Browser requirements
+## Browser Requirements
 
 There are no polyfill included in [the demo](https://kenrick95.github.io/nikku/).
 
@@ -33,6 +33,10 @@ Developed and tested in Firefox 66
 
 - [WiiBrew](https://wiibrew.org/wiki/BRSTM_file), for BRSTM file description.
 - [BrawlLib](https://github.com/libertyernie/brawltools) codes, on how to decode BRSTM.
+
+## See Also
+
+- [My journey of building this](https://blog.kenrick95.org/2019/04/nikku/)
 
 ## TODOs
 
