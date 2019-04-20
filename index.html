@@ -30,7 +30,10 @@
           <button id="controls-pause" disabled>Pause</button>
           <label id="controls-loop-container">
             <input type="checkbox" id="controls-loop" disabled checked />
-            Loop <small class="note" title="There is a gap on every loop">(note)</small>
+            Loop
+            <small class="note" title="There is a gap on every loop"
+              >(note)</small
+            >
           </label>
         </fieldset>
       </form>
@@ -43,14 +46,16 @@
           <tbody id="metadata-body"></tbody>
         </table>
       </div>
-
-      <template id="metadata-row">
-        <tr>
-          <td class="metadata-row-key"></td>
-          <td class="metadata-row-value"></td>
-        </tr>
-      </template>
     </main>
+    <footer>
+      <a href="https://github.com/kenrick95/nikku">GitHub repository</a>
+    </footer>
+    <template id="metadata-row">
+      <tr>
+        <td class="metadata-row-key"></td>
+        <td class="metadata-row-value"></td>
+      </tr>
+    </template>
     <script type="module" src="./src/main.js"></script>
   </body>
 </html>
