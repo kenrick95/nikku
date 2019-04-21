@@ -44,5 +44,5 @@ Developed and tested in Firefox 66
 - [x] Simple UI (play, pause, loop)
 - [ ] Figure out gapless looping
 - [ ] UI: Progress bar
-- [ ] Perf: move brstm decoder to worker
+- [ ] Perf: move brstm decoder to worker --> [Web Worker does not support ES2015 module yet ._.](https://stackoverflow.com/a/45578811/917957)
 - [ ] Publish brstm decoder as npm package?

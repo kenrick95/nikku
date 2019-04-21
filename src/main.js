@@ -1,12 +1,13 @@
-// File description: https://wiibrew.org/wiki/BRSTM_file
-import { Brstm } from './brstm.js';
-import { AudioPlayer } from './audio.js';
+import { Brstm } from './brstm/brstm.js';
+import { AudioPlayer } from './audioPlayer.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   const fileElement = document.getElementById('file');
   let audioPlayer = null;
   document.getElementById('controls-play').setAttribute('disabled', 'disabled');
-  document.getElementById('controls-pause').setAttribute('disabled', 'disabled');
+  document
+    .getElementById('controls-pause')
+    .setAttribute('disabled', 'disabled');
   document.getElementById('controls-loop').setAttribute('disabled', 'disabled');
 
   fileElement.addEventListener('input', () => {
@@ -14,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const headerReader = new FileReader();
     headerReader.addEventListener('loadend', (ev) => {
       const buffer = headerReader.result;
+
       const brstm = new Brstm(buffer);
 
       console.log('brstm', brstm);
@@ -22,7 +24,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const samples = brstm.getAllSamples();
 
-      // console.log('samples', samples);
       audioPlayer = new AudioPlayer(brstm.metadata);
 
       audioPlayer.load(samples);
