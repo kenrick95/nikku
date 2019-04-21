@@ -7,11 +7,15 @@ export class AudioPlayer {
     });
     this.bufferSource = this.audioContext.createBufferSource();
 
-    this.samples = [];
+    /**
+     * @private
+     * @member {Array<Float32Array>} _floatSamples per-channel audio buffer data
+     */
+    this._floatSamples = [];
   }
 
   /**
-   *
+   * Interpotale [-32768..32767] (Int16) to [-1..1] (Float32)
    * @returns {Float32Array} audio buffer's channel data
    * @param {Int16Array} pcmSamples
    */
@@ -19,10 +23,8 @@ export class AudioPlayer {
     // https://stackoverflow.com/a/17888298/917957
     const floats = new Float32Array(pcmSamples.length);
     pcmSamples.forEach(function(sample, i) {
-      // normalize [-32768..32767] (Int16) to [-1..1] (Float32)
       floats[i] = sample < 0 ? sample / 0x8000 : sample / 0x7fff;
     });
-    // console.log('floats', floats);
     return floats;
   }
 
@@ -31,19 +33,21 @@ export class AudioPlayer {
    * @param {Array<Int16Array>} samples per-channel PCM samples
    */
   async load(samples) {
-    const { numberChannels, loopStartSample, totalSamples, sampleRate } = this.metadata;
-
-    const floatsArray = samples.map((sample) => {
+    this._floatSamples = samples.map((sample) => {
       return this.convertToAudioBufferData(sample);
     });
+    this.initPlayback();
+  }
 
+  initPlayback() {
+    const { numberChannels, loopStartSample, totalSamples, sampleRate } = this.metadata;
     const audioBuffer = this.audioContext.createBuffer(
       numberChannels,
-      numberChannels * floatsArray[0].length,
+      numberChannels * this._floatSamples[0].length,
       this.audioContext.sampleRate
     );
     for (let c = 0; c < numberChannels; c++) {
-      audioBuffer.getChannelData(c).set(floatsArray[c]);
+      audioBuffer.getChannelData(c).set(this._floatSamples[c]);
     }
 
     this.bufferSource.buffer = audioBuffer;
@@ -52,6 +56,7 @@ export class AudioPlayer {
 
     this.bufferSource.loopStart = loopStartSample / sampleRate;
     this.bufferSource.loopEnd = totalSamples / sampleRate;
+
   }
 
   async play() {
