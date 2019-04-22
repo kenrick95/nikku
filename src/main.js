@@ -1,4 +1,4 @@
-import { Brstm } from './brstm/brstm.js';
+import { Brstm } from './brstm/index.js';
 import { AudioPlayer } from './audioPlayer.js';
 
 document.addEventListener('DOMContentLoaded', () => {

@@ -64,7 +64,6 @@ export class Brstm {
     this._offsetToData = getSliceAsNumber(this.rawData, 0x20, 4);
 
     /**
-     * @private
      * @member {Object} metadata
      */
     this.metadata = this._getMetadata();

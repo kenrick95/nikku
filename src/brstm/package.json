@@ -1,16 +1,19 @@
 {
-  "name": "nikku",
+  "name": "brstm",
   "version": "0.1.0",
-  "description": "BRSTM Music Player",
+  "description": "BRSTM Decoder",
+  "keywords": [
+    "brstm"
+  ],
   "main": "index.js",
-  "private": true,
+  "files": [
+    "*.js"
+  ],
+  "module": "index.js",
   "author": {
     "name": "Kenrick",
     "email": "kenrick95@gmail.com"
   },
-  "keywords": [
-    "brstm"
-  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/kenrick95/nikku.git"
