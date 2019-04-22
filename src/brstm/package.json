@@ -1,11 +1,11 @@
 {
   "name": "brstm",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "BRSTM Decoder",
   "keywords": [
     "brstm"
   ],
-  "main": "index.js",
+  "main": "dist/index.js",
   "files": [
     "*.js"
   ],
@@ -22,5 +22,11 @@
   "bugs": {
     "url": "https://github.com/kenrick95/nikku/issues"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "scripts": {
+    "prepare": "parcel build index.js"
+  },
+  "devDependencies": {
+    "parcel-bundler": "^1.12.3"
+  }
 }
