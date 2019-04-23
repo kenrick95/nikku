@@ -13,20 +13,22 @@ document.addEventListener('DOMContentLoaded', () => {
   fileElement.addEventListener('input', () => {
     const file = fileElement.files[0];
     const headerReader = new FileReader();
-    headerReader.addEventListener('loadend', (ev) => {
+    headerReader.addEventListener('loadend', async (ev) => {
       const buffer = headerReader.result;
 
       const brstm = new Brstm(buffer);
 
-      console.log('brstm', brstm);
+      // console.log('brstm', brstm);
 
       renderMetadata(brstm.metadata);
 
-      const samples = brstm.getAllSamples();
+      if (audioPlayer) {
+        audioPlayer.destroy();
+      }
 
       audioPlayer = new AudioPlayer(brstm.metadata);
 
-      audioPlayer.load(samples);
+      audioPlayer.load(brstm.getAllSamples());
 
       document.getElementById('controls-play').removeAttribute('disabled');
       document.getElementById('controls-pause').removeAttribute('disabled');
