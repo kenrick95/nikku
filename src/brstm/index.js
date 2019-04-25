@@ -271,7 +271,8 @@ export class Brstm {
       blockSize,
       totalBlocks,
       numberChannels,
-      finalBlockSize
+      finalBlockSize,
+      finalBlockSizeWithPadding
     } = this.metadata;
 
     const dataDataSize = getSliceAsNumber(
@@ -291,7 +292,11 @@ export class Brstm {
     }
     for (let b = 0; b < totalBlocks; b++) {
       for (let c = 0; c < numberChannels; c++) {
-        const rawDataOffset = (b * numberChannels + c) * blockSize;
+        const rawDataOffset =
+          // Final block on non-zero channel: need to consider the previous channels' finalBlockSizeWithPadding!
+          c !== 0 && b + 1 === totalBlocks
+            ? b * numberChannels * blockSize + c * finalBlockSizeWithPadding
+            : (b * numberChannels + c) * blockSize;
         const rawDataEnd =
           b + 1 === totalBlocks
             ? rawDataOffset + finalBlockSize

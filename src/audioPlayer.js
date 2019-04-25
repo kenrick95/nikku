@@ -42,6 +42,7 @@ export class AudioPlayer {
    * @param {Array<Int16Array>} samples per-channel PCM samples
    */
   async load(samples) {
+    // console.log('samples', samples);
     this._floatSamples = samples.map((sample) => {
       return this.convertToAudioBufferData(sample);
     });
