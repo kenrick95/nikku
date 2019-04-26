@@ -4,11 +4,26 @@ import { AudioPlayer } from './audioPlayer.js';
 document.addEventListener('DOMContentLoaded', () => {
   const fileElement = document.getElementById('file');
   let audioPlayer = null;
-  document.getElementById('controls-play').setAttribute('disabled', 'disabled');
-  document
-    .getElementById('controls-pause')
-    .setAttribute('disabled', 'disabled');
-  document.getElementById('controls-loop').setAttribute('disabled', 'disabled');
+  const elTime = document.getElementById('controls-time');
+  const elPlay = document.getElementById('controls-play');
+  const elPause = document.getElementById('controls-pause');
+  const elLoop = document.getElementById('controls-loop');
+  const elTimeCurrent = document.getElementById('controls-time-current');
+  const elTimeAmount = document.getElementById('controls-time-amount');
+  let currentTimeRenderAf = null;
+
+  function reset() {
+    stopRenderCurrentTime();
+    currentTimeRenderAf = null;
+
+    elTime.value = 0;
+    elTime.max = 0;
+    elTime.setAttribute('disabled', 'disabled');
+    elPlay.setAttribute('disabled', 'disabled');
+    elPause.setAttribute('disabled', 'disabled');
+    elLoop.setAttribute('disabled', 'disabled');
+    elLoop.setAttribute('checked', 'true');
+  }
 
   fileElement.addEventListener('input', () => {
     const file = fileElement.files[0];
@@ -30,14 +45,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
       audioPlayer.load(brstm.getAllSamples());
 
-      document.getElementById('controls-play').removeAttribute('disabled');
-      document.getElementById('controls-pause').removeAttribute('disabled');
-      document.getElementById('controls-loop').removeAttribute('disabled');
+      // elTime.removeAttribute('disabled');
+      elPlay.removeAttribute('disabled');
+      elPause.removeAttribute('disabled');
+      elLoop.removeAttribute('disabled');
 
-      audioPlayer.setLoop(document.getElementById('controls-loop').checked);
+      const amountTimeInS =
+        brstm.metadata.totalSamples / brstm.metadata.sampleRate;
+      elTimeAmount.textContent = formatTime(amountTimeInS);
+      elTime.max = amountTimeInS;
+
+      audioPlayer.setLoop(elLoop.checked);
+      startRenderCurrentTime();
     });
     headerReader.readAsArrayBuffer(file);
   });
+
+  function formatTime(timeAmountInS) {
+    const mm = getTwoDigits(Math.floor(timeAmountInS / 60));
+    const ss = getTwoDigits(Math.floor(timeAmountInS % 60));
+    const xx = getTwoDigits(Math.floor(((timeAmountInS % 60) * 100) % 100));
+
+    return `${mm}:${ss}.${xx}`;
+  }
+  function getTwoDigits(number) {
+    if (number < 10) {
+      return `0${number}`;
+    }
+    return number;
+  }
 
   function renderMetadata(metadata) {
     const metadataContainerElement = document.getElementById(
@@ -62,24 +98,43 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  document.getElementById('controls-play').addEventListener('click', (e) => {
+  function renderCurrentTime() {
+    const currentTime = audioPlayer.getCurrentTime();
+    elTime.value = currentTime;
+    elTimeCurrent.textContent = formatTime(currentTime);
+
+    startRenderCurrentTime();
+  }
+
+  function startRenderCurrentTime() {
+    currentTimeRenderAf = requestAnimationFrame(renderCurrentTime);
+  }
+  function stopRenderCurrentTime() {
+    if (currentTimeRenderAf) {
+      cancelAnimationFrame(currentTimeRenderAf);
+    }
+  }
+
+  elPlay.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
     if (!audioPlayer) {
       return;
     }
     audioPlayer.play();
+    startRenderCurrentTime();
   });
-  document.getElementById('controls-pause').addEventListener('click', (e) => {
+  elPause.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
     if (!audioPlayer) {
       return;
     }
     audioPlayer.pause();
+    stopRenderCurrentTime();
   });
 
-  document.getElementById('controls-loop').addEventListener('input', (e) => {
+  elLoop.addEventListener('input', (e) => {
     e.preventDefault();
     e.stopPropagation();
     if (!audioPlayer) {
@@ -87,4 +142,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     audioPlayer.setLoop(e.target.checked);
   });
+
+  reset();
 });

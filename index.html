@@ -26,14 +26,34 @@
       <form class="section" id="controls-form" action="#">
         <fieldset>
           <legend>Controls</legend>
+          <div id="controls-time-container">
+            <input
+              type="range"
+              id="controls-time"
+              min="0"
+              max="100"
+              value="0"
+              step="0.1"
+              disabled
+            />
+            <br />
+            <span id="controls-time-current">
+              00:00.00
+            </span>
+            /
+            <span id="controls-time-amount">
+              00:00.00
+            </span>
+            <small class="note" title="These controls are still buggy">
+              note
+            </small>
+          </div>
+
           <button id="controls-play" disabled>Play</button>
           <button id="controls-pause" disabled>Pause</button>
           <label id="controls-loop-container">
             <input type="checkbox" id="controls-loop" disabled checked />
             Loop
-            <small class="note" title="There is a gap on every loop"
-              >(note)</small
-            >
           </label>
         </fieldset>
       </form>

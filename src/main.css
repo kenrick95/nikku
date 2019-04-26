@@ -19,11 +19,14 @@ tr {
 .section + .section {
   margin-top: 1.6rem;
 }
-#controls-loop-container .note {
+.note {
   font-size: 0.7rem;
   text-decoration: underline dotted black;
   font-style: italic;
   cursor: help;
+}
+#controls-time {
+  cursor: not-allowed;
 }
 footer {
   margin-top: 1.6rem;

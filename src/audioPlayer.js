@@ -6,6 +6,13 @@ export class AudioPlayer {
       sampleRate: metadata.sampleRate
     });
     this.bufferSource = this.audioContext.createBufferSource();
+    this._loopStartInS = null;
+    this._loopEndInS = null;
+    this._loopDurationInS = null;
+    this._currentTime = 0;
+    this._prevRawCurrentTime = 0;
+    this._shouldLoop = true;
+    this._initNeeded = true;
 
     /**
      * @private
@@ -20,6 +27,7 @@ export class AudioPlayer {
     this.audioContext = null;
     this.bufferSource = null;
     this._floatSamples = [];
+    this._initNeeded = true;
   }
 
   /**
@@ -58,7 +66,7 @@ export class AudioPlayer {
     } = this.metadata;
     const audioBuffer = this.audioContext.createBuffer(
       numberChannels,
-      numberChannels * this._floatSamples[0].length,
+      this._floatSamples[0].length,
       this.audioContext.sampleRate
     );
     for (let c = 0; c < numberChannels; c++) {
@@ -67,13 +75,30 @@ export class AudioPlayer {
 
     this.bufferSource.buffer = audioBuffer;
     this.bufferSource.connect(this.audioContext.destination);
-    this.bufferSource.start(0);
 
-    this.bufferSource.loopStart = loopStartSample / sampleRate;
-    this.bufferSource.loopEnd = totalSamples / sampleRate;
+    this._loopStartInS = loopStartSample / sampleRate;
+    this._loopEndInS = totalSamples / sampleRate;
+    this._loopDurationInS = this._loopEndInS - this._loopStartInS;
+
+    this.bufferSource.loopStart = this._loopStartInS;
+    this.bufferSource.loopEnd = this._loopEndInS;
+    this.bufferSource.loop = this._shouldLoop;
+    this.bufferSource.onended = () => {
+      this.pause();
+      this._initNeeded = true;
+    }
+    this.bufferSource.start(0);
+    this._currentTime = 0;
+    this._initNeeded = false;
+
+    // console.log('this.audioContext', this.audioContext, this.bufferSource);
   }
 
   async play() {
+    if (this._initNeeded) {
+      this.initPlayback();
+      return;
+    }
     await this.audioContext.resume();
   }
   async pause() {
@@ -82,9 +107,28 @@ export class AudioPlayer {
 
   setLoop(value) {
     if (value) {
-      this.bufferSource.loop = true;
+      this.bufferSource.loop = this._shouldLoop = true;
     } else {
-      this.bufferSource.loop = false;
+      this.bufferSource.loop = this._shouldLoop = false;
     }
+  }
+
+  /**
+   * This is kinda a hack, and `currentTime` isn't that accurate anyway
+   * TODO: Buggy for non-loop
+   *
+   * @returns current time in seconds, accounted for looping
+   */
+  getCurrentTime() {
+    // `audioContext.currentTime` will grow past loopEndInS
+    const rawCurrentTime = this.audioContext.currentTime;
+    const diff = rawCurrentTime - this._prevRawCurrentTime;
+    let newCurrentTime = this._currentTime + diff;
+    if (newCurrentTime > this._loopEndInS) {
+      newCurrentTime = newCurrentTime - this._loopEndInS + this._loopStartInS;
+    }
+    this._currentTime = newCurrentTime;
+    this._prevRawCurrentTime = rawCurrentTime;
+    return this._currentTime;
   }
 }

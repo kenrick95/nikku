@@ -37,12 +37,3 @@ Developed and tested in Firefox 66
 ## See Also
 
 - [My journey of building this](https://blog.kenrick95.org/2019/04/nikku/)
-
-## TODOs
-
-- [x] Figure out looping
-- [x] Simple UI (play, pause, loop)
-- [x] Figure out gapless looping
-- [ ] UI: Progress bar
-- [ ] Perf: move brstm decoder to worker --> [Web Worker does not support ES2015 module yet ._.](https://stackoverflow.com/a/45578811/917957)
-- [x] Publish brstm decoder as npm package?
