@@ -11,10 +11,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const elTimeCurrent = document.getElementById('controls-time-current');
   const elTimeAmount = document.getElementById('controls-time-amount');
   let currentTimeRenderAf = null;
+  let shouldCurrentTimeRender = false;
 
   function reset() {
     stopRenderCurrentTime();
     currentTimeRenderAf = null;
+    shouldCurrentTimeRender = false;
 
     elTime.value = 0;
     elTime.max = 0;
@@ -99,20 +101,24 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderCurrentTime() {
-    const currentTime = audioPlayer.getCurrentTime();
+    const currentTime = audioPlayer.getCurrrentPlaybackTime();
     elTime.value = currentTime;
     elTimeCurrent.textContent = formatTime(currentTime);
 
-    startRenderCurrentTime();
+    if (shouldCurrentTimeRender) {
+      currentTimeRenderAf = requestAnimationFrame(renderCurrentTime);
+    }
   }
 
   function startRenderCurrentTime() {
+    shouldCurrentTimeRender = true;
     currentTimeRenderAf = requestAnimationFrame(renderCurrentTime);
   }
   function stopRenderCurrentTime() {
     if (currentTimeRenderAf) {
       cancelAnimationFrame(currentTimeRenderAf);
     }
+    shouldCurrentTimeRender = false;
   }
 
   elPlay.addEventListener('click', (e) => {

@@ -28,6 +28,10 @@ tr {
 #controls-time {
   cursor: not-allowed;
 }
+#controls-time-display {
+  font-family: monospace;
+  font-size: 1rem;
+}
 footer {
   margin-top: 1.6rem;
 }

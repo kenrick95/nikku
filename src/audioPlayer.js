@@ -1,33 +1,40 @@
 export class AudioPlayer {
   constructor(metadata) {
-    this.metadata = metadata;
+    this.init(metadata);
+  }
 
-    this.audioContext = new AudioContext({
-      sampleRate: metadata.sampleRate
-    });
-    this.bufferSource = this.audioContext.createBufferSource();
-    this._loopStartInS = null;
-    this._loopEndInS = null;
-    this._loopDurationInS = null;
-    this._currentTime = 0;
-    this._prevRawCurrentTime = 0;
-    this._shouldLoop = true;
-    this._initNeeded = true;
+  init(metadata) {
+    if (metadata) {
+      this.metadata = metadata;
+      this.audioContext = new AudioContext({
+        sampleRate: metadata.sampleRate
+      });
+    } else {
+      // For destroy
+      this.metadata = null;
+      this.audioContext = null;
+    }
 
     /**
      * @private
      * @member {Array<Float32Array>} _floatSamples per-channel audio buffer data
      */
     this._floatSamples = [];
+    this.bufferSource = null;
+    this._loopStartInS = null;
+    this._loopEndInS = null;
+    this._loopDurationInS = null;
+
+    this._startTimestamp = 0;
+    this._pauseTimestamp = 0;
+
+    this._shouldLoop = true;
+    this._initNeeded = true;
   }
 
   async destroy() {
     await this.pause();
-    this.metadata = null;
-    this.audioContext = null;
-    this.bufferSource = null;
-    this._floatSamples = [];
-    this._initNeeded = true;
+    this.init();
   }
 
   /**
@@ -50,7 +57,6 @@ export class AudioPlayer {
    * @param {Array<Int16Array>} samples per-channel PCM samples
    */
   async load(samples) {
-    // console.log('samples', samples);
     this._floatSamples = samples.map((sample) => {
       return this.convertToAudioBufferData(sample);
     });
@@ -73,6 +79,7 @@ export class AudioPlayer {
       audioBuffer.getChannelData(c).set(this._floatSamples[c]);
     }
 
+    this.bufferSource = this.audioContext.createBufferSource();
     this.bufferSource.buffer = audioBuffer;
     this.bufferSource.connect(this.audioContext.destination);
 
@@ -86,9 +93,10 @@ export class AudioPlayer {
     this.bufferSource.onended = () => {
       this.pause();
       this._initNeeded = true;
-    }
+    };
     this.bufferSource.start(0);
-    this._currentTime = 0;
+    this._startTimestamp = performance.now();
+
     this._initNeeded = false;
 
     // console.log('this.audioContext', this.audioContext, this.bufferSource);
@@ -99,9 +107,12 @@ export class AudioPlayer {
       this.initPlayback();
       return;
     }
+    this._startTimestamp =
+      this._startTimestamp + (performance.now() - this._pauseTimestamp);
     await this.audioContext.resume();
   }
   async pause() {
+    this._pauseTimestamp = performance.now();
     await this.audioContext.suspend();
   }
 
@@ -114,21 +125,22 @@ export class AudioPlayer {
   }
 
   /**
-   * This is kinda a hack, and `currentTime` isn't that accurate anyway
-   * TODO: Buggy for non-loop
-   *
+   * This timer does not rely on Web Audio API at all, might be less accurate, but more or less working
    * @returns current time in seconds, accounted for looping
    */
-  getCurrentTime() {
-    // `audioContext.currentTime` will grow past loopEndInS
-    const rawCurrentTime = this.audioContext.currentTime;
-    const diff = rawCurrentTime - this._prevRawCurrentTime;
-    let newCurrentTime = this._currentTime + diff;
-    if (newCurrentTime > this._loopEndInS) {
-      newCurrentTime = newCurrentTime - this._loopEndInS + this._loopStartInS;
+  getCurrrentPlaybackTime() {
+    const currentTimestamp = performance.now();
+    const playbackTime = currentTimestamp - this._startTimestamp;
+    let playbackTimeInS = playbackTime / 1000;
+    if (playbackTimeInS > this._loopEndInS) {
+      if (this._shouldLoop) {
+        this._startTimestamp =
+          this._startTimestamp + this._loopDurationInS * 1000;
+        playbackTimeInS = (currentTimestamp - this._startTimestamp) / 1000;
+      } else {
+        playbackTimeInS = Math.min(playbackTimeInS, this._loopEndInS);
+      }
     }
-    this._currentTime = newCurrentTime;
-    this._prevRawCurrentTime = rawCurrentTime;
-    return this._currentTime;
+    return playbackTimeInS;
   }
 }
