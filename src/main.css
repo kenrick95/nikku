@@ -25,9 +25,6 @@ tr {
   font-style: italic;
   cursor: help;
 }
-#controls-time {
-  cursor: not-allowed;
-}
 #controls-time-display {
   font-family: monospace;
   font-size: 1rem;

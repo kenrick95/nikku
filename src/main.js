@@ -12,12 +12,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const elTimeAmount = document.getElementById('controls-time-amount');
   let currentTimeRenderAf = null;
   let shouldCurrentTimeRender = false;
+  let isElTimeDragging = false;
 
   function reset() {
     stopRenderCurrentTime();
     currentTimeRenderAf = null;
     shouldCurrentTimeRender = false;
-
+    isElTimeDragging = false;
     elTime.value = 0;
     elTime.max = 0;
     elTime.setAttribute('disabled', 'disabled');
@@ -47,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       audioPlayer.load(brstm.getAllSamples());
 
-      // elTime.removeAttribute('disabled');
+      elTime.removeAttribute('disabled');
       elPlay.removeAttribute('disabled');
       elPause.removeAttribute('disabled');
       elLoop.removeAttribute('disabled');
@@ -102,7 +103,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderCurrentTime() {
     const currentTime = audioPlayer.getCurrrentPlaybackTime();
-    elTime.value = currentTime;
+    if (!isElTimeDragging) {
+      elTime.value = currentTime;
+    }
     elTimeCurrent.textContent = formatTime(currentTime);
 
     if (shouldCurrentTimeRender) {
@@ -147,6 +150,27 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     audioPlayer.setLoop(e.target.checked);
+  });
+
+  let isElTimeDraggingTimeoutId = null;
+  elTime.addEventListener('input', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!audioPlayer) {
+      return;
+    }
+    isElTimeDragging = true;
+    if (isElTimeDraggingTimeoutId) {
+      clearTimeout(isElTimeDraggingTimeoutId);
+    }
+    // Make sure targetTimeInMs is at most "xx.xx" (chop off the 0.00000000000001 floating point error)
+    let targetTimeInS =
+      Math.round(parseFloat(e.target.value) * 1000 + 150) / 1000;
+    isElTimeDraggingTimeoutId = setTimeout(() => {
+      isElTimeDragging = false;
+      audioPlayer.seek(targetTimeInS);
+      startRenderCurrentTime();
+    }, 150);
   });
 
   reset();

@@ -15,11 +15,7 @@ export class AudioPlayer {
       this.audioContext = null;
     }
 
-    /**
-     * @private
-     * @member {Array<Float32Array>} _floatSamples per-channel audio buffer data
-     */
-    this._floatSamples = [];
+    this._audioBuffer = null;
     this.bufferSource = null;
     this._loopStartInS = null;
     this._loopEndInS = null;
@@ -30,6 +26,8 @@ export class AudioPlayer {
 
     this._shouldLoop = true;
     this._initNeeded = true;
+    this._isSeeking = false;
+    this._isPlaying = false;
   }
 
   async destroy() {
@@ -57,30 +55,34 @@ export class AudioPlayer {
    * @param {Array<Int16Array>} samples per-channel PCM samples
    */
   async load(samples) {
-    this._floatSamples = samples.map((sample) => {
+    const floatSamples = samples.map((sample) => {
       return this.convertToAudioBufferData(sample);
     });
-    this.initPlayback();
-  }
 
-  initPlayback() {
-    const {
+    const { numberChannels } = this.metadata;
+    this._audioBuffer = this.audioContext.createBuffer(
       numberChannels,
-      loopStartSample,
-      totalSamples,
-      sampleRate
-    } = this.metadata;
-    const audioBuffer = this.audioContext.createBuffer(
-      numberChannels,
-      this._floatSamples[0].length,
+      floatSamples[0].length,
       this.audioContext.sampleRate
     );
     for (let c = 0; c < numberChannels; c++) {
-      audioBuffer.getChannelData(c).set(this._floatSamples[c]);
+      this._audioBuffer.getChannelData(c).set(floatSamples[c]);
+    }
+
+    this.initPlayback();
+    this._isPlaying = true;
+  }
+
+  initPlayback(bufferStart = 0) {
+    const { loopStartSample, totalSamples, sampleRate } = this.metadata;
+
+    if (this.bufferSource) {
+      this.bufferSource.stop(0);
+      this.bufferSource = null;
     }
 
     this.bufferSource = this.audioContext.createBufferSource();
-    this.bufferSource.buffer = audioBuffer;
+    this.bufferSource.buffer = this._audioBuffer;
     this.bufferSource.connect(this.audioContext.destination);
 
     this._loopStartInS = loopStartSample / sampleRate;
@@ -91,37 +93,60 @@ export class AudioPlayer {
     this.bufferSource.loopEnd = this._loopEndInS;
     this.bufferSource.loop = this._shouldLoop;
     this.bufferSource.onended = () => {
-      this.pause();
-      this._initNeeded = true;
+      if (!this._isSeeking) {
+        this.pause();
+        this._initNeeded = true;
+      } else {
+        /**
+         * Naturally, this piece of code shouldn't be here, but since I called
+         * `this.bufferSource.stop(0);` earlier on, this `onended` event will be triggered
+         * much much later than any other codes.
+         */
+        this._isSeeking = false;
+      }
     };
-    this.bufferSource.start(0);
-    this._startTimestamp = performance.now();
+    this.bufferSource.start(this.audioContext.currentTime, bufferStart);
+    this._startTimestamp = performance.now() - bufferStart * 1000;
 
     this._initNeeded = false;
+  }
 
-    // console.log('this.audioContext', this.audioContext, this.bufferSource);
+  async seek(playbackTimeInS) {
+    this._isSeeking = true;
+    this.initPlayback(playbackTimeInS);
+    if (!this._isPlaying) {
+      this._isPlaying = true;
+      // Cannot use this.play() as it will adjust _startTimestamp based on previous _pauseTimestamp
+      await this.audioContext.resume();
+    }
   }
 
   async play() {
-    if (this._initNeeded) {
-      this.initPlayback();
+    if (this._isPlaying) {
       return;
     }
-    this._startTimestamp =
-      this._startTimestamp + (performance.now() - this._pauseTimestamp);
+    this._isPlaying = true;
     await this.audioContext.resume();
+
+    if (this._initNeeded) {
+      this.initPlayback();
+    } else {
+      this._startTimestamp =
+        this._startTimestamp + performance.now() - this._pauseTimestamp;
+    }
   }
   async pause() {
+    if (!this._isPlaying) {
+      return;
+    }
+    this._isPlaying = false;
     this._pauseTimestamp = performance.now();
     await this.audioContext.suspend();
   }
 
   setLoop(value) {
-    if (value) {
-      this.bufferSource.loop = this._shouldLoop = true;
-    } else {
-      this.bufferSource.loop = this._shouldLoop = false;
-    }
+    this._shouldLoop = value;
+    this.bufferSource.loop = this._shouldLoop;
   }
 
   /**
@@ -133,7 +158,7 @@ export class AudioPlayer {
     const playbackTime = currentTimestamp - this._startTimestamp;
     let playbackTimeInS = playbackTime / 1000;
     if (playbackTimeInS > this._loopEndInS) {
-      if (this._shouldLoop) {
+      if (this._shouldLoop && this._isPlaying) {
         this._startTimestamp =
           this._startTimestamp + this._loopDurationInS * 1000;
         playbackTimeInS = (currentTimestamp - this._startTimestamp) / 1000;
