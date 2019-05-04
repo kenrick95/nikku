@@ -32,3 +32,12 @@ tr {
 footer {
   margin-top: 1.6rem;
 }
+#unsupported {
+  display: none;
+  color: #FF4136;
+  border: 1px solid currentColor;
+  padding: 0.6rem;
+}
+input:disabled, button:disabled {
+  cursor: not-allowed;
+}

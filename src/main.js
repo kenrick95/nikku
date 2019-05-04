@@ -2,6 +2,7 @@ import { Brstm } from './brstm/index.js';
 import { AudioPlayer } from './audioPlayer.js';
 
 document.addEventListener('DOMContentLoaded', () => {
+
   const fileElement = document.getElementById('file');
   let audioPlayer = null;
   const elTime = document.getElementById('controls-time');
@@ -14,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let shouldCurrentTimeRender = false;
   let isElTimeDragging = false;
 
+  fileElement.setAttribute('disabled', 'disabled');
   function reset() {
     stopRenderCurrentTime();
     currentTimeRenderAf = null;
@@ -26,9 +28,10 @@ document.addEventListener('DOMContentLoaded', () => {
     elPause.setAttribute('disabled', 'disabled');
     elLoop.setAttribute('disabled', 'disabled');
     elLoop.setAttribute('checked', 'true');
+    fileElement.removeAttribute('disabled');
   }
 
-  fileElement.addEventListener('input', () => {
+  fileElement.addEventListener('change', () => {
     const file = fileElement.files[0];
     const headerReader = new FileReader();
     headerReader.addEventListener('loadend', async (ev) => {
@@ -172,6 +175,16 @@ document.addEventListener('DOMContentLoaded', () => {
       startRenderCurrentTime();
     }, 150);
   });
+  function displayUnsupported() {
+    document.getElementById('unsupported').style.display = 'block';
+  }
+  function isCompatible() {
+    return 'AudioContext' in self;
+  }
 
-  reset();
+  if (isCompatible()) {
+    reset();
+  } else {
+    displayUnsupported();
+  }
 });

@@ -16,11 +16,14 @@
       </p>
     </header>
     <main id="main">
+      <div class="section" id="unsupported">
+        Sorry, this browser is unsupported
+      </div>
       <div class="section">
         <label for="file">
           Select a BRSTM file:
         </label>
-        <input type="file" id="file" />
+        <input type="file" id="file" accept=".brstm" disabled />
       </div>
 
       <form class="section" id="controls-form" action="#">
@@ -45,7 +48,10 @@
                 00:00.00
               </span>
             </div>
-            <small class="note" title="These controls could be buggy, if you find bug(s), please report it at the GitHub repo. Thanks!">
+            <small
+              class="note"
+              title="These controls could be buggy, if you find bug(s), please report it at the GitHub repo. Thanks!"
+            >
               note
             </small>
           </div>
@@ -78,5 +84,6 @@
       </tr>
     </template>
     <script type="module" src="./src/main.js"></script>
+    <script nomodule src="./src/nomodule.js"></script>
   </body>
 </html>
