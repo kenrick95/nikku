@@ -34,6 +34,11 @@ footer {
 }
 #unsupported {
   display: none;
+}
+#errors:empty {
+  visibility: hidden;
+}
+.error {
   color: #FF4136;
   border: 1px solid currentColor;
   padding: 0.6rem;

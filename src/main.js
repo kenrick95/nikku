@@ -2,7 +2,6 @@ import { Brstm } from './brstm/index.js';
 import { AudioPlayer } from './audioPlayer.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-
   const fileElement = document.getElementById('file');
   let audioPlayer = null;
   const elTime = document.getElementById('controls-time');
@@ -11,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const elLoop = document.getElementById('controls-loop');
   const elTimeCurrent = document.getElementById('controls-time-current');
   const elTimeAmount = document.getElementById('controls-time-amount');
+  const elErrors = document.getElementById('errors');
   let currentTimeRenderAf = null;
   let shouldCurrentTimeRender = false;
   let isElTimeDragging = false;
@@ -29,40 +29,45 @@ document.addEventListener('DOMContentLoaded', () => {
     elLoop.setAttribute('disabled', 'disabled');
     elLoop.setAttribute('checked', 'true');
     fileElement.removeAttribute('disabled');
+    elErrors.textContent = "";
   }
 
   fileElement.addEventListener('change', () => {
     const file = fileElement.files[0];
     const headerReader = new FileReader();
     headerReader.addEventListener('loadend', async (ev) => {
-      const buffer = headerReader.result;
+      try {
+        const buffer = headerReader.result;
 
-      const brstm = new Brstm(buffer);
+        const brstm = new Brstm(buffer);
 
-      // console.log('brstm', brstm);
+        // console.log('brstm', brstm);
 
-      renderMetadata(brstm.metadata);
+        renderMetadata(brstm.metadata);
 
-      if (audioPlayer) {
-        audioPlayer.destroy();
+        if (audioPlayer) {
+          audioPlayer.destroy();
+        }
+
+        audioPlayer = new AudioPlayer(brstm.metadata);
+
+        audioPlayer.load(brstm.getAllSamples());
+
+        elTime.removeAttribute('disabled');
+        elPlay.removeAttribute('disabled');
+        elPause.removeAttribute('disabled');
+        elLoop.removeAttribute('disabled');
+
+        const amountTimeInS =
+          brstm.metadata.totalSamples / brstm.metadata.sampleRate;
+        elTimeAmount.textContent = formatTime(amountTimeInS);
+        elTime.max = amountTimeInS;
+
+        audioPlayer.setLoop(elLoop.checked);
+        startRenderCurrentTime();
+      } catch (e) {
+        elErrors.textContent = e.message;
       }
-
-      audioPlayer = new AudioPlayer(brstm.metadata);
-
-      audioPlayer.load(brstm.getAllSamples());
-
-      elTime.removeAttribute('disabled');
-      elPlay.removeAttribute('disabled');
-      elPause.removeAttribute('disabled');
-      elLoop.removeAttribute('disabled');
-
-      const amountTimeInS =
-        brstm.metadata.totalSamples / brstm.metadata.sampleRate;
-      elTimeAmount.textContent = formatTime(amountTimeInS);
-      elTime.max = amountTimeInS;
-
-      audioPlayer.setLoop(elLoop.checked);
-      startRenderCurrentTime();
     });
     headerReader.readAsArrayBuffer(file);
   });
