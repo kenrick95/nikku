@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     elLoop.setAttribute('disabled', 'disabled');
     elLoop.setAttribute('checked', 'true');
     fileElement.removeAttribute('disabled');
-    elErrors.textContent = "";
+    elErrors.textContent = '';
   }
 
   fileElement.addEventListener('change', () => {
