@@ -6,7 +6,9 @@ body {
 body,
 p,
 div,
-tr {
+tr,
+summary,
+details {
   font-family: sans-serif;
   line-height: 1.6;
 }
@@ -39,10 +41,11 @@ footer {
   visibility: hidden;
 }
 .error {
-  color: #FF4136;
+  color: #ff4136;
   border: 1px solid currentColor;
   padding: 0.6rem;
 }
-input:disabled, button:disabled {
+input:disabled,
+button:disabled {
   cursor: not-allowed;
 }
