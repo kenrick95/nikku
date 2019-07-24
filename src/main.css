@@ -31,6 +31,10 @@ details {
   font-family: monospace;
   font-size: 1rem;
 }
+#controls-stream-select {
+  display: none;
+  margin-left: 0.6rem;
+}
 footer {
   margin-top: 1.6rem;
 }

@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const elLoop = document.getElementById('controls-loop');
   const elTimeCurrent = document.getElementById('controls-time-current');
   const elTimeAmount = document.getElementById('controls-time-amount');
+  const elStreamSelect = document.getElementById('controls-stream-select');
   const elErrors = document.getElementById('errors');
   let currentTimeRenderAf = null;
   let shouldCurrentTimeRender = false;
@@ -29,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     elLoop.setAttribute('disabled', 'disabled');
     elLoop.setAttribute('checked', 'true');
     fileElement.removeAttribute('disabled');
+    elStreamSelect.removeAttribute('style');
     elErrors.textContent = '';
   }
 
@@ -57,6 +59,21 @@ document.addEventListener('DOMContentLoaded', () => {
         elPlay.removeAttribute('disabled');
         elPause.removeAttribute('disabled');
         elLoop.removeAttribute('disabled');
+
+        // Reset elStreamSelect
+        elStreamSelect.removeAttribute('style');
+        elStreamSelect.innerHTML = '';
+
+        if (brstm.metadata.numberChannels > 2) {
+          const numberStreams = Math.floor(brstm.metadata.numberChannels / 2);
+          for (let i = 0; i < numberStreams; i++) {
+            const child = document.createElement('option');
+            child.textContent = `Stream ${i + 1}`;
+            child.value = i;
+            elStreamSelect.appendChild(child);
+          }
+          elStreamSelect.style.display = 'inline-block';
+        }
 
         const amountTimeInS =
           brstm.metadata.totalSamples / brstm.metadata.sampleRate;
@@ -149,6 +166,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     audioPlayer.pause();
     stopRenderCurrentTime();
+  });
+
+  elStreamSelect.addEventListener('input', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!audioPlayer) {
+      return;
+    }
+    audioPlayer.setStreamIndex(e.target.value);
   });
 
   elLoop.addEventListener('input', (e) => {

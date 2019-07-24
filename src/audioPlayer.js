@@ -15,6 +15,14 @@ export class AudioPlayer {
       this.audioContext = null;
     }
 
+    /**
+     * One BRSTM file can have more than 2 channels
+     * For example the ones given in [#1](https://github.com/kenrick95/nikku/issues/1) have 8 and 4 channels!
+     * 
+     * One "stream" is a pair of 2 channels
+     */
+    this._streamIndex = 0;
+
     this._audioBuffer = null;
     this.bufferSource = null;
     this._loopStartInS = null;
@@ -74,7 +82,12 @@ export class AudioPlayer {
   }
 
   initPlayback(bufferStart = 0) {
-    const { loopStartSample, totalSamples, sampleRate } = this.metadata;
+    const {
+      loopStartSample,
+      totalSamples,
+      sampleRate,
+      numberChannels
+    } = this.metadata;
 
     if (this.bufferSource) {
       this.bufferSource.stop(0);
@@ -83,7 +96,50 @@ export class AudioPlayer {
 
     this.bufferSource = this.audioContext.createBufferSource();
     this.bufferSource.buffer = this._audioBuffer;
-    this.bufferSource.connect(this.audioContext.destination);
+
+    if (numberChannels <= 1) {
+      // if mono, don't bother to do this complicated stuffs
+      this.bufferSource.connect(this.audioContext.destination);
+    } else {
+      /**
+       * The purpose of this branch is to only play one stream at a time, i.e. max 2 channels
+       * The illustration is shown below
+       */
+
+      /*
+       * Example when numberChannels = 4
+       *                                            /-0-->
+       *                                            |
+       * [  buffer source  ]  -->   [splitter]   ---+-1-->
+       *                                            |
+       *                                            +-2-->
+       *                                            |
+       *                                            \-3-->
+       *
+       */
+
+      /*
+       * Continued example, and when selected "stream" index = 1
+       *
+       * --0-->
+       *
+       * --1-->
+       *          /-->-L-\
+       * --2-->--/        +--> [merger]  --> [  context destination  ]
+       *            /->R-/
+       * --3-->----/
+       *
+       */
+      const splitter = this.audioContext.createChannelSplitter(numberChannels);
+      const merger = this.audioContext.createChannelMerger(2);
+
+      this.bufferSource.connect(splitter);
+
+      splitter.connect(merger, 2 * this._streamIndex + 0, 0);
+      splitter.connect(merger, 2 * this._streamIndex + 1, 1);
+
+      merger.connect(this.audioContext.destination);
+    }
 
     this._loopStartInS = loopStartSample / sampleRate;
     this._loopEndInS = totalSamples / sampleRate;
@@ -142,6 +198,14 @@ export class AudioPlayer {
     this._isPlaying = false;
     this._pauseTimestamp = performance.now();
     await this.audioContext.suspend();
+  }
+
+  setStreamIndex(index) {
+    this._streamIndex = index;
+
+    if (this._isPlaying) {
+      this.seek(this.getCurrrentPlaybackTime());
+    }
   }
 
   setLoop(value) {
