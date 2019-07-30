@@ -378,7 +378,8 @@ export class Brstm {
       blockSize,
       finalBlockSize,
       totalSamplesInFinalBlock,
-      samplesPerBlock
+      samplesPerBlock,
+      codec
     } = this.metadata;
     const channelInfo = this._getChannelInfo();
 
@@ -402,7 +403,6 @@ export class Brstm {
       const channelDataChunkData = dataChunkData[c];
 
       for (let b = 0; b < totalBlocks; b++) {
-        const { yn1, yn2 } = adpcChunkData[c][b];
         const blockData =
           b === totalBlocks - 1
             ? channelDataChunkData.slice(
@@ -410,51 +410,77 @@ export class Brstm {
                 b * blockSize + finalBlockSize
               )
             : channelDataChunkData.slice(b * blockSize, (b + 1) * blockSize);
-        const ps = blockData[0];
-
-        // #region Magic adapted from brawllib's ADPCMState.cs
-        const sampleResult = [];
-
-        let cps = ps,
-          cyn1 = yn1,
-          cyn2 = yn2,
-          dataIndex = 0;
         const totalSamplesInBlock =
           b === totalBlocks - 1 ? totalSamplesInFinalBlock : samplesPerBlock;
+        const sampleResult = [];
+        if (codec === 2) {
+          // 4-bit ADPCM
+          const ps = blockData[0];
+          const { yn1, yn2 } = adpcChunkData[c][b];
 
-        for (let sampleIndex = 0; sampleIndex < totalSamplesInBlock; ) {
-          let outSample = 0;
-          if (sampleIndex % 14 === 0) {
-            cps = blockData[dataIndex++];
+          // #region Magic adapted from brawllib's ADPCMState.cs
+          let cps = ps,
+            cyn1 = yn1,
+            cyn2 = yn2,
+            dataIndex = 0;
+
+          for (let sampleIndex = 0; sampleIndex < totalSamplesInBlock; ) {
+            let outSample = 0;
+            if (sampleIndex % 14 === 0) {
+              cps = blockData[dataIndex++];
+            }
+            if ((sampleIndex++ & 1) === 0) {
+              outSample = blockData[dataIndex] >> 4;
+            } else {
+              outSample = blockData[dataIndex++] & 0x0f;
+            }
+            if (outSample >= 8) {
+              outSample -= 16;
+            }
+            const scale = 1 << (cps & 0x0f);
+            const cIndex = (cps >> 4) << 1;
+
+            outSample =
+              (0x400 +
+                ((scale * outSample) << 11) +
+                adpcmCoefficients[clamp(cIndex, 0, 15)] * cyn1 +
+                adpcmCoefficients[clamp(cIndex + 1, 0, 15)] * cyn2) >>
+              11;
+
+            cyn2 = cyn1;
+            cyn1 = clamp(outSample, -32768, 32767);
+
+            sampleResult.push(cyn1);
           }
-          if ((sampleIndex++ & 1) === 0) {
-            outSample = blockData[dataIndex] >> 4;
-          } else {
-            outSample = blockData[dataIndex++] & 0x0f;
+
+          // #endregion
+          // console.log('>>', c, b, yn1, yn2, ps, blockData, sampleResult);
+        } else if (codec === 1) {
+          // 16-bit PCM
+          for (
+            let sampleIndex = 0;
+            sampleIndex < totalSamplesInBlock;
+            sampleIndex++
+          ) {
+            const result = getInt16(
+              getSliceAsNumber(blockData, sampleIndex * 2, 2)
+            );
+            sampleResult.push(result);
           }
-          if (outSample >= 8) {
-            outSample -= 16;
+        } else if (codec === 0) {
+          // 8-bit PCM
+          for (
+            let sampleIndex = 0;
+            sampleIndex < totalSamplesInBlock;
+            sampleIndex++
+          ) {
+            sampleResult.push(getInt16(blockData[sampleIndex]));
           }
-          const scale = 1 << (cps & 0x0f);
-          const cIndex = (cps >> 4) << 1;
-
-          outSample =
-            (0x400 +
-              ((scale * outSample) << 11) +
-              adpcmCoefficients[clamp(cIndex, 0, 15)] * cyn1 +
-              adpcmCoefficients[clamp(cIndex + 1, 0, 15)] * cyn2) >>
-            11;
-
-          cyn2 = cyn1;
-          cyn1 = clamp(outSample, -32768, 32767);
-
-          sampleResult.push(cyn1);
+        } else {
+          throw new Error('Invalid codec');
         }
 
-        // #endregion
-
         result[c].set(sampleResult, b * samplesPerBlock);
-        // console.log('>>', c, b, yn1, yn2, ps, blockData, sampleResult);
       }
     }
 
