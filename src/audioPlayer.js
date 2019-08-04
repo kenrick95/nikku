@@ -18,10 +18,10 @@ export class AudioPlayer {
     /**
      * One BRSTM file can have more than 2 channels
      * For example the ones given in [#1](https://github.com/kenrick95/nikku/issues/1) have 8 and 4 channels!
-     * 
+     *
      * One "stream" is a pair of 2 channels
      */
-    this._streamIndex = 0;
+    this._streamStates = [true];
 
     this._audioBuffer = null;
     this.bufferSource = null;
@@ -76,6 +76,15 @@ export class AudioPlayer {
     for (let c = 0; c < numberChannels; c++) {
       this._audioBuffer.getChannelData(c).set(floatSamples[c]);
     }
+    const numberStreams = Math.floor(numberChannels / 2);
+    this._streamStates = [];
+    for (let i = 0; i < numberStreams; i++) {
+      if (i === 0) {
+        this._streamStates.push(true);
+      } else {
+        this._streamStates.push(false);
+      }
+    }
 
     this.initPlayback();
     this._isPlaying = true;
@@ -119,7 +128,7 @@ export class AudioPlayer {
        */
 
       /*
-       * Continued example, and when selected "stream" index = 1
+       * Continued example, and when only "stream" index = 1 is active
        *
        * --0-->
        *
@@ -131,12 +140,27 @@ export class AudioPlayer {
        *
        */
       const splitter = this.audioContext.createChannelSplitter(numberChannels);
-      const merger = this.audioContext.createChannelMerger(2);
+
+      let mergerChannels = 2;
+      for (const streamState of this._streamStates) {
+        if (streamState) {
+          mergerChannels += 2;
+        }
+      }
+      const merger = this.audioContext.createChannelMerger(mergerChannels);
 
       this.bufferSource.connect(splitter);
 
-      splitter.connect(merger, 2 * this._streamIndex + 0, 0);
-      splitter.connect(merger, 2 * this._streamIndex + 1, 1);
+      let mergerIndex = 0;
+      for (let i = 0; i < this._streamStates.length; i++) {
+        const streamState = this._streamStates[i];
+
+        if (streamState) {
+          splitter.connect(merger, 2 * i + 0, mergerIndex);
+          splitter.connect(merger, 2 * i + 1, mergerIndex + 1);
+          mergerIndex += 2;
+        }
+      }
 
       merger.connect(this.audioContext.destination);
     }
@@ -200,12 +224,10 @@ export class AudioPlayer {
     await this.audioContext.suspend();
   }
 
-  setStreamIndex(index) {
-    this._streamIndex = index;
-
-    if (this._isPlaying) {
-      this.seek(this.getCurrrentPlaybackTime());
-    }
+  async setStreamStates(newStates) {
+    this._streamStates = newStates;
+    // NOTE: Only works well when this._isPlaying is true!
+    this.seek(this.getCurrrentPlaybackTime());
   }
 
   setLoop(value) {

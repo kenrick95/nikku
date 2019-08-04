@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentTimeRenderAf = null;
   let shouldCurrentTimeRender = false;
   let isElTimeDragging = false;
+  let streamStates = [true];
 
   fileElement.setAttribute('disabled', 'disabled');
   function reset() {
@@ -32,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fileElement.removeAttribute('disabled');
     elStreamSelect.removeAttribute('style');
     elErrors.textContent = '';
+    streamStates = [true];
   }
 
   fileElement.addEventListener('change', () => {
@@ -66,10 +68,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (brstm.metadata.numberChannels > 2) {
           const numberStreams = Math.floor(brstm.metadata.numberChannels / 2);
+          const text = document.createElement('span');
+          text.textContent = 'Stream(s) enabled:';
+          text.title =
+            'This file contains more than 1 streams, check or uncheck the checkboxes to enable/disable each stream';
+          elStreamSelect.appendChild(text);
+          streamStates = [];
           for (let i = 0; i < numberStreams; i++) {
-            const child = document.createElement('option');
-            child.textContent = `Stream ${i + 1}`;
-            child.value = i;
+            const child = document.createElement('input');
+            child.type = 'checkbox';
+            if (i === 0) {
+              child.checked = true;
+              streamStates.push(true);
+            } else {
+              child.checked = false;
+              streamStates.push(false);
+            }
+            child.title = `Stream ${i + 1}`;
+            child.addEventListener('input', streamCheckedHandler.bind(this, i));
             elStreamSelect.appendChild(child);
           }
           elStreamSelect.style.display = 'inline-block';
@@ -157,6 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     audioPlayer.play();
     startRenderCurrentTime();
+    enableStreamCheckboxes();
   });
   elPause.addEventListener('click', (e) => {
     e.preventDefault();
@@ -166,16 +183,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     audioPlayer.pause();
     stopRenderCurrentTime();
+    disableStreamCheckboxes();
   });
 
-  elStreamSelect.addEventListener('input', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+  function streamCheckedHandler(i) {
     if (!audioPlayer) {
       return;
     }
-    audioPlayer.setStreamIndex(e.target.value);
-  });
+    streamStates[i] = !streamStates[i];
+    audioPlayer.setStreamStates(streamStates);
+  }
 
   elLoop.addEventListener('input', (e) => {
     e.preventDefault();
@@ -211,6 +228,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   function isCompatible() {
     return 'AudioContext' in self;
+  }
+
+  function disableStreamCheckboxes() {
+    for (const child of elStreamSelect.childNodes) {
+      child.disabled = true;
+    }
+  }
+  function enableStreamCheckboxes() {
+    for (const child of elStreamSelect.childNodes) {
+      child.disabled = false;
+    }
   }
 
   if (isCompatible()) {

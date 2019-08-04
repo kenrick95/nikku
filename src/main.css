@@ -35,6 +35,9 @@ details {
   display: none;
   margin-left: 0.6rem;
 }
+#controls-stream-select > input {
+  margin: 2px;
+}
 footer {
   margin-top: 1.6rem;
 }
