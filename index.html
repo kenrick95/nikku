@@ -58,6 +58,19 @@
 
           <button id="controls-play" disabled>Play</button>
           <button id="controls-pause" disabled>Pause</button>
+
+          <label id="controls-volume-container">
+            Volume<br />
+            <input
+              type="range"
+              id="controls-volume"
+              disabled
+              value="1"
+              min="0"
+              max="1"
+              step="0.01"
+            />
+          </label>
           <label id="controls-loop-container">
             <input type="checkbox" id="controls-loop" disabled checked />
             Loop

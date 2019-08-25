@@ -36,6 +36,12 @@ export class AudioPlayer {
     this._initNeeded = true;
     this._isSeeking = false;
     this._isPlaying = false;
+
+    /**
+     * 0..1
+     */
+    this._volume = 1;
+    this._gainNode = null;
   }
 
   async destroy() {
@@ -106,9 +112,13 @@ export class AudioPlayer {
     this.bufferSource = this.audioContext.createBufferSource();
     this.bufferSource.buffer = this._audioBuffer;
 
+    this._gainNode = this.audioContext.createGain();
+    this._gainNode.gain.value = this._volume;
+
     if (numberChannels <= 1) {
-      // if mono, don't bother to do this complicated stuffs
-      this.bufferSource.connect(this.audioContext.destination);
+      // if mono, only connect buffer -> gain (volume) -> destination
+      this.bufferSource.connect(this._gainNode);
+      this._gainNode.connect(this.audioContext.destination);
     } else {
       /**
        * The purpose of this branch is to only play one stream at a time, i.e. max 2 channels
@@ -134,7 +144,7 @@ export class AudioPlayer {
        *
        * --1-->
        *          /-->-L-\
-       * --2-->--/        +--> [merger]  --> [  context destination  ]
+       * --2-->--/        +--> [merger]  --> [gain] --> [  context destination  ]
        *            /->R-/
        * --3-->----/
        *
@@ -162,7 +172,8 @@ export class AudioPlayer {
         }
       }
 
-      merger.connect(this.audioContext.destination);
+      merger.connect(this._gainNode);
+      this._gainNode.connect(this.audioContext.destination);
     }
 
     this._loopStartInS = loopStartSample / sampleRate;
@@ -228,6 +239,17 @@ export class AudioPlayer {
     this._streamStates = newStates;
     // NOTE: Only works well when this._isPlaying is true!
     this.seek(this.getCurrrentPlaybackTime());
+  }
+
+  /**
+   * Set the gain node's value
+   * @param {number} value 0..1
+   */
+  async setVolume(value) {
+    this._volume = value;
+    if (this._gainNode) {
+      this._gainNode.gain.value = value;
+    }
   }
 
   setLoop(value) {

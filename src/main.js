@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const elPlay = document.getElementById('controls-play');
   const elPause = document.getElementById('controls-pause');
   const elLoop = document.getElementById('controls-loop');
+  const elVolume = document.getElementById('controls-volume');
   const elTimeCurrent = document.getElementById('controls-time-current');
   const elTimeAmount = document.getElementById('controls-time-amount');
   const elStreamSelect = document.getElementById('controls-stream-select');
@@ -30,6 +31,8 @@ document.addEventListener('DOMContentLoaded', () => {
     elPause.setAttribute('disabled', 'disabled');
     elLoop.setAttribute('disabled', 'disabled');
     elLoop.setAttribute('checked', 'true');
+    elVolume.value = 1;
+    elVolume.setAttribute('disabled', 'disabled');
     fileElement.removeAttribute('disabled');
     elStreamSelect.removeAttribute('style');
     elErrors.textContent = '';
@@ -61,6 +64,8 @@ document.addEventListener('DOMContentLoaded', () => {
         elPlay.removeAttribute('disabled');
         elPause.removeAttribute('disabled');
         elLoop.removeAttribute('disabled');
+        elVolume.removeAttribute('disabled');
+        elVolume.value = 1;
 
         // Reset elStreamSelect
         elStreamSelect.removeAttribute('style');
@@ -88,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
             child.addEventListener('input', streamCheckedHandler.bind(this, i));
             elStreamSelect.appendChild(child);
           }
-          elStreamSelect.style.display = 'inline-block';
+          elStreamSelect.style.display = 'block';
         }
 
         const amountTimeInS =
@@ -203,6 +208,9 @@ document.addEventListener('DOMContentLoaded', () => {
     audioPlayer.setLoop(e.target.checked);
   });
 
+  /**
+   * To throttle the input event
+   */
   let isElTimeDraggingTimeoutId = null;
   elTime.addEventListener('input', (e) => {
     e.preventDefault();
@@ -223,6 +231,17 @@ document.addEventListener('DOMContentLoaded', () => {
       startRenderCurrentTime();
     }, 150);
   });
+
+  elVolume.addEventListener('input', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!audioPlayer) {
+      return;
+    }
+    let volume = Math.round(parseFloat(e.target.value) * 1000) / 1000;
+    audioPlayer.setVolume(volume);
+  });
+
   function displayUnsupported() {
     document.getElementById('unsupported').style.display = 'block';
   }
