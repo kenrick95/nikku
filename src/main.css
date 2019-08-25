@@ -27,6 +27,15 @@ details {
   font-style: italic;
   cursor: help;
 }
+#form-and-details {
+  display: flex;
+}
+#form-and-details .column {
+  flex: 1 1 50%;
+}
+#form-and-details .column + .column {
+  margin-left: 0.6rem;
+}
 #controls-form {
   position: relative;
 }
@@ -36,7 +45,7 @@ details {
 }
 #controls-volume-container {
   position: absolute;
-  right: 50%;
+  right: 1rem;
   top: 1rem;
   text-align: center;
 }
@@ -53,8 +62,8 @@ details {
 #controls-stream-select > input {
   margin: 2px;
 }
-footer {
-  margin-top: 1.6rem;
+#metadata-caption {
+  cursor: help;
 }
 #unsupported {
   display: none;
