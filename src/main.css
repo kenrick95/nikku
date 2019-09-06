@@ -27,19 +27,43 @@ details {
   font-style: italic;
   cursor: help;
 }
+#form-and-details {
+  display: flex;
+}
+#form-and-details .column {
+  flex: 1 1 50%;
+}
+#form-and-details .column + .column {
+  margin-left: 0.6rem;
+}
+#controls-form {
+  position: relative;
+}
 #controls-time-display {
   font-family: monospace;
   font-size: 1rem;
 }
+#controls-volume-container {
+  position: absolute;
+  right: 1rem;
+  top: 1rem;
+  text-align: center;
+}
+#controls-volume {
+  width: 80px;
+  height: 2rem;
+  margin: 0;
+  transform-origin: 50% 50%;
+  transform: rotate(-90deg) translateX(-50%) translateX(1rem);
+}
 #controls-stream-select {
   display: none;
-  margin-left: 0.6rem;
 }
 #controls-stream-select > input {
   margin: 2px;
 }
-footer {
-  margin-top: 1.6rem;
+#metadata-caption {
+  cursor: help;
 }
 #unsupported {
   display: none;

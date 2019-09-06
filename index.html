@@ -26,58 +26,75 @@
         <input type="file" id="file" accept=".brstm" disabled />
       </div>
 
-      <form class="section" id="controls-form" action="#">
-        <fieldset>
-          <legend>Controls</legend>
-          <div id="controls-time-container">
-            <input
-              type="range"
-              id="controls-time"
-              min="0"
-              max="100"
-              value="0"
-              step="0.1"
-              disabled
-            />
-            <div id="controls-time-display">
-              <span id="controls-time-current">
-                00:00.00
-              </span>
-              /
-              <span id="controls-time-amount">
-                00:00.00
-              </span>
-            </div>
-            <small
-              class="note"
-              title="These controls could be buggy, if you find bug(s), please report it at the GitHub repo. Thanks!"
-            >
-              note
-            </small>
-          </div>
+      <div class="section" id="form-and-details">
+        <div class="column">
+          <form class="section" id="controls-form" action="#">
+            <fieldset>
+              <legend>Controls</legend>
+              <div id="controls-time-container">
+                <input
+                  type="range"
+                  id="controls-time"
+                  min="0"
+                  max="100"
+                  value="0"
+                  step="0.1"
+                  disabled
+                />
+                <div id="controls-time-display">
+                  <span id="controls-time-current">
+                    00:00.00
+                  </span>
+                  /
+                  <span id="controls-time-amount">
+                    00:00.00
+                  </span>
+                </div>
+                <small
+                  class="note"
+                  title="These controls could be buggy, if you find bug(s), please report it at the GitHub repo. Thanks!"
+                >
+                  note
+                </small>
+              </div>
 
-          <button id="controls-play" disabled>Play</button>
-          <button id="controls-pause" disabled>Pause</button>
-          <label id="controls-loop-container">
-            <input type="checkbox" id="controls-loop" disabled checked />
-            Loop
-          </label>
-          <div id="controls-stream-select"></div>
-        </fieldset>
-      </form>
+              <button id="controls-play" disabled>Play</button>
+              <button id="controls-pause" disabled>Pause</button>
 
-      <div class="section error" id="errors"></div>
+              <label id="controls-volume-container">
+                Volume<br />
+                <input
+                  type="range"
+                  id="controls-volume"
+                  disabled
+                  value="1"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                />
+              </label>
+              <label id="controls-loop-container">
+                <input type="checkbox" id="controls-loop" disabled checked />
+                Loop
+              </label>
+              <div id="controls-stream-select"></div>
+            </fieldset>
+          </form>
 
-      <details class="section" id="metadata-container">
-        <summary id="metadata-caption">File metadata</summary>
-        <table id="metadata">
-          <tbody id="metadata-body"></tbody>
-        </table>
-      </details>
+          <div class="section error" id="errors"></div>
+
+          <a class="section" href="https://github.com/kenrick95/nikku">GitHub repository</a>
+        </div>
+        <div class="column">
+          <details class="section" id="metadata-container">
+            <summary id="metadata-caption" title="Click to expand/collapse file metadata details">File metadata</summary>
+            <table id="metadata">
+              <tbody id="metadata-body"></tbody>
+            </table>
+          </details>
+        </div>
+      </div>
     </main>
-    <footer>
-      <a href="https://github.com/kenrick95/nikku">GitHub repository</a>
-    </footer>
     <template id="metadata-row">
       <tr>
         <td class="metadata-row-key"></td>
