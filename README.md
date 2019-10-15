@@ -36,4 +36,5 @@ Developed and tested in Firefox 66
 
 ## See Also
 
-- [My journey of building this](https://blog.kenrick95.org/2019/04/nikku/)
+- [My journey of building this](https://blog.kenrick95.org/2019/04/nikku/) (April 2019)
+- [My talk in Geekcamp Singapore 2019](https://github.com/kenrick95/nikku-talk) (October 2019)
