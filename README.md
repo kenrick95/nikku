@@ -13,6 +13,7 @@ BRSTM is a file format that contains [lossless](https://sound.stackexchange.com/
 Some places to look for BRSTM files:
 
 - ~~[Smash Custom Music](http://smashcustommusic.com/)~~<sup>[_dead link_]</sup>
+- [Smash Custom Music Archive](https://smashcustommusic.net/) (the audio player in this site is using the ["brstm" package](https://github.com/kenrick95/nikku/tree/master/src/brstm) from this repo!)
 - [Reddit](https://www.reddit.com/r/BRSTM/)
 
 ## Browser Requirements
