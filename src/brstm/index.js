@@ -311,7 +311,53 @@ export class Brstm {
     }
     return result;
   }
+  
+  /**
+   * used in getBuffer
+   * @returns {Array<Uint8Array>} array of non-interlaced raw data; each array represents one channel
+   */
+  _getPartitionedBlockData(block) {
+    const {
+      blockSize,
+      totalBlocks,
+      numberChannels,
+      finalBlockSize,
+      finalBlockSizeWithPadding
+    } = this.metadata;
 
+    const dataDataSize = getSliceAsNumber(
+      this.rawData,
+      this._offsetToData + 0x04,
+      4
+    );
+
+    // `rawData` here is data chunk's raw data
+    const rawData = this.rawData.slice(
+      this._offsetToData + 0x20,
+      this._offsetToData + 0x20 + dataDataSize
+    );
+    let result = [];
+    for (let c = 0; c < numberChannels; c++) {
+      result.push(new Uint8Array(blockSize));
+    }
+    let b = block;
+    for (let c = 0; c < numberChannels; c++) {
+      const rawDataOffset =
+      // Final block on non-zero channel: need to consider the previous channels' finalBlockSizeWithPadding!
+      c !== 0 && b + 1 === totalBlocks
+      ? b * numberChannels * blockSize + c * finalBlockSizeWithPadding
+      : (b * numberChannels + c) * blockSize;
+      const rawDataEnd =
+      b + 1 === totalBlocks
+      ? rawDataOffset + finalBlockSize
+      : rawDataOffset + blockSize;
+      //const resultOffset = b * blockSize;
+      const slice = rawData.slice(rawDataOffset, rawDataEnd);
+      result[c].set(slice, 0);
+    }
+    return result;
+  }
+  
   _getPartitionedAdpcChunkData() {
     const { totalBlocks, numberChannels } = this.metadata;
     const adpcDataSize = getSliceAsNumber(
@@ -517,7 +563,7 @@ export class Brstm {
       /**
        * @var {Array<Uint8Array>} dataChunkData array of non-interlaced raw data; each array represents one channel
        */
-      const dataChunkData = this._getPartitionedDataChunkData();
+      const dataChunkData = this._getPartitionedBlockData(offset/samplesPerBlock | 0);
       
       const channelInfo = this._getChannelInfo();
       
@@ -537,20 +583,11 @@ export class Brstm {
           // loopHistorySample2
         } = channelInfo[c];
         
-        // Length should be = (totalBlocks - 1) * blockSize + finalBlockSize
-        const channelDataChunkData = dataChunkData[c];
-        
         let b = offset/samplesPerBlock | 0;
         //don't try to read blocks that don't exist
         if(b >= totalBlocks) {return result;}
         
-        const blockData =
-        b === totalBlocks - 1
-        ? channelDataChunkData.slice(
-          b * blockSize,
-          b * blockSize + finalBlockSize
-        )
-        : channelDataChunkData.slice(b * blockSize, (b + 1) * blockSize);
+        const blockData = dataChunkData[c];
         const totalSamplesInBlock =
         b === totalBlocks - 1 ? totalSamplesInFinalBlock : samplesPerBlock;
         const sampleResult = [];
