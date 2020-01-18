@@ -347,7 +347,7 @@ export class Brstm {
       b + 1 === totalBlocks
       ? rawDataOffset + finalBlockSize
       : rawDataOffset + blockSize;
-      //this._currentBlockData[c].set(this.rawData.subarray(this._offsetToData + 0x20 + rawDataOffset, this._offsetToData + 0x20 + rawDataEnd), 0);
+      
       for(let i = 0; i < rawDataEnd-rawDataOffset; i++) {
         this._currentBlockData[c][i] = this.rawData[this._offsetToData + 0x20 + rawDataOffset + i];
       }
@@ -551,7 +551,7 @@ export class Brstm {
         codec
     } = this.metadata;
     
-    let b = (offset/samplesPerBlock) | 0;
+    let b = offset/samplesPerBlock | 0;
     
     if (this._currentCachedBlock !== b) {
       //Decode block
@@ -560,7 +560,6 @@ export class Brstm {
        * @var {Array<Array<{yn1: number, yn2: number}>>} adpcChunkData array of numberChannels x totalBlocks, each containing yn1 and yn2, representing the history sample 1 and 2 of that channel & block
        */
       if(this._partitionedAdpcChunkData == false) {
-        console.log('fill partitionedAdpcChunkData')
         this._partitionedAdpcChunkData = this._getPartitionedAdpcChunkData();
       }
       const adpcChunkData = this._partitionedAdpcChunkData;
@@ -572,14 +571,12 @@ export class Brstm {
       
       //Channel info
       if(this._cachedChannelInfo == false) {
-        console.log('fill ChannelInfo');
         this._cachedChannelInfo = this._getChannelInfo();
       }
       const channelInfo = this._cachedChannelInfo;
       
       //Cached block data (will be filled now)
       if(this._cachedBlock == false) {
-        console.log('new cachedBlock array');
         for (let c = 0; c < numberChannels; c++) {
           this._cachedBlock.push(new Int16Array(samplesPerBlock));
         }
@@ -598,7 +595,7 @@ export class Brstm {
         
         const totalSamplesInBlock =
         b === totalBlocks - 1 ? totalSamplesInFinalBlock : samplesPerBlock;
-        let sampleResult = [];
+        //let sampleResult = [];
         if (codec === 2) {
           // 4-bit ADPCM
           const ps = blockData[c][0];
@@ -636,7 +633,8 @@ export class Brstm {
             cyn2 = cyn1;
             cyn1 = clamp(outSample, -32768, 32767);
             
-            sampleResult.push(cyn1);
+            //sampleResult.push(cyn1);
+            this._cachedBlock[c][sampleIndex] = cyn1;
           }
           
           // #endregion
@@ -651,7 +649,8 @@ export class Brstm {
             const result = getInt16(
               getSliceAsNumber(blockData[c], sampleIndex * 2, 2)
             );
-            sampleResult.push(result);
+            //sampleResult.push(result);
+            this._cachedBlock[c][sampleIndex] = result;
           }
         } else if (codec === 0) {
           // 8-bit PCM
@@ -660,26 +659,20 @@ export class Brstm {
           sampleIndex < totalSamplesInBlock;
           sampleIndex++
           ) {
-            sampleResult.push(getInt16(blockData[sampleIndex]));
+            //sampleResult.push(getInt16(blockData[sampleIndex]));
+            this._cachedBlock[c][sampleIndex] = getInt16(blockData[sampleIndex]);
           }
         } else {
           throw new Error('Invalid codec');
         }
-        this._cachedBlock[c].set(sampleResult,0);
+        //this._cachedBlock[c].set(sampleResult,0);
         //Remember the block that is currently stored in _cachedBlock
         this._currentCachedBlock = b;
       }
     }
     
     if(this._returnBuffer) {
-      let lastp = -1;
       //make and return the requested buffer
-      /*const result = [];
-      for (let c = 0; c < numberChannels; c++) {
-        result.push(new Int16Array(size));
-      }*/
-      const result = this._resultBuffer;
-      
       let blockEndReached = false;
       let blockEndReachedAt = 0;
       for(let c = 0; c < numberChannels; c++) {
@@ -691,17 +684,18 @@ export class Brstm {
             blockEndReachedAt=p;
             break;
           }
-          result[c][p] = this._cachedBlock[c][dataIndex+p];
+          this._resultBuffer[c][p] = this._cachedBlock[c][dataIndex+p];
         }
       }
       if(blockEndReached) {
+        //don't make a new result buffer
         this._returnBuffer = false;
         this.getBuffer.bind(this)(offset+blockEndReachedAt,0);
         this._returnBuffer = true;
         for(let c = 0; c < numberChannels; c++) {
           let dataIndex=0;
           for(let p = blockEndReachedAt; p < size; p++) {
-            result[c][p] = this._cachedBlock[c][dataIndex++];
+            this._resultBuffer[c][p] = this._cachedBlock[c][dataIndex++];
           }
         }
       }
