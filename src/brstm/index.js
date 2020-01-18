@@ -81,8 +81,10 @@ export class Brstm {
     this._currentBlockData = [];
     this._partitionedAdpcChunkData = [];
     this._cachedChannelInfo = [];
+    this._resultBuffer = [];
     for (let c = 0; c < this.metadata.numberChannels; c++) {
       this._currentBlockData.push(new Uint8Array(this.metadata.blockSize));
+      this._resultBuffer.push(new Int16Array(16384));
     }
   }
 
@@ -345,9 +347,10 @@ export class Brstm {
       b + 1 === totalBlocks
       ? rawDataOffset + finalBlockSize
       : rawDataOffset + blockSize;
-      console.log('Read ' + (rawDataEnd-rawDataOffset) + ' bytes in getPartitionedBlockData');
-      const slice = this.rawData.slice(this._offsetToData + 0x20 + rawDataOffset, this._offsetToData + 0x20 + rawDataEnd);
-      this._currentBlockData[c].set(slice, 0);
+      //this._currentBlockData[c].set(this.rawData.subarray(this._offsetToData + 0x20 + rawDataOffset, this._offsetToData + 0x20 + rawDataEnd), 0);
+      for(let i = 0; i < rawDataEnd-rawDataOffset; i++) {
+        this._currentBlockData[c][i] = this.rawData[this._offsetToData + 0x20 + rawDataOffset + i];
+      }
     }
     return this._currentBlockData;
   }
@@ -550,9 +553,7 @@ export class Brstm {
     
     let b = (offset/samplesPerBlock) | 0;
     
-    if(this._returnBuffer) console.log (this._currentCachedBlock + '==' + b);
     if (this._currentCachedBlock !== b) {
-      if(this._returnBuffer) console.log ('FALSE decoding new block');
       //Decode block
       
       /** ADPC chunk data
@@ -668,20 +669,22 @@ export class Brstm {
         //Remember the block that is currently stored in _cachedBlock
         this._currentCachedBlock = b;
       }
-    } else {if(this._returnBuffer) console.log('TRUE reusing cache');}
+    }
     
     if(this._returnBuffer) {
+      let lastp = -1;
       //make and return the requested buffer
-      const result = [];
+      /*const result = [];
       for (let c = 0; c < numberChannels; c++) {
         result.push(new Int16Array(size));
-      }
+      }*/
+      const result = this._resultBuffer;
       
       let blockEndReached = false;
       let blockEndReachedAt = 0;
       for(let c = 0; c < numberChannels; c++) {
         //offset in current block
-        let dataIndex = offset-samplesPerBlock*((offset/samplesPerBlock) | 0);
+        let dataIndex = offset-samplesPerBlock*(offset/samplesPerBlock | 0);
         for(let p = 0; p < size; p++) {
           if(dataIndex+p >= samplesPerBlock) {
             blockEndReached=true;
@@ -692,10 +695,9 @@ export class Brstm {
         }
       }
       if(blockEndReached) {
-        console.log('Reached block end');
-        this.returnBufffer = false;
-        this.getBuffer(offset+blockEndReachedAt,0);
-        this.returnBufffer = true;
+        this._returnBuffer = false;
+        this.getBuffer.bind(this)(offset+blockEndReachedAt,0);
+        this._returnBuffer = true;
         for(let c = 0; c < numberChannels; c++) {
           let dataIndex=0;
           for(let p = blockEndReachedAt; p < size; p++) {
@@ -704,7 +706,7 @@ export class Brstm {
         }
       }
       
-      return result;
+      return this._resultBuffer;
     }
   }
 }
