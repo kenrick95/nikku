@@ -84,7 +84,7 @@ export class Brstm {
     this._resultBuffer = [];
     for (let c = 0; c < this.metadata.numberChannels; c++) {
       this._currentBlockData.push(new Uint8Array(this.metadata.blockSize));
-      this._resultBuffer.push(new Int16Array(16384));
+      this._resultBuffer.push(new Int16Array(this.metadata.samplesPerBlock));
     }
   }
 
