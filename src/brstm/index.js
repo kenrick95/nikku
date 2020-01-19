@@ -73,6 +73,19 @@ export class Brstm {
      * @member {Array<Int16Array>} _cachedSamples per-channel samples
      */
     this._cachedSamples = null;
+
+    //used in getBuffer
+    this._cachedBlock = [];
+    this._currentCachedBlock = -1;
+    this._returnBuffer = true;
+    this._currentBlockData = [];
+    this._partitionedAdpcChunkData = [];
+    this._cachedChannelInfo = [];
+    this._resultBuffer = [];
+    for (let c = 0; c < this.metadata.numberChannels; c++) {
+      this._currentBlockData.push(new Uint8Array(this.metadata.blockSize));
+      this._resultBuffer.push(new Int16Array(this.metadata.samplesPerBlock));
+    }
   }
 
   _getChannelInfo() {
@@ -309,6 +322,41 @@ export class Brstm {
     return result;
   }
 
+  /**
+   * Read only one block
+   * used in getBuffer
+   * @returns {Array<Uint8Array>} array of non-interlaced raw data; each array represents one channel
+   */
+  _getPartitionedBlockData(block) {
+    const {
+      blockSize,
+      totalBlocks,
+      numberChannels,
+      finalBlockSize,
+      finalBlockSizeWithPadding
+    } = this.metadata;
+
+    let b = block;
+    for (let c = 0; c < numberChannels; c++) {
+      const rawDataOffset =
+        // Final block on non-zero channel: need to consider the previous channels' finalBlockSizeWithPadding!
+        c !== 0 && b + 1 === totalBlocks
+          ? b * numberChannels * blockSize + c * finalBlockSizeWithPadding
+          : (b * numberChannels + c) * blockSize;
+      const rawDataEnd =
+        b + 1 === totalBlocks
+          ? rawDataOffset + finalBlockSize
+          : rawDataOffset + blockSize;
+
+      for (let i = 0; i < rawDataEnd - rawDataOffset; i++) {
+        this._currentBlockData[c][i] = this.rawData[
+          this._offsetToData + 0x20 + rawDataOffset + i
+        ];
+      }
+    }
+    return this._currentBlockData;
+  }
+
   _getPartitionedAdpcChunkData() {
     const { totalBlocks, numberChannels } = this.metadata;
     const adpcDataSize = getSliceAsNumber(
@@ -355,6 +403,9 @@ export class Brstm {
   }
 
   /**
+   *
+   * TODO: Inconsistent naming with `getBuffer`
+   *
    * @returns {Array<Int16Array>} per-channel samples
    */
   getAllSamples() {
@@ -402,6 +453,7 @@ export class Brstm {
       // Length should be = (totalBlocks - 1) * blockSize + finalBlockSize
       const channelDataChunkData = dataChunkData[c];
 
+      // TODO: This loop seemed to be replacable with `this.getBuffer(b * blockSize, totalSamplesInBlock)`
       for (let b = 0; b < totalBlocks; b++) {
         const blockData =
           b === totalBlocks - 1
@@ -487,5 +539,176 @@ export class Brstm {
     this._cachedSamples = result;
 
     return result;
+  }
+
+  /**
+   * Get buffer of Int16 samples
+   *
+   *
+   * Make sure to not ask for anything outside the file!
+   *
+   * Example:
+   * - Total samples: 10000
+   * - brstm.getBuffer(8000, 4000); is invalid
+   *
+   * @param {number} offset
+   * @param {number} size
+   * @returns {Array<Int16Array>} per-channel samples from `offset`-th sample until `(offset + size - 1)`-th sample
+   */
+  getBuffer(offset, size) {
+    const {
+      numberChannels,
+      totalSamples,
+      totalBlocks,
+      blockSize,
+      finalBlockSize,
+      totalSamplesInFinalBlock,
+      samplesPerBlock,
+      codec
+    } = this.metadata;
+
+    let b = (offset / samplesPerBlock) | 0;
+
+    if (this._currentCachedBlock !== b) {
+      // Decode new block
+
+      /**
+       * ADPC chunk data
+       * @var {Array<Array<{yn1: number, yn2: number}>>} adpcChunkData array of numberChannels x totalBlocks, each containing yn1 and yn2, representing the history sample 1 and 2 of that channel & block
+       */
+      if (this._partitionedAdpcChunkData == false) {
+        this._partitionedAdpcChunkData = this._getPartitionedAdpcChunkData();
+      }
+      const adpcChunkData = this._partitionedAdpcChunkData;
+
+      /**
+       * Read current block's data
+       * @var {Array<Uint8Array>} dataChunkData array of non-interlaced raw data; each array represents one channel
+       */
+      const blockData = this._getPartitionedBlockData(b);
+
+      // Channel info
+      if (this._cachedChannelInfo == false) {
+        this._cachedChannelInfo = this._getChannelInfo();
+      }
+      const channelInfo = this._cachedChannelInfo;
+
+      // Cached decoded block data (will be filled now)
+      if (this._cachedBlock == false) {
+        for (let c = 0; c < numberChannels; c++) {
+          this._cachedBlock.push(new Int16Array(samplesPerBlock));
+        }
+      }
+
+      for (let c = 0; c < numberChannels; c++) {
+        const { adpcmCoefficients } = channelInfo[c];
+
+        const totalSamplesInBlock =
+          b === totalBlocks - 1 ? totalSamplesInFinalBlock : samplesPerBlock;
+        if (codec === 2) {
+          // 4-bit ADPCM
+          const ps = blockData[c][0];
+          const { yn1, yn2 } = adpcChunkData[c][b];
+
+          // #region Magic adapted from brawllib's ADPCMState.cs
+          let cps = ps,
+            cyn1 = yn1,
+            cyn2 = yn2,
+            dataIndex = 0;
+
+          for (let sampleIndex = 0; sampleIndex < totalSamplesInBlock; ) {
+            let outSample = 0;
+            if (sampleIndex % 14 === 0) {
+              cps = blockData[c][dataIndex++];
+            }
+            if ((sampleIndex++ & 1) === 0) {
+              outSample = blockData[c][dataIndex] >> 4;
+            } else {
+              outSample = blockData[c][dataIndex++] & 0x0f;
+            }
+            if (outSample >= 8) {
+              outSample -= 16;
+            }
+            const scale = 1 << (cps & 0x0f);
+            const cIndex = (cps >> 4) << 1;
+
+            outSample =
+              (0x400 +
+                ((scale * outSample) << 11) +
+                adpcmCoefficients[clamp(cIndex, 0, 15)] * cyn1 +
+                adpcmCoefficients[clamp(cIndex + 1, 0, 15)] * cyn2) >>
+              11;
+
+            cyn2 = cyn1;
+            cyn1 = clamp(outSample, -32768, 32767);
+
+            this._cachedBlock[c][sampleIndex] = cyn1;
+          }
+
+          // #endregion
+          // console.log('>>', c, b, yn1, yn2, ps, blockData, sampleResult);
+        } else if (codec === 1) {
+          // 16-bit PCM
+          for (
+            let sampleIndex = 0;
+            sampleIndex < totalSamplesInBlock;
+            sampleIndex++
+          ) {
+            const result = getInt16(
+              getSliceAsNumber(blockData[c], sampleIndex * 2, 2)
+            );
+            this._cachedBlock[c][sampleIndex] = result;
+          }
+        } else if (codec === 0) {
+          // 8-bit PCM
+          for (
+            let sampleIndex = 0;
+            sampleIndex < totalSamplesInBlock;
+            sampleIndex++
+          ) {
+            this._cachedBlock[c][sampleIndex] = getInt16(
+              blockData[sampleIndex]
+            );
+          }
+        } else {
+          throw new Error('Invalid codec');
+        }
+        // Remember the block that is currently stored in _cachedBlock
+        this._currentCachedBlock = b;
+      }
+    }
+
+    if (this._returnBuffer) {
+      // Make and return the requested buffer
+      let blockEndReached = false;
+      let blockEndReachedAt = 0;
+      for (let c = 0; c < numberChannels; c++) {
+        // Offset in current block
+        let dataIndex =
+          offset - samplesPerBlock * ((offset / samplesPerBlock) | 0);
+        for (let p = 0; p < size; p++) {
+          if (dataIndex + p >= samplesPerBlock) {
+            blockEndReached = true;
+            blockEndReachedAt = p;
+            break;
+          }
+          this._resultBuffer[c][p] = this._cachedBlock[c][dataIndex + p];
+        }
+      }
+      if (blockEndReached) {
+        // Don't make a new result buffer
+        this._returnBuffer = false;
+        this.getBuffer.bind(this)(offset + blockEndReachedAt, 0);
+        this._returnBuffer = true;
+        // Continue filling the result buffer
+        for (let c = 0; c < numberChannels; c++) {
+          let dataIndex = 0;
+          for (let p = blockEndReachedAt; p < size; p++) {
+            this._resultBuffer[c][p] = this._cachedBlock[c][dataIndex++];
+          }
+        }
+      }
+      return this._resultBuffer;
+    }
   }
 }
