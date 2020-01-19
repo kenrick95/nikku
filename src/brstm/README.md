@@ -19,6 +19,11 @@ const metadata = brstm.metadata;
 
 // You get per-channel PCM samples
 const samples = brstm.getAllSamples();
+
+// If you don't want the full samples, you can decode them partially
+// getBuffer(offset, size) will return the per-channel `offset`-th sample until `(offset + size - 1)`-th sample
+const samplesPartial = brstm.getBuffer(0, 100);
+
 ```
 
 ## Members
@@ -49,3 +54,4 @@ const samples = brstm.getAllSamples();
 ## Methods
 
 - `getAllSamples()`: `{Array<Int16Array>}`, per-channel PCM samples
+- `getBuffer(offset, size)`: `{Array<Int16Array>}`, per-channel samples from `offset`-th sample until `(offset + size - 1)`-th sample
