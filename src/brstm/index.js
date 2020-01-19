@@ -324,6 +324,7 @@ export class Brstm {
   
   
   /**
+   * Read only one block
    * used in getBuffer
    * @returns {Array<Uint8Array>} array of non-interlaced raw data; each array represents one channel
    */
@@ -536,6 +537,12 @@ export class Brstm {
   }
   
   /** Get buffer of Int16 samples
+   * 
+   * Make sure to not ask for anything outside the file!
+   * Example:
+   * Total samples: 10000
+   * brstm.getBuffer(8000, 4000); is invalid
+   * 
    * @returns {Array<Int16Array>} per-channel samples
    */
   getBuffer(offset, size) {
@@ -554,7 +561,7 @@ export class Brstm {
     let b = offset/samplesPerBlock | 0;
     
     if (this._currentCachedBlock !== b) {
-      //Decode block
+      //Decode new block
       
       /** ADPC chunk data
        * @var {Array<Array<{yn1: number, yn2: number}>>} adpcChunkData array of numberChannels x totalBlocks, each containing yn1 and yn2, representing the history sample 1 and 2 of that channel & block
@@ -575,7 +582,7 @@ export class Brstm {
       }
       const channelInfo = this._cachedChannelInfo;
       
-      //Cached block data (will be filled now)
+      //Cached decoded block data (will be filled now)
       if(this._cachedBlock == false) {
         for (let c = 0; c < numberChannels; c++) {
           this._cachedBlock.push(new Int16Array(samplesPerBlock));
@@ -595,7 +602,6 @@ export class Brstm {
         
         const totalSamplesInBlock =
         b === totalBlocks - 1 ? totalSamplesInFinalBlock : samplesPerBlock;
-        //let sampleResult = [];
         if (codec === 2) {
           // 4-bit ADPCM
           const ps = blockData[c][0];
@@ -633,7 +639,6 @@ export class Brstm {
             cyn2 = cyn1;
             cyn1 = clamp(outSample, -32768, 32767);
             
-            //sampleResult.push(cyn1);
             this._cachedBlock[c][sampleIndex] = cyn1;
           }
           
@@ -649,7 +654,6 @@ export class Brstm {
             const result = getInt16(
               getSliceAsNumber(blockData[c], sampleIndex * 2, 2)
             );
-            //sampleResult.push(result);
             this._cachedBlock[c][sampleIndex] = result;
           }
         } else if (codec === 0) {
@@ -659,13 +663,11 @@ export class Brstm {
           sampleIndex < totalSamplesInBlock;
           sampleIndex++
           ) {
-            //sampleResult.push(getInt16(blockData[sampleIndex]));
             this._cachedBlock[c][sampleIndex] = getInt16(blockData[sampleIndex]);
           }
         } else {
           throw new Error('Invalid codec');
         }
-        //this._cachedBlock[c].set(sampleResult,0);
         //Remember the block that is currently stored in _cachedBlock
         this._currentCachedBlock = b;
       }
@@ -692,6 +694,7 @@ export class Brstm {
         this._returnBuffer = false;
         this.getBuffer.bind(this)(offset+blockEndReachedAt,0);
         this._returnBuffer = true;
+        //continue filling the result buffer
         for(let c = 0; c < numberChannels; c++) {
           let dataIndex=0;
           for(let p = blockEndReachedAt; p < size; p++) {
@@ -699,7 +702,6 @@ export class Brstm {
           }
         }
       }
-      
       return this._resultBuffer;
     }
   }
