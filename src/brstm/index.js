@@ -1,9 +1,49 @@
+// @ts-check
+
 import {
   getSliceAsString,
   getSliceAsNumber,
   getInt16,
-  clamp
+  clamp,
 } from './utils.js';
+
+/**
+ * @typedef {Object} ChannelInfo
+ * @property {Array<number>} adpcmCoefficients
+ * @property {number} gain
+ * @property {number} initialPredictorScale
+ * @property {number} historySample1
+ * @property {number} historySample2
+ * @property {number} loopPredictorScale
+ * @property {number} loopHistorySample1
+ * @property {number} loopHistorySample2
+ */
+
+/**
+ * @exports 
+ * @typedef {Object} Metadata
+ * @property {number} fileSize
+ * @property {number} codec
+ *   - 0 - 8-bit PCM
+ *   - 1 - 16-bit PCM
+ *   - 2 - 4-bit ADPCM
+ * @property {number} loopFlag
+ * @property {number} numberChannels
+ * @property {number} sampleRate
+ * @property {number} loopStartSample loop start, in terms of sample #
+ * @property {number} totalSamples
+ * @property {number} totalBlocks total number of blocks, per channel, including final block
+ * @property {number} blockSize
+ * @property {number} samplesPerBlock
+ * @property {number} finalBlockSize Final block size, without padding, in bytes
+ * @property {number} finalBlockSizeWithPadding Final block size, **with** padding, in bytes
+ * @property {number} totalSamplesInFinalBlock Total samples in final block
+ * @property {number} adpcTableSamplesPerEntry Samples per entry in ADPC table
+ * @property {number} adpcTableBytesPerEntry Bytes per entry in ADPC table
+ * @property {number} numberTracks Number of tracks
+ * @property {number} trackDescriptionType Track description type ??
+ */
+
 /**
  * @class
  */
@@ -14,7 +54,7 @@ export class Brstm {
    */
   constructor(arrayBuffer) {
     /**
-     * @member {Uint8Array} rawData
+     * @type {Uint8Array} rawData
      */
     this.rawData = new Uint8Array(arrayBuffer);
 
@@ -25,12 +65,12 @@ export class Brstm {
 
     /**
      * @private
-     * @member {number} _offsetToHead Offset to HEAD chunk, relative to beginning of file
+     * @type {number} _offsetToHead Offset to HEAD chunk, relative to beginning of file
      */
     this._offsetToHead = getSliceAsNumber(this.rawData, 0x10, 4);
     /**
      * @private
-     * @member {number} _offsetToHeadChunk1 Offset to HEAD chunk part 1, relative to beginning of file
+     * @type {number} _offsetToHeadChunk1 Offset to HEAD chunk part 1, relative to beginning of file
      */
     this._offsetToHeadChunk1 =
       this._offsetToHead +
@@ -38,7 +78,7 @@ export class Brstm {
       0x08;
     /**
      * @private
-     * @member {number} _offsetToHeadChunk2 Offset to HEAD chunk part 2, relative to beginning of file
+     * @type {number} _offsetToHeadChunk2 Offset to HEAD chunk part 2, relative to beginning of file
      */
     this._offsetToHeadChunk2 =
       this._offsetToHead +
@@ -46,7 +86,7 @@ export class Brstm {
       0x08;
     /**
      * @private
-     * @member {number} _offsetToHeadChunk3 Offset to HEAD chunk part 3, relative to beginning of file
+     * @type {number} _offsetToHeadChunk3 Offset to HEAD chunk part 3, relative to beginning of file
      */
     this._offsetToHeadChunk3 =
       this._offsetToHead +
@@ -54,27 +94,26 @@ export class Brstm {
       0x08;
     /**
      * @private
-     * @member {number} _offsetToAdpc Offset to ADPC chunk, relative to beginning of file
+     * @type {number} _offsetToAdpc Offset to ADPC chunk, relative to beginning of file
      */
     this._offsetToAdpc = getSliceAsNumber(this.rawData, 0x18, 4);
     /**
      * @private
-     * @member {number} _offsetToData Offset to DATA, relative to beginning of file
+     * @type {number} _offsetToData Offset to DATA, relative to beginning of file
      */
     this._offsetToData = getSliceAsNumber(this.rawData, 0x20, 4);
 
     /**
-     * @member {Object} metadata
+     * @type {Metadata} metadata
      */
     this.metadata = this._getMetadata();
 
     /**
      * @private
-     * @member {Array<Int16Array>} _cachedSamples per-channel samples
+     * @type {Array<Int16Array>} _cachedSamples per-channel samples
      */
     this._cachedSamples = null;
 
-    //used in getBuffer
     this._cachedBlock = [];
     this._currentCachedBlock = -1;
     this._returnBuffer = true;
@@ -88,6 +127,9 @@ export class Brstm {
     }
   }
 
+  /**
+   * @returns {Array<ChannelInfo>}
+   */
   _getChannelInfo() {
     const { numberChannels } = this.metadata;
     const channelInfo = [];
@@ -102,6 +144,9 @@ export class Brstm {
         ) +
         0x08 +
         8;
+      /**
+       * @type {Array<number>}
+       */
       const adpcmCoefficients = [];
       for (let i = 0; i < 16; i++) {
         const num = getSliceAsNumber(
@@ -151,7 +196,7 @@ export class Brstm {
           this.rawData,
           offsetToChannelInfo + 0x34,
           2
-        )
+        ),
       });
     }
 
@@ -164,15 +209,11 @@ export class Brstm {
       this._offsetToHeadChunk1 + 0x0002,
       1
     );
+    /**
+     * @type {Metadata}
+     */
     const metadata = {
       fileSize: getSliceAsNumber(this.rawData, 8, 4),
-
-      /**
-       * Codec:
-       * 0 - 8-bit PCM
-       * 1 - 16-bit PCM
-       * 2 - 4-bit ADPCM
-       */
       codec: getSliceAsNumber(this.rawData, this._offsetToHeadChunk1, 1),
       loopFlag: getSliceAsNumber(
         this.rawData,
@@ -185,9 +226,6 @@ export class Brstm {
         this._offsetToHeadChunk1 + 0x0004,
         2
       ),
-      /**
-       * @field {number} loop start, in terms of sample #
-       */
       loopStartSample: getSliceAsNumber(
         this.rawData,
         this._offsetToHeadChunk1 + 0x0008,
@@ -198,9 +236,6 @@ export class Brstm {
         this._offsetToHeadChunk1 + 0x000c,
         4
       ),
-      /**
-       * @field {number} total number of blocks, per channel, including final block
-       */
       totalBlocks: getSliceAsNumber(
         this.rawData,
         this._offsetToHeadChunk1 + 0x0014,
@@ -216,60 +251,37 @@ export class Brstm {
         this._offsetToHeadChunk1 + 0x001c,
         4
       ),
-      /**
-       * @field {number} Final block size, without padding, in bytes
-       */
       finalBlockSize: getSliceAsNumber(
         this.rawData,
         this._offsetToHeadChunk1 + 0x0020,
         4
       ),
-      /**
-       * @field {number} Final block size, **with** padding, in bytes
-       */
       finalBlockSizeWithPadding: getSliceAsNumber(
         this.rawData,
         this._offsetToHeadChunk1 + 0x0028,
         4
       ),
-      /**
-       * @field {number} Total samples in final block
-       */
       totalSamplesInFinalBlock: getSliceAsNumber(
         this.rawData,
         this._offsetToHeadChunk1 + 0x0024,
         4
       ),
-      /**
-       * @field {number} Samples per entry in ADPC table
-       */
       adpcTableSamplesPerEntry: getSliceAsNumber(
         this.rawData,
         this._offsetToHeadChunk1 + 0x002c,
         4
       ),
-      /**
-       * @field {number} Bytes per entry in ADPC table
-       */
       adpcTableBytesPerEntry: getSliceAsNumber(
         this.rawData,
         this._offsetToHeadChunk1 + 0x0030,
         4
       ),
-
-      /**
-       * @field {number} Number of tracks
-       */
       numberTracks: getSliceAsNumber(this.rawData, this._offsetToHeadChunk2, 1),
-
-      /**
-       * @field {number} Track description type ??
-       */
       trackDescriptionType: getSliceAsNumber(
         this.rawData,
         this._offsetToHeadChunk2 + 0x01,
         1
-      )
+      ),
     };
 
     return metadata;
@@ -285,7 +297,7 @@ export class Brstm {
       totalBlocks,
       numberChannels,
       finalBlockSize,
-      finalBlockSizeWithPadding
+      finalBlockSizeWithPadding,
     } = this.metadata;
 
     const dataDataSize = getSliceAsNumber(
@@ -324,7 +336,6 @@ export class Brstm {
 
   /**
    * Read only one block
-   * used in getBuffer
    * @returns {Array<Uint8Array>} array of non-interlaced raw data; each array represents one channel
    */
   _getPartitionedBlockData(block) {
@@ -333,7 +344,7 @@ export class Brstm {
       totalBlocks,
       numberChannels,
       finalBlockSize,
-      finalBlockSizeWithPadding
+      finalBlockSizeWithPadding,
     } = this.metadata;
 
     let b = block;
@@ -395,7 +406,7 @@ export class Brstm {
 
         result[c][b] = {
           yn1,
-          yn2
+          yn2,
         };
       }
     }
@@ -403,8 +414,6 @@ export class Brstm {
   }
 
   /**
-   *
-   * TODO: Inconsistent naming with `getBuffer`
    *
    * @returns {Array<Int16Array>} per-channel samples
    */
@@ -414,11 +423,11 @@ export class Brstm {
     }
 
     /**
-     * @var {Array<Array<{yn1: number, yn2: number}>>} adpcChunkData array of numberChannels x totalBlocks, each containing yn1 and yn2, representing the history sample 1 and 2 of that channel & block
+     * @type {Array<Array<{yn1: number, yn2: number}>>} adpcChunkData array of numberChannels x totalBlocks, each containing yn1 and yn2, representing the history sample 1 and 2 of that channel & block
      */
     const adpcChunkData = this._getPartitionedAdpcChunkData();
     /**
-     * @var {Array<Uint8Array>} dataChunkData array of non-interlaced raw data; each array represents one channel
+     * @type {Array<Uint8Array>} dataChunkData array of non-interlaced raw data; each array represents one channel
      */
     const dataChunkData = this._getPartitionedDataChunkData();
 
@@ -430,7 +439,7 @@ export class Brstm {
       finalBlockSize,
       totalSamplesInFinalBlock,
       samplesPerBlock,
-      codec
+      codec,
     } = this.metadata;
     const channelInfo = this._getChannelInfo();
 
@@ -440,15 +449,7 @@ export class Brstm {
     }
 
     for (let c = 0; c < numberChannels; c++) {
-      const {
-        adpcmCoefficients
-        // initialPredictorScale,
-        // historySample1,
-        // historySample2,
-        // loopPredictorScale,
-        // loopHistorySample1,
-        // loopHistorySample2
-      } = channelInfo[c];
+      const { adpcmCoefficients } = channelInfo[c];
 
       // Length should be = (totalBlocks - 1) * blockSize + finalBlockSize
       const channelDataChunkData = dataChunkData[c];
@@ -464,6 +465,10 @@ export class Brstm {
             : channelDataChunkData.slice(b * blockSize, (b + 1) * blockSize);
         const totalSamplesInBlock =
           b === totalBlocks - 1 ? totalSamplesInFinalBlock : samplesPerBlock;
+
+        /**
+         * @type {Array<number>}
+         */
         const sampleResult = [];
         if (codec === 2) {
           // 4-bit ADPCM
@@ -542,6 +547,19 @@ export class Brstm {
   }
 
   /**
+   * Same as `getSamples`
+   *
+   * @deprecated Please use `getSamples`
+   *
+   * @param {number} offset
+   * @param {number} size
+   * @returns {Array<Int16Array>} per-channel samples from `offset`-th sample until `(offset + size - 1)`-th sample
+   */
+  getBuffer(offset, size) {
+    return this.getSamples(offset, size);
+  }
+
+  /**
    * Get buffer of Int16 samples
    *
    *
@@ -549,22 +567,19 @@ export class Brstm {
    *
    * Example:
    * - Total samples: 10000
-   * - brstm.getBuffer(8000, 4000); is invalid
+   * - brstm.getSamples(8000, 4000); is invalid
    *
    * @param {number} offset
    * @param {number} size
    * @returns {Array<Int16Array>} per-channel samples from `offset`-th sample until `(offset + size - 1)`-th sample
    */
-  getBuffer(offset, size) {
+  getSamples(offset, size) {
     const {
       numberChannels,
-      totalSamples,
       totalBlocks,
-      blockSize,
-      finalBlockSize,
       totalSamplesInFinalBlock,
       samplesPerBlock,
-      codec
+      codec,
     } = this.metadata;
 
     let b = (offset / samplesPerBlock) | 0;
@@ -572,29 +587,29 @@ export class Brstm {
     if (this._currentCachedBlock !== b) {
       // Decode new block
 
-      /**
-       * ADPC chunk data
-       * @var {Array<Array<{yn1: number, yn2: number}>>} adpcChunkData array of numberChannels x totalBlocks, each containing yn1 and yn2, representing the history sample 1 and 2 of that channel & block
-       */
-      if (this._partitionedAdpcChunkData == false) {
+      if (this._partitionedAdpcChunkData.length === 0) {
         this._partitionedAdpcChunkData = this._getPartitionedAdpcChunkData();
       }
+      /**
+       * ADPC chunk data
+       * @type {Array<Array<{yn1: number, yn2: number}>>} adpcChunkData array of numberChannels x totalBlocks, each containing yn1 and yn2, representing the history sample 1 and 2 of that channel & block
+       */
       const adpcChunkData = this._partitionedAdpcChunkData;
 
       /**
        * Read current block's data
-       * @var {Array<Uint8Array>} dataChunkData array of non-interlaced raw data; each array represents one channel
+       * @type {Array<Uint8Array>} dataChunkData array of non-interlaced raw data; each array represents one channel
        */
       const blockData = this._getPartitionedBlockData(b);
 
       // Channel info
-      if (this._cachedChannelInfo == false) {
+      if (!this._cachedChannelInfo) {
         this._cachedChannelInfo = this._getChannelInfo();
       }
       const channelInfo = this._cachedChannelInfo;
 
       // Cached decoded block data (will be filled now)
-      if (this._cachedBlock == false) {
+      if (!this._cachedBlock) {
         for (let c = 0; c < numberChannels; c++) {
           this._cachedBlock.push(new Int16Array(samplesPerBlock));
         }
@@ -667,13 +682,13 @@ export class Brstm {
             sampleIndex++
           ) {
             this._cachedBlock[c][sampleIndex] = getInt16(
-              blockData[sampleIndex]
+              blockData[c][sampleIndex]
             );
           }
         } else {
           throw new Error('Invalid codec');
         }
-        // Remember the block that is currently stored in _cachedBlock
+        // Retype the block that is currently stored in _cachedBlock
         this._currentCachedBlock = b;
       }
     }

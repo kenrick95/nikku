@@ -1,8 +1,24 @@
+// @ts-check
+
+/**
+ * @typedef {import("./brstm/index.js").Metadata} Metadata
+ */
+
+/**
+ * @class AudioPlayer
+ */
+
 export class AudioPlayer {
+  /**
+   * @param {Metadata} metadata
+   */
   constructor(metadata) {
     this.init(metadata);
   }
 
+  /**
+   * @param {Metadata=} metadata
+   */
   init(metadata) {
     if (metadata) {
       this.metadata = metadata;
@@ -20,6 +36,8 @@ export class AudioPlayer {
      * For example the ones given in [#1](https://github.com/kenrick95/nikku/issues/1) have 8 and 4 channels!
      *
      * One "stream" is a pair of 2 channels
+     * 
+     * @type {Array<boolean>}
      */
     this._streamStates = [true];
 
@@ -96,6 +114,9 @@ export class AudioPlayer {
     this._isPlaying = true;
   }
 
+  /**
+   * @param {number=} bufferStart
+   */
   initPlayback(bufferStart = 0) {
     const {
       loopStartSample,
@@ -202,6 +223,9 @@ export class AudioPlayer {
     this._initNeeded = false;
   }
 
+  /**
+   * @param {number} playbackTimeInS
+   */
   async seek(playbackTimeInS) {
     this._isSeeking = true;
     this.initPlayback(playbackTimeInS);
@@ -235,6 +259,10 @@ export class AudioPlayer {
     await this.audioContext.suspend();
   }
 
+  /**
+   * 
+   * @param {Array<boolean>} newStates 
+   */
   async setStreamStates(newStates) {
     this._streamStates = newStates;
     // NOTE: Only works well when this._isPlaying is true!
@@ -252,6 +280,9 @@ export class AudioPlayer {
     }
   }
 
+  /**
+   * @param {boolean} value
+   */
   setLoop(value) {
     this._shouldLoop = value;
     this.bufferSource.loop = this._shouldLoop;
@@ -259,7 +290,7 @@ export class AudioPlayer {
 
   /**
    * This timer does not rely on Web Audio API at all, might be less accurate, but more or less working
-   * @returns current time in seconds, accounted for looping
+   * @returns {number} current time in seconds, accounted for looping
    */
   getCurrrentPlaybackTime() {
     const currentTimestamp = performance.now();

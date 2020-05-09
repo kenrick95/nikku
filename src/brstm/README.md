@@ -54,4 +54,4 @@ const samplesPartial = brstm.getBuffer(0, 100);
 ## Methods
 
 - `getAllSamples()`: `{Array<Int16Array>}`, per-channel PCM samples
-- `getBuffer(offset, size)`: `{Array<Int16Array>}`, per-channel samples from `offset`-th sample until `(offset + size - 1)`-th sample
+- `getSamples(offset, size)`: `{Array<Int16Array>}`, per-channel samples from `offset`-th sample until `(offset + size - 1)`-th sample
