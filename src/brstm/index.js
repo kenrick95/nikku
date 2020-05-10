@@ -110,15 +110,18 @@ export class Brstm {
 
     /**
      * @private
-     * @type {Array<Int16Array>} _cachedSamples per-channel samples
+     * @type {?Array<Int16Array>} _cachedSamples per-channel samples
      */
     this._cachedSamples = null;
 
     /**
-     * @type {Array<Array<{yn1: number, yn2: number}>>}
+     * @type {?Array<Array<{yn1: number, yn2: number}>>}
      */
     this._partitionedAdpcChunkData = null;
 
+    /**
+     * @type {?Array<ChannelInfo>}
+     */
     this._cachedChannelInfo = null;
 
     /**
@@ -352,24 +355,25 @@ export class Brstm {
       this._offsetToAdpc + 0x08,
       this._offsetToAdpc + 0x08 + adpcDataSize
     );
-    /**
-     * @type {Array<Array<{yn1: number, yn2: number}>>}
-     */
-    let result = [];
+
     let offset = 0;
     let yn1 = 0;
     let yn2 = 0;
     for (let c = 0; c < numberChannels; c++) {
-      result.push([]);
-      for (let b = 0; b < totalBlocks; b++) {
-        result[c].push({ yn1: null, yn2: null });
-      }
       yn1 = getInt16(getSliceAsNumber(rawData, offset, 2));
       offset += 2;
       yn2 = getInt16(getSliceAsNumber(rawData, offset, 2));
       offset += 2;
     }
+
+    /**
+     * `transposedResult[b][c]`
+     * 
+     * @type {Array<Array<{yn1: number, yn2: number}>>}
+     */
+    const transposedResult = [];
     for (let b = 0; b < totalBlocks; b++) {
+      transposedResult.push([]);
       for (let c = 0; c < numberChannels; c++) {
         if (b > 0) {
           yn1 = getInt16(getSliceAsNumber(rawData, offset, 2));
@@ -377,12 +381,27 @@ export class Brstm {
           yn2 = getInt16(getSliceAsNumber(rawData, offset, 2));
           offset += 2;
         }
-        result[c][b] = {
+        transposedResult[b].push({
           yn1,
           yn2,
-        };
+        });
       }
     }
+
+    /**
+     * `result[c][b]`
+     * 
+     * @type {Array<Array<{yn1: number, yn2: number}>>}
+     */
+    let result = [];
+    for (let c = 0; c < numberChannels; c++) {
+      result.push(
+        transposedResult.map((r) => {
+          return r[c];
+        })
+      );
+    }
+
     this._partitionedAdpcChunkData = result;
     return result;
   }
