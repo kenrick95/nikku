@@ -58,7 +58,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         audioPlayer = new AudioPlayer(brstm.metadata);
 
-        audioPlayer.load(brstm.getAllSamples());
+        // TODO: This seems slow, taking around 200ms
+        console.time('brstm.getAllSamples');
+        const allSamples = brstm.getAllSamples();
+        console.timeEnd('brstm.getAllSamples');
+
+        audioPlayer.load(allSamples);
 
         elTime.removeAttribute('disabled');
         elPlay.removeAttribute('disabled');
@@ -104,6 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
         audioPlayer.setLoop(elLoop.checked);
         startRenderCurrentTime();
       } catch (e) {
+        console.error('e', e);
         elErrors.textContent = e.message;
       }
     });
