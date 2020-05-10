@@ -368,7 +368,7 @@ export class Brstm {
 
     /**
      * `transposedResult[b][c]`
-     * 
+     *
      * @type {Array<Array<{yn1: number, yn2: number}>>}
      */
     const transposedResult = [];
@@ -390,7 +390,7 @@ export class Brstm {
 
     /**
      * `result[c][b]`
-     * 
+     *
      * @type {Array<Array<{yn1: number, yn2: number}>>}
      */
     let result = [];
@@ -607,33 +607,42 @@ export class Brstm {
     }
 
     for (let b = blockIndexStart; b <= blockIndexEnd; b++) {
-      if (b === blockIndexStart) {
-        // Slice `result[b][c]` so it starts at `offset`
+      const resulBlockIndex = b - blockIndexStart;
+      if (b === blockIndexStart && b === blockIndexEnd) {
+        // Slice `result[b][c]` so it starts at `offset` AND ends at `offset + size - 1`
         for (let c = 0; c < numberChannels; c++) {
           transformedResult[c].set(
-            result[b][c].slice(sampleStart - blockIndexStart * samplesPerBlock),
+            result[resulBlockIndex][c].slice(
+              sampleStart - blockIndexStart * samplesPerBlock,
+              sampleStart - blockIndexStart * samplesPerBlock + size
+            ),
             0
           );
+        }
+      } else if (b === blockIndexStart) {
+        // Slice `result[b][c]` so it starts at `offset`
+        for (let c = 0; c < numberChannels; c++) {
+          const slice = result[resulBlockIndex][c].slice(
+            sampleStart - blockIndexStart * samplesPerBlock
+          );
+          transformedResult[c].set(slice, 0);
         }
       } else if (b === blockIndexEnd) {
         // Slice `result[b][c]` so it ends at the requested place (`offset + size - 1`)
         for (let c = 0; c < numberChannels; c++) {
-          transformedResult[c].set(
-            result[b][c].slice(
-              0,
-              Math.max(
-                result[b][c].length,
-                sampleEnd - (blockIndexEnd - blockIndexStart) * samplesPerBlock
-              )
-            ),
-            (b - blockIndexStart) * samplesPerBlock
+          const slice = result[resulBlockIndex][c].slice(
+            0,
+            sampleEnd -
+              result[resulBlockIndex][c].length -
+              blockIndexStart * samplesPerBlock
           );
+          transformedResult[c].set(slice, b * samplesPerBlock - sampleStart);
         }
       } else {
         for (let c = 0; c < numberChannels; c++) {
           transformedResult[c].set(
-            result[b][c],
-            (b - blockIndexStart) * samplesPerBlock
+            result[resulBlockIndex][c],
+            b * samplesPerBlock - sampleStart
           );
         }
       }

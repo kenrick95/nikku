@@ -28,7 +28,7 @@
   "license": "MIT",
   "scripts": {
     "prepare": "microbundle",
-    "test": "microbundle && node tests/index.test.js"
+    "test": "microbundle --compress false && node tests/index.test.js"
   },
   "devDependencies": {
     "microbundle": "^0.12.0"
