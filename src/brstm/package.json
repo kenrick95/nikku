@@ -7,7 +7,8 @@
   ],
   "source": "index.js",
   "main": "dist/brstm.js",
-  "module": "dist/brstm.mjs",
+  "module": "dist/brstm.module.js",
+  "umd:main": "dist/brstm.umd.js",
   "unpkg": "dist/brstm.umd.js",
   "files": [
     "*.js"
@@ -26,10 +27,11 @@
   },
   "license": "MIT",
   "scripts": {
-    "prepare": "microbundle"
+    "prepare": "microbundle",
+    "test": "microbundle --compress false && node tests/index.test.js"
   },
   "devDependencies": {
-    "microbundle": "^0.11.0"
+    "microbundle": "^0.12.0"
   },
   "resolutions": {
     "braces": ">=2.3.1",
