@@ -21,8 +21,8 @@ const metadata = brstm.metadata;
 const samples = brstm.getAllSamples();
 
 // If you don't want the full samples, you can decode them partially
-// getBuffer(offset, size) will return the per-channel `offset`-th sample until `(offset + size - 1)`-th sample
-const samplesPartial = brstm.getBuffer(0, 100);
+// getSamples(offset, size) will return the per-channel `offset`-th sample until `(offset + size - 1)`-th sample
+const samplesPartial = brstm.getSamples(0, 100);
 
 ```
 
