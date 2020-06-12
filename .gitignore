@@ -1,3 +1,4 @@
 node_modules/
 *.log
 *.brstm
+!src/brstm/tests/assets/*.brstm
