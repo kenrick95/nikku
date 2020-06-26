@@ -513,6 +513,12 @@ export class Brstm {
 
           sampleResult.push(cyn1);
         }
+        
+        // Overwrite history samples for the next block with decoded samples
+        if (b < totalBlocks - 1) {
+          adpcChunkData[c][b+1].yn1 = sampleResult[totalSamplesInBlock - 1];
+          adpcChunkData[c][b+1].yn2 = sampleResult[totalSamplesInBlock - 2];
+        }
 
         // #endregion
         // console.log('>>', c, b, yn1, yn2, ps, blockData, sampleResult);
