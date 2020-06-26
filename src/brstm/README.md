@@ -1,6 +1,6 @@
 # brstm.js
 
-[![npm version](https://badge.fury.io/js/brstm.svg)](https://badge.fury.io/js/brstm)
+[![npm version](https://badge.fury.io/js/brstm.svg)](https://badge.fury.io/js/brstm) ![Test](https://github.com/kenrick95/nikku/workflows/Test/badge.svg)
 
 BRSTM decoder.
 
