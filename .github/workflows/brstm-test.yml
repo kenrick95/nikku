@@ -20,6 +20,6 @@ jobs:
       uses: actions/setup-node@v1
       with:
           node-version: 12
-    - run: cd src/brstm
-    - run: yarn install --frozen-lockfile
-    - run: yarn test
+
+    - run: cd src/brstm && yarn install --frozen-lockfile && cd -
+    - run: cd src/brstm && yarn test && cd -
