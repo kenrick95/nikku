@@ -31,7 +31,7 @@
     "test": "microbundle --compress false && node tests/index.test.js"
   },
   "devDependencies": {
-    "microbundle": "^0.12.2"
+    "microbundle": "^0.12.3"
   },
   "resolutions": {
     "braces": ">=2.3.1",
