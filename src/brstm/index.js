@@ -631,7 +631,16 @@ export class Brstm {
           const slice = result[resulBlockIndex][c].slice(
             sampleStart - blockIndexStart * samplesPerBlock
           );
-          transformedResult[c].set(slice, 0);
+          // At the final block, the slice sometimes ends up too large
+          // This is to prevent transformedResult from being overflowed
+          if (slice.length + (b * samplesPerBlock - sampleStart) > transformedResult[c].length) {
+            transformedResult[c].set(
+                slice.slice(0, (4096 - (b * samplesPerBlock - sampleStart))),
+                b * samplesPerBlock - sampleStart
+            );
+          } else {
+            transformedResult[c].set(slice, b * samplesPerBlock - sampleStart);
+          }
         }
       } else if (b === blockIndexEnd) {
         // Slice `result[b][c]` so it ends at the requested place (`offset + size - 1`)
