@@ -646,7 +646,7 @@ export class Brstm {
           // This is to prevent transformedResult from being overflowed
           if (slice.length + (b * samplesPerBlock - sampleStart) > transformedResult[c].length) {
             transformedResult[c].set(
-                slice.slice(0, (4096 - (b * samplesPerBlock - sampleStart))),
+                slice.slice(0, (size - (b * samplesPerBlock - sampleStart))),
                 b * samplesPerBlock - sampleStart
             );
           } else {
