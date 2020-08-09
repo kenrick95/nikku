@@ -642,7 +642,16 @@ export class Brstm {
               result[resulBlockIndex][c].length -
               blockIndexStart * samplesPerBlock
           );
-          transformedResult[c].set(slice, b * samplesPerBlock - sampleStart);
+          // At the final block, the slice sometimes ends up too large
+          // This is to prevent transformedResult from being overflowed
+          if (slice.length + (b * samplesPerBlock - sampleStart) > transformedResult[c].length) {
+            transformedResult[c].set(
+                slice.slice(0, (size - (b * samplesPerBlock - sampleStart))),
+                b * samplesPerBlock - sampleStart
+            );
+          } else {
+            transformedResult[c].set(slice, b * samplesPerBlock - sampleStart);
+          }
         }
       } else {
         for (let c = 0; c < numberChannels; c++) {
