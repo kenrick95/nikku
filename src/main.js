@@ -1,3 +1,4 @@
+import * as Comlink from 'comlink';
 import { Brstm } from './brstm/index.js';
 import { AudioPlayer } from './audioPlayer.js';
 
@@ -17,6 +18,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let shouldCurrentTimeRender = false;
   let isElTimeDragging = false;
   let streamStates = [true];
+
+  const worker = new Worker('./worker.js');
+  const Brstm = Comlink.wrap(worker);
 
   fileElement.setAttribute('disabled', 'disabled');
   function reset() {
@@ -46,22 +50,25 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const buffer = headerReader.result;
 
-        const brstm = new Brstm(buffer);
+        const brstm = await new Brstm(buffer);
+        const metadata = await brstm.metadata;
 
         // console.log('brstm', brstm);
 
-        renderMetadata(brstm.metadata);
+        renderMetadata(metadata);
 
         if (audioPlayer) {
           audioPlayer.destroy();
         }
 
-        audioPlayer = new AudioPlayer(brstm.metadata);
+        audioPlayer = new AudioPlayer(metadata);
 
         // TODO: This seems slow, taking around 200ms
         console.time('brstm.getAllSamples');
-        const allSamples = brstm.getAllSamples();
+        const allSamples = await brstm.getAllSamples();
         console.timeEnd('brstm.getAllSamples');
+
+        console.log('allSamples', allSamples)
 
         audioPlayer.load(allSamples);
 
@@ -76,8 +83,8 @@ document.addEventListener('DOMContentLoaded', () => {
         elStreamSelect.removeAttribute('style');
         elStreamSelect.innerHTML = '';
 
-        if (brstm.metadata.numberChannels > 2) {
-          const numberStreams = Math.floor(brstm.metadata.numberChannels / 2);
+        if (metadata.numberChannels > 2) {
+          const numberStreams = Math.floor(metadata.numberChannels / 2);
           const text = document.createElement('span');
           text.textContent = 'Stream(s) enabled:';
           text.title =
@@ -95,14 +102,14 @@ document.addEventListener('DOMContentLoaded', () => {
               streamStates.push(false);
             }
             child.title = `Stream ${i + 1}`;
-            child.addEventListener('input', streamCheckedHandler.bind(this, i));
+            child.addEventListener('input', streamCheckedHandler.bind(self, i));
             elStreamSelect.appendChild(child);
           }
           elStreamSelect.style.display = 'block';
         }
 
         const amountTimeInS =
-          brstm.metadata.totalSamples / brstm.metadata.sampleRate;
+          metadata.totalSamples / metadata.sampleRate;
         elTimeAmount.textContent = formatTime(amountTimeInS);
         elTime.max = amountTimeInS;
 
