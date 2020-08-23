@@ -58,10 +58,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         audioPlayer = new AudioPlayer(brstm.metadata, {
-          onPlayed: () => {
+          onPlay: () => {
             elPlayPause.textContent = 'Pause';
           },
-          onPaused: () => {
+          onPause: () => {
             elPlayPause.textContent = 'Play';
           },
         });

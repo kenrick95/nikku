@@ -6,8 +6,8 @@
 
 /**
  * @typedef {Object} AudioPlayerHooks
- * @property {() => void} onPlayed
- * @property {() => void} onPaused
+ * @property {() => void} onPlay
+ * @property {() => void} onPause
  */
 
 /**
@@ -20,8 +20,8 @@ export class AudioPlayer {
    * @param {AudioPlayerHooks} hooks
    */
   constructor(metadata, hooks) {
-    this.init(metadata);
     this.hooks = hooks;
+    this.init(metadata);
   }
 
   /**
@@ -120,7 +120,7 @@ export class AudioPlayer {
 
     this.initPlayback();
     this.isPlaying = true;
-    this.hooks.onPlayed();
+    this.hooks.onPlay();
   }
 
   /**
@@ -240,9 +240,9 @@ export class AudioPlayer {
     this.initPlayback(playbackTimeInS);
     if (!this.isPlaying) {
       this.isPlaying = true;
+      this.hooks.onPlay();
       // Cannot use this.play() as it will adjust _startTimestamp based on previous _pauseTimestamp
       await this.audioContext.resume();
-      this.hooks.onPlayed();
     }
   }
 
@@ -251,8 +251,8 @@ export class AudioPlayer {
       return;
     }
     this.isPlaying = true;
+    this.hooks.onPlay();
     await this.audioContext.resume();
-    this.hooks.onPlayed();
 
     if (this._initNeeded) {
       this.initPlayback();
@@ -266,9 +266,9 @@ export class AudioPlayer {
       return;
     }
     this.isPlaying = false;
+    this.hooks.onPause();
     this._pauseTimestamp = Date.now();
     await this.audioContext.suspend();
-    this.hooks.onPaused();
   }
 
   /**
