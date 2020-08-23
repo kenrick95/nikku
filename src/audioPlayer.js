@@ -227,7 +227,7 @@ export class AudioPlayer {
       }
     };
     this.bufferSource.start(this.audioContext.currentTime, bufferStart);
-    this._startTimestamp = performance.now() - bufferStart * 1000;
+    this._startTimestamp = Date.now() - bufferStart * 1000;
 
     this._initNeeded = false;
   }
@@ -258,7 +258,7 @@ export class AudioPlayer {
       this.initPlayback();
     } else {
       this._startTimestamp =
-        this._startTimestamp + performance.now() - this._pauseTimestamp;
+        this._startTimestamp + Date.now() - this._pauseTimestamp;
     }
   }
   async pause() {
@@ -266,7 +266,7 @@ export class AudioPlayer {
       return;
     }
     this.isPlaying = false;
-    this._pauseTimestamp = performance.now();
+    this._pauseTimestamp = Date.now();
     await this.audioContext.suspend();
     this.hooks.onPaused();
   }
@@ -305,10 +305,31 @@ export class AudioPlayer {
    * @returns {number} current time in seconds, accounted for looping
    */
   getCurrrentPlaybackTime() {
-    const currentTimestamp = performance.now();
+    const currentTimestamp = Date.now();
     const playbackTime = currentTimestamp - this._startTimestamp;
     let playbackTimeInS = playbackTime / 1000;
-    if (playbackTimeInS > this._loopEndInS) {
+
+    /**
+     * This is to account for this._startTimestamp > currentTimestamp
+     * 
+     * https://github.com/kenrick95/nikku/issues/15
+     * 
+     * Bug description:
+     * - Load a file, tick Loop, pause it for N seconds, where N > file's duration
+     * - When played again, it will show a wrong playback time
+     * 
+     * This is because during the resume of the file, `this._startTimestamp` is changed at multiple places
+     * 1. getCurrrentPlaybackTime() will change `this._startTimestamp`
+     * 2. then play() will also change `this._startTimestamp`
+     * 3. then the next getCurrrentPlaybackTime() will result in a negative value
+     * 
+     */
+    while (playbackTimeInS < 0) {
+      this._startTimestamp =
+        this._startTimestamp - this._loopDurationInS * 1000;
+      playbackTimeInS = (currentTimestamp - this._startTimestamp) / 1000;
+    }
+    while (playbackTimeInS > this._loopEndInS) {
       if (this._shouldLoop && this.isPlaying) {
         this._startTimestamp =
           this._startTimestamp + this._loopDurationInS * 1000;
