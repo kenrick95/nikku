@@ -3,10 +3,12 @@ import { AudioPlayer } from './audioPlayer.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   const fileElement = document.getElementById('file');
+  /**
+   * @type {null|AudioPlayer}
+   */
   let audioPlayer = null;
   const elTime = document.getElementById('controls-time');
-  const elPlay = document.getElementById('controls-play');
-  const elPause = document.getElementById('controls-pause');
+  const elPlayPause = document.getElementById('controls-play-pause');
   const elLoop = document.getElementById('controls-loop');
   const elVolume = document.getElementById('controls-volume');
   const elTimeCurrent = document.getElementById('controls-time-current');
@@ -27,8 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     elTime.value = 0;
     elTime.max = 0;
     elTime.setAttribute('disabled', 'disabled');
-    elPlay.setAttribute('disabled', 'disabled');
-    elPause.setAttribute('disabled', 'disabled');
+    elPlayPause.setAttribute('disabled', 'disabled');
     elLoop.setAttribute('disabled', 'disabled');
     elLoop.setAttribute('checked', 'true');
     elVolume.value = 1;
@@ -56,7 +57,14 @@ document.addEventListener('DOMContentLoaded', () => {
           audioPlayer.destroy();
         }
 
-        audioPlayer = new AudioPlayer(brstm.metadata);
+        audioPlayer = new AudioPlayer(brstm.metadata, {
+          onPlayed: () => {
+            elPlayPause.textContent = 'Pause';
+          },
+          onPaused: () => {
+            elPlayPause.textContent = 'Play';
+          },
+        });
 
         // TODO: This seems slow, taking around 200ms
         console.time('brstm.getAllSamples');
@@ -66,8 +74,8 @@ document.addEventListener('DOMContentLoaded', () => {
         audioPlayer.load(allSamples);
 
         elTime.removeAttribute('disabled');
-        elPlay.removeAttribute('disabled');
-        elPause.removeAttribute('disabled');
+        elPlayPause.removeAttribute('disabled');
+
         elLoop.removeAttribute('disabled');
         elVolume.removeAttribute('disabled');
         elVolume.value = 1;
@@ -176,25 +184,21 @@ document.addEventListener('DOMContentLoaded', () => {
     shouldCurrentTimeRender = false;
   }
 
-  elPlay.addEventListener('click', (e) => {
+  elPlayPause.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
     if (!audioPlayer) {
       return;
     }
-    audioPlayer.play();
-    startRenderCurrentTime();
-    enableStreamCheckboxes();
-  });
-  elPause.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!audioPlayer) {
-      return;
+    if (audioPlayer.isPlaying) {
+      audioPlayer.pause();
+      stopRenderCurrentTime();
+      disableStreamCheckboxes();
+    } else {
+      audioPlayer.play();
+      startRenderCurrentTime();
+      enableStreamCheckboxes();
     }
-    audioPlayer.pause();
-    stopRenderCurrentTime();
-    disableStreamCheckboxes();
   });
 
   function streamCheckedHandler(i) {

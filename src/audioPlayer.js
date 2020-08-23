@@ -5,15 +5,23 @@
  */
 
 /**
+ * @typedef {Object} AudioPlayerHooks
+ * @property {() => void} onPlayed
+ * @property {() => void} onPaused
+ */
+
+/**
  * @class AudioPlayer
  */
 
 export class AudioPlayer {
   /**
    * @param {Metadata} metadata
+   * @param {AudioPlayerHooks} hooks
    */
-  constructor(metadata) {
+  constructor(metadata, hooks) {
     this.init(metadata);
+    this.hooks = hooks;
   }
 
   /**
@@ -23,7 +31,7 @@ export class AudioPlayer {
     if (metadata) {
       this.metadata = metadata;
       this.audioContext = new AudioContext({
-        sampleRate: metadata.sampleRate
+        sampleRate: metadata.sampleRate,
       });
     } else {
       // For destroy
@@ -36,7 +44,7 @@ export class AudioPlayer {
      * For example the ones given in [#1](https://github.com/kenrick95/nikku/issues/1) have 8 and 4 channels!
      *
      * One "stream" is a pair of 2 channels
-     * 
+     *
      * @type {Array<boolean>}
      */
     this._streamStates = [true];
@@ -53,7 +61,7 @@ export class AudioPlayer {
     this._shouldLoop = true;
     this._initNeeded = true;
     this._isSeeking = false;
-    this._isPlaying = false;
+    this.isPlaying = false;
 
     /**
      * 0..1
@@ -111,7 +119,8 @@ export class AudioPlayer {
     }
 
     this.initPlayback();
-    this._isPlaying = true;
+    this.isPlaying = true;
+    this.hooks.onPlayed();
   }
 
   /**
@@ -122,7 +131,7 @@ export class AudioPlayer {
       loopStartSample,
       totalSamples,
       sampleRate,
-      numberChannels
+      numberChannels,
     } = this.metadata;
 
     if (this.bufferSource) {
@@ -229,19 +238,21 @@ export class AudioPlayer {
   async seek(playbackTimeInS) {
     this._isSeeking = true;
     this.initPlayback(playbackTimeInS);
-    if (!this._isPlaying) {
-      this._isPlaying = true;
+    if (!this.isPlaying) {
+      this.isPlaying = true;
       // Cannot use this.play() as it will adjust _startTimestamp based on previous _pauseTimestamp
       await this.audioContext.resume();
+      this.hooks.onPlayed();
     }
   }
 
   async play() {
-    if (this._isPlaying) {
+    if (this.isPlaying) {
       return;
     }
-    this._isPlaying = true;
+    this.isPlaying = true;
     await this.audioContext.resume();
+    this.hooks.onPlayed();
 
     if (this._initNeeded) {
       this.initPlayback();
@@ -251,21 +262,22 @@ export class AudioPlayer {
     }
   }
   async pause() {
-    if (!this._isPlaying) {
+    if (!this.isPlaying) {
       return;
     }
-    this._isPlaying = false;
+    this.isPlaying = false;
     this._pauseTimestamp = performance.now();
     await this.audioContext.suspend();
+    this.hooks.onPaused();
   }
 
   /**
-   * 
-   * @param {Array<boolean>} newStates 
+   *
+   * @param {Array<boolean>} newStates
    */
   async setStreamStates(newStates) {
     this._streamStates = newStates;
-    // NOTE: Only works well when this._isPlaying is true!
+    // NOTE: Only works well when this.isPlaying is true!
     this.seek(this.getCurrrentPlaybackTime());
   }
 
@@ -297,7 +309,7 @@ export class AudioPlayer {
     const playbackTime = currentTimestamp - this._startTimestamp;
     let playbackTimeInS = playbackTime / 1000;
     if (playbackTimeInS > this._loopEndInS) {
-      if (this._shouldLoop && this._isPlaying) {
+      if (this._shouldLoop && this.isPlaying) {
         this._startTimestamp =
           this._startTimestamp + this._loopDurationInS * 1000;
         playbackTimeInS = (currentTimestamp - this._startTimestamp) / 1000;
