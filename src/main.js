@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
    * 0..1
    */
   let volume = 1;
+  let amountTimeInS = 0;
 
   fileElement.setAttribute('disabled', 'disabled');
   function reset() {
@@ -30,6 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
     currentTimeRenderAf = null;
     shouldCurrentTimeRender = false;
     isElTimeDragging = false;
+    amountTimeInS = 0;
     elTime.value = 0;
     elTime.max = 0;
     elTime.setAttribute('disabled', 'disabled');
@@ -66,9 +68,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         audioPlayer = new AudioPlayer(brstm.metadata, {
           onPlay: () => {
+            if (navigator.mediaSession) {
+              navigator.mediaSession.playbackState = 'playing';
+            }
             elPlayPause.textContent = 'Pause';
           },
           onPause: () => {
+            if (navigator.mediaSession) {
+              navigator.mediaSession.playbackState = 'paused';
+            }
             elPlayPause.textContent = 'Play';
           },
         });
@@ -79,6 +87,12 @@ document.addEventListener('DOMContentLoaded', () => {
         console.timeEnd('brstm.getAllSamples');
 
         audioPlayer.load(allSamples);
+
+        if (navigator.mediaSession) {
+          navigator.mediaSession.metadata = new MediaMetadata({
+            title: file.name,
+          });
+        }
 
         elTime.removeAttribute('disabled');
         elPlayPause.removeAttribute('disabled');
@@ -115,8 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
           elStreamSelect.style.display = 'block';
         }
 
-        const amountTimeInS =
-          brstm.metadata.totalSamples / brstm.metadata.sampleRate;
+        amountTimeInS = brstm.metadata.totalSamples / brstm.metadata.sampleRate;
         elTimeAmount.textContent = formatTime(amountTimeInS);
         elTime.max = amountTimeInS;
 
@@ -174,6 +187,17 @@ document.addEventListener('DOMContentLoaded', () => {
       elTime.value = currentTime;
     }
     elTimeCurrent.textContent = formatTime(currentTime);
+
+    if (
+      navigator.mediaSession &&
+      'setPositionState' in navigator.mediaSession
+    ) {
+      navigator.mediaSession.setPositionState({
+        duration: amountTimeInS,
+        playbackRate: 1,
+        position: currentTime,
+      });
+    }
 
     if (shouldCurrentTimeRender) {
       currentTimeRenderAf = requestAnimationFrame(renderCurrentTime);
@@ -275,6 +299,25 @@ document.addEventListener('DOMContentLoaded', () => {
     for (const child of elStreamSelect.childNodes) {
       child.disabled = false;
     }
+  }
+
+  if ('mediaSession' in navigator) {
+    navigator.mediaSession.setActionHandler('play', () => {
+      if (!audioPlayer) {
+        return;
+      }
+      audioPlayer.play();
+      startRenderCurrentTime();
+      enableStreamCheckboxes();
+    });
+    navigator.mediaSession.setActionHandler('pause', () => {
+      if (!audioPlayer) {
+        return;
+      }
+      audioPlayer.pause();
+      stopRenderCurrentTime();
+      disableStreamCheckboxes();
+    });
   }
 
   if (isCompatible()) {
