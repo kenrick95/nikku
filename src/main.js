@@ -19,6 +19,10 @@ document.addEventListener('DOMContentLoaded', () => {
   let shouldCurrentTimeRender = false;
   let isElTimeDragging = false;
   let streamStates = [true];
+  /**
+   * 0..1
+   */
+  let volume = 1;
 
   fileElement.setAttribute('disabled', 'disabled');
   function reset() {
@@ -32,8 +36,11 @@ document.addEventListener('DOMContentLoaded', () => {
     elPlayPause.setAttribute('disabled', 'disabled');
     elLoop.setAttribute('disabled', 'disabled');
     elLoop.setAttribute('checked', 'true');
-    elVolume.value = 1;
     elVolume.setAttribute('disabled', 'disabled');
+    volume = Math.round(parseFloat(elVolume.value) * 1000) / 1000;
+    volume = Math.min(1, Math.max(0, volume));
+    elVolume.value = volume;
+
     fileElement.removeAttribute('disabled');
     elStreamSelect.removeAttribute('style');
     elErrors.textContent = '';
@@ -78,7 +85,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         elLoop.removeAttribute('disabled');
         elVolume.removeAttribute('disabled');
-        elVolume.value = 1;
 
         // Reset elStreamSelect
         elStreamSelect.removeAttribute('style');
@@ -114,6 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
         elTimeAmount.textContent = formatTime(amountTimeInS);
         elTime.max = amountTimeInS;
 
+        audioPlayer.setVolume(volume);
         audioPlayer.setLoop(elLoop.checked);
         startRenderCurrentTime();
       } catch (e) {
@@ -248,7 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!audioPlayer) {
       return;
     }
-    let volume = Math.round(parseFloat(e.target.value) * 1000) / 1000;
+    volume = Math.round(parseFloat(e.target.value) * 1000) / 1000;
     audioPlayer.setVolume(volume);
   });
 
