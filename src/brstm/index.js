@@ -513,11 +513,11 @@ export class Brstm {
 
           sampleResult.push(cyn1);
         }
-        
+
         // Overwrite history samples for the next block with decoded samples
         if (b < totalBlocks - 1) {
-          adpcChunkData[c][b+1].yn1 = sampleResult[totalSamplesInBlock - 1];
-          adpcChunkData[c][b+1].yn2 = sampleResult[totalSamplesInBlock - 2];
+          adpcChunkData[c][b + 1].yn1 = sampleResult[totalSamplesInBlock - 1];
+          adpcChunkData[c][b + 1].yn2 = sampleResult[totalSamplesInBlock - 2];
         }
 
         // #endregion
@@ -644,10 +644,13 @@ export class Brstm {
           );
           // At the final block, the slice sometimes ends up too large
           // This is to prevent transformedResult from being overflowed
-          if (slice.length + (b * samplesPerBlock - sampleStart) > transformedResult[c].length) {
+          if (
+            slice.length + (b * samplesPerBlock - sampleStart) >
+            transformedResult[c].length
+          ) {
             transformedResult[c].set(
-                slice.slice(0, (size - (b * samplesPerBlock - sampleStart))),
-                b * samplesPerBlock - sampleStart
+              slice.slice(0, size - (b * samplesPerBlock - sampleStart)),
+              b * samplesPerBlock - sampleStart
             );
           } else {
             transformedResult[c].set(slice, b * samplesPerBlock - sampleStart);
