@@ -88,6 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Reset elStreamSelect
         elStreamSelect.removeAttribute('style');
+        elStreamSelect.setAttribute('tabindex', 0);
         elStreamSelect.innerHTML = '';
 
         if (brstm.metadata.numberChannels > 2) {
