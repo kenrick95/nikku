@@ -3,10 +3,12 @@ import { AudioPlayer } from './audioPlayer.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   const fileElement = document.getElementById('file');
+  /**
+   * @type {null|AudioPlayer}
+   */
   let audioPlayer = null;
   const elTime = document.getElementById('controls-time');
-  const elPlay = document.getElementById('controls-play');
-  const elPause = document.getElementById('controls-pause');
+  const elPlayPause = document.getElementById('controls-play-pause');
   const elLoop = document.getElementById('controls-loop');
   const elVolume = document.getElementById('controls-volume');
   const elTimeCurrent = document.getElementById('controls-time-current');
@@ -17,6 +19,10 @@ document.addEventListener('DOMContentLoaded', () => {
   let shouldCurrentTimeRender = false;
   let isElTimeDragging = false;
   let streamStates = [true];
+  /**
+   * 0..1
+   */
+  let volume = 1;
 
   fileElement.setAttribute('disabled', 'disabled');
   function reset() {
@@ -27,12 +33,14 @@ document.addEventListener('DOMContentLoaded', () => {
     elTime.value = 0;
     elTime.max = 0;
     elTime.setAttribute('disabled', 'disabled');
-    elPlay.setAttribute('disabled', 'disabled');
-    elPause.setAttribute('disabled', 'disabled');
+    elPlayPause.setAttribute('disabled', 'disabled');
     elLoop.setAttribute('disabled', 'disabled');
     elLoop.setAttribute('checked', 'true');
-    elVolume.value = 1;
     elVolume.setAttribute('disabled', 'disabled');
+    volume = Math.round(parseFloat(elVolume.value) * 1000) / 1000;
+    volume = Math.min(1, Math.max(0, volume));
+    elVolume.value = volume;
+
     fileElement.removeAttribute('disabled');
     elStreamSelect.removeAttribute('style');
     elErrors.textContent = '';
@@ -56,7 +64,14 @@ document.addEventListener('DOMContentLoaded', () => {
           audioPlayer.destroy();
         }
 
-        audioPlayer = new AudioPlayer(brstm.metadata);
+        audioPlayer = new AudioPlayer(brstm.metadata, {
+          onPlay: () => {
+            elPlayPause.textContent = 'Pause';
+          },
+          onPause: () => {
+            elPlayPause.textContent = 'Play';
+          },
+        });
 
         // TODO: This seems slow, taking around 200ms
         console.time('brstm.getAllSamples');
@@ -66,14 +81,14 @@ document.addEventListener('DOMContentLoaded', () => {
         audioPlayer.load(allSamples);
 
         elTime.removeAttribute('disabled');
-        elPlay.removeAttribute('disabled');
-        elPause.removeAttribute('disabled');
+        elPlayPause.removeAttribute('disabled');
+
         elLoop.removeAttribute('disabled');
         elVolume.removeAttribute('disabled');
-        elVolume.value = 1;
 
         // Reset elStreamSelect
         elStreamSelect.removeAttribute('style');
+        elStreamSelect.setAttribute('tabindex', 0);
         elStreamSelect.innerHTML = '';
 
         if (brstm.metadata.numberChannels > 2) {
@@ -106,6 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
         elTimeAmount.textContent = formatTime(amountTimeInS);
         elTime.max = amountTimeInS;
 
+        audioPlayer.setVolume(volume);
         audioPlayer.setLoop(elLoop.checked);
         startRenderCurrentTime();
       } catch (e) {
@@ -176,25 +192,21 @@ document.addEventListener('DOMContentLoaded', () => {
     shouldCurrentTimeRender = false;
   }
 
-  elPlay.addEventListener('click', (e) => {
+  elPlayPause.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
     if (!audioPlayer) {
       return;
     }
-    audioPlayer.play();
-    startRenderCurrentTime();
-    enableStreamCheckboxes();
-  });
-  elPause.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!audioPlayer) {
-      return;
+    if (audioPlayer.isPlaying) {
+      audioPlayer.pause();
+      stopRenderCurrentTime();
+      disableStreamCheckboxes();
+    } else {
+      audioPlayer.play();
+      startRenderCurrentTime();
+      enableStreamCheckboxes();
     }
-    audioPlayer.pause();
-    stopRenderCurrentTime();
-    disableStreamCheckboxes();
   });
 
   function streamCheckedHandler(i) {
@@ -244,7 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!audioPlayer) {
       return;
     }
-    let volume = Math.round(parseFloat(e.target.value) * 1000) / 1000;
+    volume = Math.round(parseFloat(e.target.value) * 1000) / 1000;
     audioPlayer.setVolume(volume);
   });
 

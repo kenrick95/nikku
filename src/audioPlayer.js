@@ -5,14 +5,22 @@
  */
 
 /**
+ * @typedef {Object} AudioPlayerHooks
+ * @property {() => void} onPlay
+ * @property {() => void} onPause
+ */
+
+/**
  * @class AudioPlayer
  */
 
 export class AudioPlayer {
   /**
    * @param {Metadata} metadata
+   * @param {AudioPlayerHooks} hooks
    */
-  constructor(metadata) {
+  constructor(metadata, hooks) {
+    this.hooks = hooks;
     this.init(metadata);
   }
 
@@ -23,7 +31,7 @@ export class AudioPlayer {
     if (metadata) {
       this.metadata = metadata;
       this.audioContext = new AudioContext({
-        sampleRate: metadata.sampleRate
+        sampleRate: metadata.sampleRate,
       });
     } else {
       // For destroy
@@ -36,7 +44,7 @@ export class AudioPlayer {
      * For example the ones given in [#1](https://github.com/kenrick95/nikku/issues/1) have 8 and 4 channels!
      *
      * One "stream" is a pair of 2 channels
-     * 
+     *
      * @type {Array<boolean>}
      */
     this._streamStates = [true];
@@ -53,7 +61,7 @@ export class AudioPlayer {
     this._shouldLoop = true;
     this._initNeeded = true;
     this._isSeeking = false;
-    this._isPlaying = false;
+    this.isPlaying = false;
 
     /**
      * 0..1
@@ -111,7 +119,8 @@ export class AudioPlayer {
     }
 
     this.initPlayback();
-    this._isPlaying = true;
+    this.isPlaying = true;
+    this.hooks.onPlay();
   }
 
   /**
@@ -122,7 +131,7 @@ export class AudioPlayer {
       loopStartSample,
       totalSamples,
       sampleRate,
-      numberChannels
+      numberChannels,
     } = this.metadata;
 
     if (this.bufferSource) {
@@ -218,7 +227,7 @@ export class AudioPlayer {
       }
     };
     this.bufferSource.start(this.audioContext.currentTime, bufferStart);
-    this._startTimestamp = performance.now() - bufferStart * 1000;
+    this._startTimestamp = Date.now() - bufferStart * 1000;
 
     this._initNeeded = false;
   }
@@ -229,43 +238,46 @@ export class AudioPlayer {
   async seek(playbackTimeInS) {
     this._isSeeking = true;
     this.initPlayback(playbackTimeInS);
-    if (!this._isPlaying) {
-      this._isPlaying = true;
+    if (!this.isPlaying) {
+      this.isPlaying = true;
+      this.hooks.onPlay();
       // Cannot use this.play() as it will adjust _startTimestamp based on previous _pauseTimestamp
       await this.audioContext.resume();
     }
   }
 
   async play() {
-    if (this._isPlaying) {
+    if (this.isPlaying) {
       return;
     }
-    this._isPlaying = true;
+    this.isPlaying = true;
+    this.hooks.onPlay();
     await this.audioContext.resume();
 
     if (this._initNeeded) {
       this.initPlayback();
     } else {
       this._startTimestamp =
-        this._startTimestamp + performance.now() - this._pauseTimestamp;
+        this._startTimestamp + Date.now() - this._pauseTimestamp;
     }
   }
   async pause() {
-    if (!this._isPlaying) {
+    if (!this.isPlaying) {
       return;
     }
-    this._isPlaying = false;
-    this._pauseTimestamp = performance.now();
+    this.isPlaying = false;
+    this.hooks.onPause();
+    this._pauseTimestamp = Date.now();
     await this.audioContext.suspend();
   }
 
   /**
-   * 
-   * @param {Array<boolean>} newStates 
+   *
+   * @param {Array<boolean>} newStates
    */
   async setStreamStates(newStates) {
     this._streamStates = newStates;
-    // NOTE: Only works well when this._isPlaying is true!
+    // NOTE: Only works well when this.isPlaying is true!
     this.seek(this.getCurrrentPlaybackTime());
   }
 
@@ -293,11 +305,32 @@ export class AudioPlayer {
    * @returns {number} current time in seconds, accounted for looping
    */
   getCurrrentPlaybackTime() {
-    const currentTimestamp = performance.now();
+    const currentTimestamp = Date.now();
     const playbackTime = currentTimestamp - this._startTimestamp;
     let playbackTimeInS = playbackTime / 1000;
-    if (playbackTimeInS > this._loopEndInS) {
-      if (this._shouldLoop && this._isPlaying) {
+
+    /**
+     * This is to account for this._startTimestamp > currentTimestamp
+     * 
+     * https://github.com/kenrick95/nikku/issues/15
+     * 
+     * Bug description:
+     * - Load a file, tick Loop, pause it for N seconds, where N > file's duration
+     * - When played again, it will show a wrong playback time
+     * 
+     * This is because during the resume of the file, `this._startTimestamp` is changed at multiple places
+     * 1. getCurrrentPlaybackTime() will change `this._startTimestamp`
+     * 2. then play() will also change `this._startTimestamp`
+     * 3. then the next getCurrrentPlaybackTime() will result in a negative value
+     * 
+     */
+    while (playbackTimeInS < 0) {
+      this._startTimestamp =
+        this._startTimestamp - this._loopDurationInS * 1000;
+      playbackTimeInS = (currentTimestamp - this._startTimestamp) / 1000;
+    }
+    while (playbackTimeInS > this._loopEndInS) {
+      if (this._shouldLoop && this.isPlaying) {
         this._startTimestamp =
           this._startTimestamp + this._loopDurationInS * 1000;
         playbackTimeInS = (currentTimestamp - this._startTimestamp) / 1000;
