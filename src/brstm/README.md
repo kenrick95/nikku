@@ -31,6 +31,7 @@ const samplesPartial = brstm.getSamples(0, 100);
 - `rawData`: `{Uint8Array}`, representation of array buffer passed in at class constructor.
 - `metadata`: `{Object}`, the metadata extracted from BRSTM's file HEAD chunk
   - `fileSize`: `{number}`
+  - `endianness`: `{number}`, 0 - little endian, 1 - big endian
   - `codec`: `{number}`
     - 0 - 8-bit PCM
     - 1 - 16-bit PCM

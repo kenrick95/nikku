@@ -5,6 +5,7 @@ import {
   getSliceAsNumber,
   getInt16,
   clamp,
+  getEndianness,
 } from './utils.js';
 
 /**
@@ -23,6 +24,7 @@ import {
  * @exports
  * @typedef {Object} Metadata
  * @property {number} fileSize
+ * @property {number} endianness 0 - little endian, 1 - big endian
  * @property {number} codec
  *   - 0 - 8-bit PCM
  *   - 1 - 16-bit PCM
@@ -61,20 +63,34 @@ export class Brstm {
     if (getSliceAsString(this.rawData, 0, 4) !== 'RSTM') {
       throw new Error('Not a valid BRSTM file');
     }
-    // number of seconds: totalSamples / sampleRate
+
+    /**
+     * @type {number} 0 - little endian, 1 - big endian
+     */
+    this.endianness = getEndianness(this.rawData);
 
     /**
      * @private
      * @type {number} _offsetToHead Offset to HEAD chunk, relative to beginning of file
      */
-    this._offsetToHead = getSliceAsNumber(this.rawData, 0x10, 4);
+    this._offsetToHead = getSliceAsNumber(
+      this.rawData,
+      0x10,
+      4,
+      this.endianness
+    );
     /**
      * @private
      * @type {number} _offsetToHeadChunk1 Offset to HEAD chunk part 1, relative to beginning of file
      */
     this._offsetToHeadChunk1 =
       this._offsetToHead +
-      getSliceAsNumber(this.rawData, this._offsetToHead + 0x0c, 4) +
+      getSliceAsNumber(
+        this.rawData,
+        this._offsetToHead + 0x0c,
+        4,
+        this.endianness
+      ) +
       0x08;
     /**
      * @private
@@ -82,7 +98,12 @@ export class Brstm {
      */
     this._offsetToHeadChunk2 =
       this._offsetToHead +
-      getSliceAsNumber(this.rawData, this._offsetToHead + 0x14, 4) +
+      getSliceAsNumber(
+        this.rawData,
+        this._offsetToHead + 0x14,
+        4,
+        this.endianness
+      ) +
       0x08;
     /**
      * @private
@@ -90,18 +111,33 @@ export class Brstm {
      */
     this._offsetToHeadChunk3 =
       this._offsetToHead +
-      getSliceAsNumber(this.rawData, this._offsetToHead + 0x1c, 4) +
+      getSliceAsNumber(
+        this.rawData,
+        this._offsetToHead + 0x1c,
+        4,
+        this.endianness
+      ) +
       0x08;
     /**
      * @private
      * @type {number} _offsetToAdpc Offset to ADPC chunk, relative to beginning of file
      */
-    this._offsetToAdpc = getSliceAsNumber(this.rawData, 0x18, 4);
+    this._offsetToAdpc = getSliceAsNumber(
+      this.rawData,
+      0x18,
+      4,
+      this.endianness
+    );
     /**
      * @private
      * @type {number} _offsetToData Offset to DATA, relative to beginning of file
      */
-    this._offsetToData = getSliceAsNumber(this.rawData, 0x20, 4);
+    this._offsetToData = getSliceAsNumber(
+      this.rawData,
+      0x20,
+      4,
+      this.endianness
+    );
 
     /**
      * @type {Metadata} metadata
@@ -147,7 +183,8 @@ export class Brstm {
         getSliceAsNumber(
           this.rawData,
           this._offsetToHeadChunk3 + 0x08 + c * 8,
-          4
+          4,
+          this.endianness
         ) +
         0x08 +
         8;
@@ -159,7 +196,8 @@ export class Brstm {
         const num = getSliceAsNumber(
           this.rawData,
           offsetToChannelInfo + 2 * i,
-          2
+          2,
+          this.endianness
         );
         // Covert number to int16
         adpcmCoefficients.push(getInt16(num));
@@ -167,42 +205,53 @@ export class Brstm {
 
       channelInfo.push({
         adpcmCoefficients,
-        gain: getSliceAsNumber(this.rawData, offsetToChannelInfo + 0x28, 2),
+        gain: getSliceAsNumber(
+          this.rawData,
+          offsetToChannelInfo + 0x28,
+          2,
+          this.endianness
+        ),
 
         initialPredictorScale: getSliceAsNumber(
           this.rawData,
           offsetToChannelInfo + 0x2a,
-          2
+          2,
+          this.endianness
         ),
 
         historySample1: getSliceAsNumber(
           this.rawData,
           offsetToChannelInfo + 0x2c,
-          2
+          2,
+          this.endianness
         ),
 
         historySample2: getSliceAsNumber(
           this.rawData,
           offsetToChannelInfo + 0x2e,
-          2
+          2,
+          this.endianness
         ),
 
         loopPredictorScale: getSliceAsNumber(
           this.rawData,
           offsetToChannelInfo + 0x30,
-          2
+          2,
+          this.endianness
         ),
 
         loopHistorySample1: getSliceAsNumber(
           this.rawData,
           offsetToChannelInfo + 0x32,
-          2
+          2,
+          this.endianness
         ),
 
         loopHistorySample2: getSliceAsNumber(
           this.rawData,
           offsetToChannelInfo + 0x34,
-          2
+          2,
+          this.endianness
         ),
       });
     }
@@ -214,80 +263,105 @@ export class Brstm {
     const numberChannels = getSliceAsNumber(
       this.rawData,
       this._offsetToHeadChunk1 + 0x0002,
-      1
+      1,
+      this.endianness
     );
     /**
      * @type {Metadata}
      */
     const metadata = {
-      fileSize: getSliceAsNumber(this.rawData, 8, 4),
-      codec: getSliceAsNumber(this.rawData, this._offsetToHeadChunk1, 1),
+      fileSize: getSliceAsNumber(this.rawData, 8, 4, this.endianness),
+      endianness: this.endianness,
+      codec: getSliceAsNumber(
+        this.rawData,
+        this._offsetToHeadChunk1,
+        1,
+        this.endianness
+      ),
       loopFlag: getSliceAsNumber(
         this.rawData,
         this._offsetToHeadChunk1 + 0x0001,
-        1
+        1,
+        this.endianness
       ),
       numberChannels,
       sampleRate: getSliceAsNumber(
         this.rawData,
         this._offsetToHeadChunk1 + 0x0004,
-        2
+        2,
+        this.endianness
       ),
       loopStartSample: getSliceAsNumber(
         this.rawData,
         this._offsetToHeadChunk1 + 0x0008,
-        4
+        4,
+        this.endianness
       ),
       totalSamples: getSliceAsNumber(
         this.rawData,
         this._offsetToHeadChunk1 + 0x000c,
-        4
+        4,
+        this.endianness
       ),
       totalBlocks: getSliceAsNumber(
         this.rawData,
         this._offsetToHeadChunk1 + 0x0014,
-        4
+        4,
+        this.endianness
       ),
       blockSize: getSliceAsNumber(
         this.rawData,
         this._offsetToHeadChunk1 + 0x0018,
-        4
+        4,
+        this.endianness
       ),
       samplesPerBlock: getSliceAsNumber(
         this.rawData,
         this._offsetToHeadChunk1 + 0x001c,
-        4
+        4,
+        this.endianness
       ),
       finalBlockSize: getSliceAsNumber(
         this.rawData,
         this._offsetToHeadChunk1 + 0x0020,
-        4
+        4,
+        this.endianness
       ),
       finalBlockSizeWithPadding: getSliceAsNumber(
         this.rawData,
         this._offsetToHeadChunk1 + 0x0028,
-        4
+        4,
+        this.endianness
       ),
       totalSamplesInFinalBlock: getSliceAsNumber(
         this.rawData,
         this._offsetToHeadChunk1 + 0x0024,
-        4
+        4,
+        this.endianness
       ),
       adpcTableSamplesPerEntry: getSliceAsNumber(
         this.rawData,
         this._offsetToHeadChunk1 + 0x002c,
-        4
+        4,
+        this.endianness
       ),
       adpcTableBytesPerEntry: getSliceAsNumber(
         this.rawData,
         this._offsetToHeadChunk1 + 0x0030,
-        4
+        4,
+        this.endianness
       ),
-      numberTracks: getSliceAsNumber(this.rawData, this._offsetToHeadChunk2, 1),
+      numberTracks: getSliceAsNumber(
+        this.rawData,
+        this._offsetToHeadChunk2,
+        1,
+        this.endianness
+      ),
       trackDescriptionType: getSliceAsNumber(
         this.rawData,
         this._offsetToHeadChunk2 + 0x01,
-        1
+        1,
+        this.endianness
       ),
     };
 
@@ -347,7 +421,8 @@ export class Brstm {
     const adpcDataSize = getSliceAsNumber(
       this.rawData,
       this._offsetToAdpc + 0x04,
-      4
+      4,
+      this.endianness
     );
 
     // `rawData` here is adpc chunk's raw data
@@ -360,9 +435,9 @@ export class Brstm {
     let yn1 = 0;
     let yn2 = 0;
     for (let c = 0; c < numberChannels; c++) {
-      yn1 = getInt16(getSliceAsNumber(rawData, offset, 2));
+      yn1 = getInt16(getSliceAsNumber(rawData, offset, 2, this.endianness));
       offset += 2;
-      yn2 = getInt16(getSliceAsNumber(rawData, offset, 2));
+      yn2 = getInt16(getSliceAsNumber(rawData, offset, 2, this.endianness));
       offset += 2;
     }
 
@@ -376,9 +451,9 @@ export class Brstm {
       transposedResult.push([]);
       for (let c = 0; c < numberChannels; c++) {
         if (b > 0) {
-          yn1 = getInt16(getSliceAsNumber(rawData, offset, 2));
+          yn1 = getInt16(getSliceAsNumber(rawData, offset, 2, this.endianness));
           offset += 2;
-          yn2 = getInt16(getSliceAsNumber(rawData, offset, 2));
+          yn2 = getInt16(getSliceAsNumber(rawData, offset, 2, this.endianness));
           offset += 2;
         }
         transposedResult[b].push({
@@ -530,7 +605,7 @@ export class Brstm {
           sampleIndex++
         ) {
           const result = getInt16(
-            getSliceAsNumber(blockData, sampleIndex * 2, 2)
+            getSliceAsNumber(blockData, sampleIndex * 2, 2, this.endianness)
           );
           sampleResult.push(result);
         }
