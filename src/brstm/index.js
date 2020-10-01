@@ -616,7 +616,7 @@ export class Brstm {
           sampleIndex < totalSamplesInBlock;
           sampleIndex++
         ) {
-          sampleResult.push(getInt16(blockData[sampleIndex])*256);
+          sampleResult.push(getInt16(blockData[sampleIndex]) * 256);
         }
       } else {
         throw new Error('Invalid codec');

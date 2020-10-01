@@ -52,6 +52,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const headerReader = new FileReader();
     headerReader.addEventListener('loadend', async (ev) => {
       try {
+        elErrors.textContent = '';
+
         const buffer = headerReader.result;
 
         const brstm = new Brstm(buffer);
@@ -78,6 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const allSamples = brstm.getAllSamples();
         console.timeEnd('brstm.getAllSamples');
 
+        await audioPlayer.readyPromise;
         audioPlayer.load(allSamples);
 
         elTime.removeAttribute('disabled');
