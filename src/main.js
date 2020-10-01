@@ -52,6 +52,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const headerReader = new FileReader();
     headerReader.addEventListener('loadend', async (ev) => {
       try {
+        elErrors.textContent = '';
+
         const buffer = headerReader.result;
 
         const brstm = new Brstm(buffer);
