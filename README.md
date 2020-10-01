@@ -22,6 +22,7 @@ There are no polyfill included in [the demo](https://kenrick95.github.io/nikku/)
 
 Browser needs to support the following features without any vendor prefix:
 
+- [Audio Worklet API](https://caniuse.com/mdn-api_audioworklet)
 - [Web Audio API](https://caniuse.com/#feat=audio-api)
 - [`<script type="module"> `](https://caniuse.com/#feat=es6-module)
 - [ES2016 class](https://caniuse.com/#feat=es6-class)

@@ -11,6 +11,16 @@
  */
 
 /**
+ * @typedef {Array<boolean>} AudioPlayerStreamStates
+ *
+ * One BRSTM file can have more than 2 channels
+ * For example the ones given in [#1](https://github.com/kenrick95/nikku/issues/1) have 8 and 4 channels!
+ *
+ * One "stream" is a pair of 2 channels
+ *
+ */
+
+/**
  * @class AudioPlayer
  */
 
@@ -21,31 +31,36 @@ export class AudioPlayer {
    */
   constructor(metadata, hooks) {
     this.hooks = hooks;
+    this.readyPromise = new Promise((resolve) => {
+      this._readyPromiseCallback = resolve;
+    });
     this.init(metadata);
   }
 
   /**
    * @param {Metadata=} metadata
    */
-  init(metadata) {
+  async init(metadata) {
     if (metadata) {
       this.metadata = metadata;
       this.audioContext = new AudioContext({
         sampleRate: metadata.sampleRate,
       });
+      if (this.audioContext.audioWorklet) {
+        await this.audioContext.audioWorklet.addModule('src/audioMixer.js');
+      }
+      this._readyPromiseCallback();
     } else {
       // For destroy
       this.metadata = null;
       this.audioContext = null;
+      this.readyPromise = new Promise((resolve) => {
+        this._readyPromiseCallback = resolve;
+      });
     }
 
     /**
-     * One BRSTM file can have more than 2 channels
-     * For example the ones given in [#1](https://github.com/kenrick95/nikku/issues/1) have 8 and 4 channels!
-     *
-     * One "stream" is a pair of 2 channels
-     *
-     * @type {Array<boolean>}
+     * @type {AudioPlayerStreamStates}
      */
     this._streamStates = [true];
 
@@ -94,7 +109,7 @@ export class AudioPlayer {
    *
    * @param {Array<Int16Array>} samples per-channel PCM samples
    */
-  async load(samples) {
+  load(samples) {
     const floatSamples = samples.map((sample) => {
       return this.convertToAudioBufferData(sample);
     });
@@ -145,64 +160,43 @@ export class AudioPlayer {
     this._gainNode = this.audioContext.createGain();
     this._gainNode.gain.value = this._volume;
 
-    if (numberChannels <= 1) {
-      // if mono, only connect buffer -> gain (volume) -> destination
+    if (numberChannels <= 2) {
+      // if mono or stereo, no need to be complicated, just connect [source] -> [gain] -> [destination]
       this.bufferSource.connect(this._gainNode);
       this._gainNode.connect(this.audioContext.destination);
     } else {
+      if (!this.audioContext.audioWorklet) {
+        throw new Error('Sorry, playback of multi-track BRSTM is not supported in this browser');
+      }
       /**
-       * The purpose of this branch is to only play one stream at a time, i.e. max 2 channels
-       * The illustration is shown below
-       */
-
-      /*
-       * Example when numberChannels = 4
-       *                                            /-0-->
-       *                                            |
-       * [  buffer source  ]  -->   [splitter]   ---+-1-->
-       *                                            |
-       *                                            +-2-->
-       *                                            |
-       *                                            \-3-->
+       *
+       * Why we cannot use the set up below?
+       *
+       * [source] --> [splitter] ===> [merger] --> [gain] --> [destination]
+       *
+       * This is because when split into >4 channels, when these channels are going back to be merged,
+       * we can only choose to either merge them using these channel intepretation:
+       * - "speaker": downmix using "speaker" intepretation algorithm, didn't work as expected if channel = 6 since it is special (treated as if it is downmix 5.1 to mono)
+       * - "discrete": downmix
+       *
+       * P.S. using "merger" node downmixed the audio into mono
        *
        */
-
-      /*
-       * Continued example, and when only "stream" index = 1 is active
-       *
-       * --0-->
-       *
-       * --1-->
-       *          /-->-L-\
-       * --2-->--/        +--> [merger]  --> [gain] --> [  context destination  ]
-       *            /->R-/
-       * --3-->----/
-       *
-       */
-      const splitter = this.audioContext.createChannelSplitter(numberChannels);
-
-      let mergerChannels = 2;
-      for (const streamState of this._streamStates) {
-        if (streamState) {
-          mergerChannels += 2;
+      const audioMixerNode = new AudioWorkletNode(
+        this.audioContext,
+        'audio-mixer-processor',
+        {
+          numberOfInputs: 1,
+          numberOfOutputs: 1,
+          outputChannelCount: [2],
+          processorOptions: {
+            streamStates: this._streamStates,
+          },
         }
-      }
-      const merger = this.audioContext.createChannelMerger(mergerChannels);
+      );
 
-      this.bufferSource.connect(splitter);
-
-      let mergerIndex = 0;
-      for (let i = 0; i < this._streamStates.length; i++) {
-        const streamState = this._streamStates[i];
-
-        if (streamState) {
-          splitter.connect(merger, 2 * i + 0, mergerIndex);
-          splitter.connect(merger, 2 * i + 1, mergerIndex + 1);
-          mergerIndex += 2;
-        }
-      }
-
-      merger.connect(this._gainNode);
+      this.bufferSource.connect(audioMixerNode);
+      audioMixerNode.connect(this._gainNode);
       this._gainNode.connect(this.audioContext.destination);
     }
 
@@ -311,18 +305,18 @@ export class AudioPlayer {
 
     /**
      * This is to account for this._startTimestamp > currentTimestamp
-     * 
+     *
      * https://github.com/kenrick95/nikku/issues/15
-     * 
+     *
      * Bug description:
      * - Load a file, tick Loop, pause it for N seconds, where N > file's duration
      * - When played again, it will show a wrong playback time
-     * 
+     *
      * This is because during the resume of the file, `this._startTimestamp` is changed at multiple places
      * 1. getCurrrentPlaybackTime() will change `this._startTimestamp`
      * 2. then play() will also change `this._startTimestamp`
      * 3. then the next getCurrrentPlaybackTime() will result in a negative value
-     * 
+     *
      */
     while (playbackTimeInS < 0) {
       this._startTimestamp =

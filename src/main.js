@@ -78,6 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const allSamples = brstm.getAllSamples();
         console.timeEnd('brstm.getAllSamples');
 
+        await audioPlayer.readyPromise;
         audioPlayer.load(allSamples);
 
         elTime.removeAttribute('disabled');
