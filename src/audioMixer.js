@@ -35,15 +35,6 @@ class AudioMixerProcessor extends AudioWorkletProcessor {
       return false;
     }
 
-    // let enabledChannelCount = 0;
-    // for (let channelIndex = 0; channelIndex < channelCount; channelIndex++) {
-    //   if (
-    //     this._streamStates &&
-    //     this._streamStates[Math.floor(channelIndex / 2)]
-    //   ) {
-    //     enabledChannelCount++;
-    //   }
-    // }
     for (let sampleIndex = 0; sampleIndex < sampleCount; sampleIndex++) {
       let sums = [0, 0];
       for (let channelIndex = 0; channelIndex < channelCount; channelIndex++) {
@@ -52,13 +43,9 @@ class AudioMixerProcessor extends AudioWorkletProcessor {
           this._streamStates[Math.floor(channelIndex / 2)]
         ) {
           sums[channelIndex % 2] +=
-            input[Math.floor(channelIndex / 2)][sampleIndex];
+            input[channelIndex][sampleIndex];
         }
       }
-      /**
-       * NOTE: I initially thought I need to `sum[0] / enabledChannelCount`, but it makes the audio _really_ soft. 
-       * clamp()-ing the sum makes each channel still audible, with minimum distortion (I guess :?)
-       */
       output[0][sampleIndex] = clamp(sums[0], -1, 1);
       output[1][sampleIndex] = clamp(sums[1], -1, 1);
     }
