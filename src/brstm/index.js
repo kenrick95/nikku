@@ -364,6 +364,13 @@ export class Brstm {
         this.endianness
       ),
     };
+    
+    // Check if loop point is valid
+    if (metadata.loopStartSample >= metadata.totalSamples) {
+      metadata.loopFlag = 0;
+      metadata.loopStartSample = 0;
+      console.warn('The loop start sample in this file is invalid.');
+    }
 
     return metadata;
   }
