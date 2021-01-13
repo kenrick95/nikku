@@ -14,6 +14,9 @@ test('Metadata', () => {
   expect(brstm.metadata.codec).toBe(2);
   expect(brstm.metadata.totalSamples).toBe(856813);
   expect(brstm.metadata.loopStartSample).toBe(186368);
+  expect(brstm.metadata.trackDescriptions).toEqual([
+    { type: 0, numberChannels: 2 },
+  ]);
 });
 
 test('Get all samples', () => {
@@ -94,4 +97,7 @@ test('Little endian file', () => {
   expect(brstm.metadata.codec).toBe(2);
   expect(brstm.metadata.totalSamples).toBe(2926120);
   expect(brstm.metadata.loopStartSample).toBe(46120);
+  expect(brstm.metadata.trackDescriptions).toEqual([
+    { type: 0, numberChannels: 1 },
+  ]);
 });
