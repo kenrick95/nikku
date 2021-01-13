@@ -21,6 +21,12 @@ import {
  */
 
 /**
+ * @typedef {Object} TrackDescription
+ * @property {number} numberChannels
+ * @property {number} type
+ */
+
+/**
  * @exports
  * @typedef {Object} Metadata
  * @property {number} fileSize
@@ -44,6 +50,7 @@ import {
  * @property {number} adpcTableBytesPerEntry Bytes per entry in ADPC table
  * @property {number} numberTracks Number of tracks
  * @property {number} trackDescriptionType Track description type ??
+ * @property {Array<TrackDescription>} trackDescriptions
  */
 
 /**
@@ -266,6 +273,63 @@ export class Brstm {
       1,
       this.endianness
     );
+    const numberTracks = getSliceAsNumber(
+      this.rawData,
+      this._offsetToHeadChunk2,
+      1,
+      this.endianness
+    );
+    const trackDescriptionType = getSliceAsNumber(
+      this.rawData,
+      this._offsetToHeadChunk2 + 0x01,
+      1,
+      this.endianness
+    );
+    /**
+     * @type {Array<TrackDescription>}
+     */
+    const trackDescriptions = [];
+
+    for (let t = 0; t < numberTracks; t++) {
+      const offsetToTrackDescriptionEntry =
+        this._offsetToHead +
+        0x08 +
+        getSliceAsNumber(
+          this.rawData,
+          this._offsetToHeadChunk2 + 0x04 + t * 8 + 0x04,
+          4,
+          this.endianness
+        );
+
+      const trackDescriptionType = getSliceAsNumber(
+        this.rawData,
+        this._offsetToHeadChunk2 + 0x04 + t * 8 + 0x01,
+        1,
+        this.endianness
+      );
+
+      let numberChannelsInTrack = 0;
+      if (trackDescriptionType === 0) {
+        numberChannelsInTrack = getSliceAsNumber(
+          this.rawData,
+          offsetToTrackDescriptionEntry,
+          1,
+          this.endianness
+        );
+      } else if (trackDescriptionType === 1) {
+        numberChannelsInTrack = getSliceAsNumber(
+          this.rawData,
+          offsetToTrackDescriptionEntry + 0x0008,
+          1,
+          this.endianness
+        );
+      }
+      trackDescriptions.push({
+        numberChannels: numberChannelsInTrack,
+        type: trackDescriptionType,
+      });
+    }
+
     /**
      * @type {Metadata}
      */
@@ -351,18 +415,9 @@ export class Brstm {
         4,
         this.endianness
       ),
-      numberTracks: getSliceAsNumber(
-        this.rawData,
-        this._offsetToHeadChunk2,
-        1,
-        this.endianness
-      ),
-      trackDescriptionType: getSliceAsNumber(
-        this.rawData,
-        this._offsetToHeadChunk2 + 0x01,
-        1,
-        this.endianness
-      ),
+      numberTracks,
+      trackDescriptionType,
+      trackDescriptions,
     };
 
     return metadata;
