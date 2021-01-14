@@ -13,7 +13,9 @@
   "unpkg": "./dist/brstm.umd.js",
   "types": "./index.d.ts",
   "files": [
-    "*.js"
+    "dist/*",
+    "*.js",
+    "*.d.ts"
   ],
   "author": {
     "name": "Kenrick",
@@ -38,10 +40,5 @@
   "devDependencies": {
     "microbundle": "^0.13.0",
     "typescript": "^4.1.3"
-  },
-  "resolutions": {
-    "braces": ">=2.3.1",
-    "js-yaml": ">=3.13.1",
-    "kind-of": ">=6.0.3"
   }
 }
