@@ -13,12 +13,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const elVolume = document.getElementById('controls-volume');
   const elTimeCurrent = document.getElementById('controls-time-current');
   const elTimeAmount = document.getElementById('controls-time-amount');
-  const elStreamSelect = document.getElementById('controls-stream-select');
+  const elTrackSelect = document.getElementById('controls-track-select');
   const elErrors = document.getElementById('errors');
   let currentTimeRenderAf = null;
   let shouldCurrentTimeRender = false;
   let isElTimeDragging = false;
-  let streamStates = [true];
+  let trackStates = [true];
   /**
    * 0..1
    */
@@ -42,9 +42,9 @@ document.addEventListener('DOMContentLoaded', () => {
     elVolume.value = volume;
 
     fileElement.removeAttribute('disabled');
-    elStreamSelect.removeAttribute('style');
+    elTrackSelect.removeAttribute('style');
     elErrors.textContent = '';
-    streamStates = [true];
+    trackStates = [true];
   }
 
   fileElement.addEventListener('change', () => {
@@ -89,34 +89,35 @@ document.addEventListener('DOMContentLoaded', () => {
         elLoop.removeAttribute('disabled');
         elVolume.removeAttribute('disabled');
 
-        // Reset elStreamSelect
-        elStreamSelect.removeAttribute('style');
-        elStreamSelect.setAttribute('tabindex', 0);
-        elStreamSelect.innerHTML = '';
+        // Reset elTrackSelect
+        elTrackSelect.removeAttribute('style');
+        elTrackSelect.setAttribute('tabindex', 0);
+        elTrackSelect.innerHTML = '';
 
-        if (brstm.metadata.numberChannels > 2) {
-          const numberStreams = Math.floor(brstm.metadata.numberChannels / 2);
+        const numberTracks = brstm.metadata.numberTracks;
+
+        if (numberTracks > 1) {
           const text = document.createElement('span');
-          text.textContent = 'Stream(s) enabled:';
+          text.textContent = 'Track(s) enabled:';
           text.title =
-            'This file contains more than 1 streams, check or uncheck the checkboxes to enable/disable each stream';
-          elStreamSelect.appendChild(text);
-          streamStates = [];
-          for (let i = 0; i < numberStreams; i++) {
+            'This file contains more than 1 track, check or uncheck the checkboxes to enable/disable each track';
+          elTrackSelect.appendChild(text);
+          trackStates = [];
+          for (let i = 0; i < numberTracks; i++) {
             const child = document.createElement('input');
             child.type = 'checkbox';
             if (i === 0) {
               child.checked = true;
-              streamStates.push(true);
+              trackStates.push(true);
             } else {
               child.checked = false;
-              streamStates.push(false);
+              trackStates.push(false);
             }
-            child.title = `Stream ${i + 1}`;
-            child.addEventListener('input', streamCheckedHandler.bind(this, i));
-            elStreamSelect.appendChild(child);
+            child.title = `Track ${i + 1}`;
+            child.addEventListener('input', trackCheckedHandler.bind(this, i));
+            elTrackSelect.appendChild(child);
           }
-          elStreamSelect.style.display = 'block';
+          elTrackSelect.style.display = 'block';
         }
 
         const amountTimeInS =
@@ -204,20 +205,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (audioPlayer.isPlaying) {
       audioPlayer.pause();
       stopRenderCurrentTime();
-      disableStreamCheckboxes();
+      disableTrackCheckboxes();
     } else {
       audioPlayer.play();
       startRenderCurrentTime();
-      enableStreamCheckboxes();
+      enableTrackCheckboxes();
     }
   });
 
-  function streamCheckedHandler(i) {
+  function trackCheckedHandler(i) {
     if (!audioPlayer) {
       return;
     }
-    streamStates[i] = !streamStates[i];
-    audioPlayer.setStreamStates(streamStates);
+    trackStates[i] = !trackStates[i];
+    audioPlayer.setTrackStates(trackStates);
   }
 
   elLoop.addEventListener('input', (e) => {
@@ -270,13 +271,13 @@ document.addEventListener('DOMContentLoaded', () => {
     return 'AudioContext' in self;
   }
 
-  function disableStreamCheckboxes() {
-    for (const child of elStreamSelect.childNodes) {
+  function disableTrackCheckboxes() {
+    for (const child of elTrackSelect.childNodes) {
       child.disabled = true;
     }
   }
-  function enableStreamCheckboxes() {
-    for (const child of elStreamSelect.childNodes) {
+  function enableTrackCheckboxes() {
+    for (const child of elTrackSelect.childNodes) {
       child.disabled = false;
     }
   }

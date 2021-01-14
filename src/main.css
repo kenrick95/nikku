@@ -82,10 +82,10 @@ details {
   transform-origin: 50% 50%;
   transform: rotate(-90deg) translateX(-50%) translateX(1rem);
 }
-#controls-stream-select {
+#controls-track-select {
   display: none;
 }
-#controls-stream-select > input {
+#controls-track-select > input {
   margin: 2px;
 }
 #metadata-caption {

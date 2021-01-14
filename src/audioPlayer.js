@@ -11,13 +11,10 @@
  */
 
 /**
- * @typedef {Array<boolean>} AudioPlayerStreamStates
+ * @typedef {Array<boolean>} AudioPlayerTrackStates
  *
- * One BRSTM file can have more than 2 channels
- * For example the ones given in [#1](https://github.com/kenrick95/nikku/issues/1) have 8 and 4 channels!
- *
- * One "stream" is a pair of 2 channels
- *
+ * One BRSTM file can have >1 track.
+ * Each track has its own channel count
  */
 
 /**
@@ -60,9 +57,9 @@ export class AudioPlayer {
     }
 
     /**
-     * @type {AudioPlayerStreamStates}
+     * @type {AudioPlayerTrackStates}
      */
-    this._streamStates = [true];
+    this._trackStates = [true];
 
     this._audioBuffer = null;
     this.bufferSource = null;
@@ -114,7 +111,7 @@ export class AudioPlayer {
       return this.convertToAudioBufferData(sample);
     });
 
-    const { numberChannels } = this.metadata;
+    const { numberChannels, numberTracks } = this.metadata;
     this._audioBuffer = this.audioContext.createBuffer(
       numberChannels,
       floatSamples[0].length,
@@ -123,13 +120,12 @@ export class AudioPlayer {
     for (let c = 0; c < numberChannels; c++) {
       this._audioBuffer.getChannelData(c).set(floatSamples[c]);
     }
-    const numberStreams = Math.floor(numberChannels / 2);
-    this._streamStates = [];
-    for (let i = 0; i < numberStreams; i++) {
+    this._trackStates = [];
+    for (let i = 0; i < numberTracks; i++) {
       if (i === 0) {
-        this._streamStates.push(true);
+        this._trackStates.push(true);
       } else {
-        this._streamStates.push(false);
+        this._trackStates.push(false);
       }
     }
 
@@ -146,7 +142,8 @@ export class AudioPlayer {
       loopStartSample,
       totalSamples,
       sampleRate,
-      numberChannels,
+      numberTracks,
+      trackDescriptions,
     } = this.metadata;
 
     if (this.bufferSource) {
@@ -160,13 +157,15 @@ export class AudioPlayer {
     this._gainNode = this.audioContext.createGain();
     this._gainNode.gain.value = this._volume;
 
-    if (numberChannels <= 2) {
+    if (numberTracks === 1) {
       // if mono or stereo, no need to be complicated, just connect [source] -> [gain] -> [destination]
       this.bufferSource.connect(this._gainNode);
       this._gainNode.connect(this.audioContext.destination);
     } else {
       if (!this.audioContext.audioWorklet) {
-        throw new Error('Sorry, playback of multi-track BRSTM is not supported in this browser');
+        throw new Error(
+          'Sorry, playback of multi-track BRSTM is not supported in this browser'
+        );
       }
       /**
        *
@@ -190,7 +189,8 @@ export class AudioPlayer {
           numberOfOutputs: 1,
           outputChannelCount: [2],
           processorOptions: {
-            streamStates: this._streamStates,
+            trackStates: this._trackStates,
+            trackDescriptions,
           },
         }
       );
@@ -269,8 +269,8 @@ export class AudioPlayer {
    *
    * @param {Array<boolean>} newStates
    */
-  async setStreamStates(newStates) {
-    this._streamStates = newStates;
+  async setTrackStates(newStates) {
+    this._trackStates = newStates;
     // NOTE: Only works well when this.isPlaying is true!
     this.seek(this.getCurrrentPlaybackTime());
   }
