@@ -11,6 +11,7 @@
   "module": "./dist/brstm.module.js",
   "umd:main": "./dist/brstm.umd.js",
   "unpkg": "./dist/brstm.umd.js",
+  "types": "./index.d.ts",
   "files": [
     "*.js"
   ],
@@ -28,12 +29,15 @@
   },
   "license": "MIT",
   "scripts": {
-    "prepublishOnly": "microbundle",
+    "prepublishOnly": "npm run build && npm run generate-dts",
+    "build": "microbundle",
+    "generate-dts": "tsc --allowJs --noEmit --declaration index.js",
     "pretest": "microbundle --compress false",
     "test": "node tests/index.test.js"
   },
   "devDependencies": {
-    "microbundle": "^0.13.0"
+    "microbundle": "^0.13.0",
+    "typescript": "^4.1.3"
   },
   "resolutions": {
     "braces": ">=2.3.1",
