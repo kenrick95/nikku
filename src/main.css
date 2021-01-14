@@ -47,12 +47,6 @@ details {
 .section + .section {
   margin-top: 1.6rem;
 }
-.note {
-  font-size: 0.7rem;
-  text-decoration: underline dotted black;
-  font-style: italic;
-  cursor: help;
-}
 #form-and-details {
   display: flex;
 }
