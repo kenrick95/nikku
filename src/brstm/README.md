@@ -37,7 +37,7 @@ const samplesPartial = brstm.getSamples(0, 100);
     - 1 - 16-bit PCM
     - 2 - 4-bit ADPCM
   - `loopFlag`: `{number}`
-  - `numberChannels`: `{number}`
+  - `numberChannels`: `{number}`, channel count of the whole file
   - `sampleRate`: `{number}`
   - `loopStartSample`: `{number}`, loop start, in terms of sample #
   - `totalSamples`: `{number}`
@@ -50,7 +50,11 @@ const samplesPartial = brstm.getSamples(0, 100);
   - `adpcTableSamplesPerEntry`: `{number}`, Samples per entry in ADPC table
   - `adpcTableBytesPerEntry`: `{number}`, Bytes per entry in ADPC table
   - `numberTracks`: `{number}`, Number of tracks
-  - `trackDescriptionType`: `{number}`, Track description type ??
+  - `trackDescriptionType`: `{number}`, Track description type (0 or 1)
+  - `trackDescriptions`: `{Array<TrackDescription>}`, Basic description of each track
+    - `TrackDescription`: `{Object}`, 
+      - `numberChannels`: `{number}`, this particular track's channel count
+      - `type`: `{number}`, this particular track's description type (0 or 1)
 
 ## Methods
 
