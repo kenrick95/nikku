@@ -1,16 +1,25 @@
 /**
- * @typedef {import("./audioPlayer.js").AudioPlayerStreamStates} AudioPlayerStreamStates
+ * @typedef {import("./audioPlayer.js").AudioPlayerTrackStates} AudioPlayerTrackStates
+ */
+/**
+ * @typedef {import("./brstm/index.js").TrackDescription} TrackDescription
  */
 
 class AudioMixerProcessor extends AudioWorkletProcessor {
   constructor(options) {
     super();
     /**
-     * @type {AudioPlayerStreamStates}
+     * @type {AudioPlayerTrackStates}
      */
-    this._streamStates = options.processorOptions.streamStates || {};
+    this._trackStates = options.processorOptions.trackStates || {};
+    /**
+     * @type {Array<TrackDescription>}
+     */
+    this._trackDescriptions = options.processorOptions.trackDescriptions || [];
     this.port.onmessage = (event) => {
-      if (event.data.streamStates) this.streamStates = event.data.streamStates;
+      if (event.data.trackStates) this._trackStates = event.data.trackStates;
+      if (event.data.trackDescriptions)
+        this._trackDescriptions = event.data.trackDescriptions;
     };
   }
 
@@ -37,15 +46,34 @@ class AudioMixerProcessor extends AudioWorkletProcessor {
 
     for (let sampleIndex = 0; sampleIndex < sampleCount; sampleIndex++) {
       let sums = [0, 0];
-      for (let channelIndex = 0; channelIndex < channelCount; channelIndex++) {
-        if (
-          this._streamStates &&
-          this._streamStates[Math.floor(channelIndex / 2)]
-        ) {
-          sums[channelIndex % 2] +=
-            input[channelIndex][sampleIndex];
+
+      for (
+        let trackIndex = 0, channelIndex = 0;
+        trackIndex < this._trackStates.length;
+        trackIndex++
+      ) {
+        const trackChannelCount = this._trackDescriptions[trackIndex]
+          .numberChannels;
+        if (this._trackStates[trackIndex]) {
+          const finalOddTrackChannelCountIndex =
+            trackChannelCount - (trackChannelCount % 2);
+
+          // Distribute left-right for first (N - (N % 2))
+          for (let tc = 0; tc < finalOddTrackChannelCountIndex; tc++) {
+            sums[tc % 2] += input[channelIndex + tc][sampleIndex];
+          }
+
+          // Put the final odd track into both left and right output
+          if (trackChannelCount % 2 === 1) {
+            sums[0] +=
+              input[channelIndex + finalOddTrackChannelCountIndex][sampleIndex];
+            sums[1] +=
+              input[channelIndex + finalOddTrackChannelCountIndex][sampleIndex];
+          }
         }
+        channelIndex += trackChannelCount;
       }
+
       output[0][sampleIndex] = clamp(sums[0], -1, 1);
       output[1][sampleIndex] = clamp(sums[1], -1, 1);
     }
