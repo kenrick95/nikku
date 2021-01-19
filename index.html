@@ -5,116 +5,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <title>Nikku - Web-based BRSTM player</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="./src/main.css" />
+    <link rel="icon" type="image/svg+xml" href="/assets/logo.svg" />
   </head>
   <body>
     <header id="header">
-      <h1>Nikku</h1>
-
-      <p>
-        Web-based BRSTM player
-      </p>
+      <img src="./assets/logo-full.svg" alt="Nikku logo" />
+      <span id="subtitle">Web-based BRSTM player</span>
     </header>
     <main id="main">
-      <div class="section error" id="unsupported">
-        Sorry, this browser is unsupported
+      <div id="track-title">music.brstm</div>
+      <div id="controls-time-display">00:42 / 01:23</div>
+      <div id="controls-progress">aaa</div>
+      <div id="controls-select-file">Select</div>
+      <div id="controls-play-pause">
+        <controls-play-pause icon="pause" />
       </div>
-      <div class="section">
-        <label for="file">
-          Select a BRSTM file:
-        </label>
-        <input type="file" id="file" accept=".brstm" disabled tabindex="0" />
-      </div>
-
-      <div class="section" id="form-and-details">
-        <div class="column">
-          <form class="section" id="controls-form" action="#">
-            <fieldset>
-              <legend>Controls</legend>
-              <div id="controls-time-container">
-                <input
-                  type="range"
-                  id="controls-time"
-                  min="0"
-                  max="100"
-                  value="0"
-                  step="0.1"
-                  disabled
-                  tabindex="0"
-                />
-                <div id="controls-time-display">
-                  <span id="controls-time-current">
-                    00:00.00
-                  </span>
-                  /
-                  <span id="controls-time-amount">
-                    00:00.00
-                  </span>
-                </div>
-              </div>
-
-              <button id="controls-play-pause" disabled tabindex="0">
-                Play
-              </button>
-
-              <label id="controls-loop-container">
-                <input
-                  type="checkbox"
-                  id="controls-loop"
-                  disabled
-                  checked
-                  tabindex="0"
-                />
-                Loop
-              </label>
-
-              <label id="controls-volume-container">
-                Volume<br />
-                <input
-                  type="range"
-                  id="controls-volume"
-                  disabled
-                  value="1"
-                  min="0"
-                  max="1"
-                  step="0.01"
-                  tabindex="0"
-                />
-              </label>
-              <div id="controls-track-select"></div>
-            </fieldset>
-          </form>
-
-          <div class="section error" id="errors"></div>
-
-          <a
-            class="section"
-            href="https://github.com/kenrick95/nikku"
-            tabindex="0"
-            target="_blank"
-            >GitHub repository</a
-          >
-        </div>
-        <div class="column">
-          <details class="section" id="metadata-container">
-            <summary
-              id="metadata-caption"
-              title="Click to expand/collapse file metadata details"
-              >File metadata</summary
-            >
-            <table id="metadata">
-              <tbody id="metadata-body"></tbody>
-            </table>
-          </details>
-        </div>
+      <div id="controls-others">
+        <div id="controls-loop">loop</div>
+        <div id="controls-volume">volume</div>
       </div>
     </main>
-    <template id="metadata-row">
-      <tr>
-        <td class="metadata-row-key"></td>
-        <td class="metadata-row-value"></td>
-      </tr>
-    </template>
+    <footer id="footer">
+      By
+      <a href="https://github.com/kenrick95" tabindex="0" target="_blank"
+        >Kenrick</a
+      >
+      <br />
+      Source code at
+      <a href="https://github.com/kenrick95/nikku" tabindex="0" target="_blank"
+        >GitHub</a
+      >
+    </footer>
+
     <script type="module" src="./src/main.js"></script>
     <script nomodule src="./src/nomodule.js"></script>
   </body>
