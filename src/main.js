@@ -1,7 +1,10 @@
 import { Brstm } from './brstm/index.js';
 import { AudioPlayer } from './audioPlayer.js';
+import './controls-play-pause.js';
 
 document.addEventListener('DOMContentLoaded', () => {
+  return;
+
   const fileElement = document.getElementById('file');
   /**
    * @type {null|AudioPlayer}
