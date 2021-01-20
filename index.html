@@ -21,10 +21,12 @@
     <main id="main">
       <div id="track-title">music.brstm</div>
       <div id="controls-time-display">00:42 / 01:23</div>
-      <div id="controls-progress">aaa</div>
+      <div id="controls-progress">
+        <controls-progress value="50" max="100" />
+      </div>
       <div id="controls-select-file">Select</div>
       <div id="controls-play-pause">
-        <controls-play-pause icon="pause" />
+        <controls-play-pause icon="play" />
       </div>
       <div id="controls-others">
         <div id="controls-loop">loop</div>
@@ -42,6 +44,43 @@
         >GitHub</a
       >
     </footer>
+
+    <template id="template-progress">
+      <style>
+        .progress-bar {
+          position: relative;
+        }
+        .progress-background {
+          position: absolute;
+          top: 5px;
+          width: 100%;
+          height: 4px;
+          border-radius: 2px;
+          background-color: #e0e4e8;
+        }
+        .progress-active {
+          position: absolute;
+          top: 5px;
+          width: 50%;
+          height: 4px;
+          border-radius: 2px;
+          background-color: var(--primary);
+        }
+        .progress-indicator {
+          position: absolute;
+          left: calc(50% - 7.5px);
+          width: 15px;
+          height: 15px;
+          border-radius: 50%;
+          background-color: var(--primary);
+        }
+      </style>
+      <div class="progress-bar">
+        <div class="progress-background"></div>
+        <div class="progress-active"></div>
+        <div class="progress-indicator"></div>
+      </div>
+    </template>
 
     <script type="module" src="./src/main.js"></script>
     <script nomodule src="./src/nomodule.js"></script>
