@@ -1,8 +1,24 @@
+//@ts-check
 import { Brstm } from './brstm/index.js';
 import { AudioPlayer } from './audioPlayer.js';
+import './controls-progress.js';
 import './controls-play-pause.js';
 
 document.addEventListener('DOMContentLoaded', () => {
+  {
+    let playPauseState = 'play';
+    const elControlsPlayPause = document.querySelector('controls-play-pause');
+    elControlsPlayPause.addEventListener('click', () => {
+      if (playPauseState === 'pause') {
+        playPauseState = 'play';
+      } else {
+        playPauseState = 'pause';
+      }
+
+      elControlsPlayPause.setAttribute('icon', playPauseState);
+    });
+  }
+
   return;
 
   const fileElement = document.getElementById('file');
