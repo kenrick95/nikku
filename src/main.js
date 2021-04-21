@@ -3,24 +3,31 @@ import { Brstm } from './brstm/index.js';
 import { AudioPlayer } from './audioPlayer.js';
 import './controls-progress.js';
 import './controls-play-pause.js';
+import './controls-loop.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-  {
-    let playPauseState = 'play';
-    const elControlsPlayPause = document.querySelector('controls-play-pause');
-    elControlsPlayPause.addEventListener('click', () => {
-      if (playPauseState === 'pause') {
-        playPauseState = 'play';
-      } else {
-        playPauseState = 'pause';
-      }
+  let playPauseState = 'play';
+  let loopState = 'on';
 
-      elControlsPlayPause.setAttribute('icon', playPauseState);
+  {
+    const elControlsPlayPause = document.querySelector('controls-play-pause');
+    elControlsPlayPause.addEventListener('playPauseClick', (e) => {
+      // @ts-ignore
+      playPauseState = e.detail.mode;
+    });
+  }
+
+  {
+    const elControlsLoop = document.querySelector('controls-loop');
+    elControlsLoop.addEventListener('loopClick', (e) => {
+      // @ts-ignore
+      loopState = e.detail.mode;
     });
   }
 
   return;
 
+  // @ts-ignore
   const fileElement = document.getElementById('file');
   /**
    * @type {null|AudioPlayer}
@@ -49,15 +56,19 @@ document.addEventListener('DOMContentLoaded', () => {
     currentTimeRenderAf = null;
     shouldCurrentTimeRender = false;
     isElTimeDragging = false;
+    // @ts-ignore
     elTime.value = 0;
+    // @ts-ignore
     elTime.max = 0;
     elTime.setAttribute('disabled', 'disabled');
     elPlayPause.setAttribute('disabled', 'disabled');
     elLoop.setAttribute('disabled', 'disabled');
     elLoop.setAttribute('checked', 'true');
     elVolume.setAttribute('disabled', 'disabled');
+    // @ts-ignore
     volume = Math.round(parseFloat(elVolume.value) * 1000) / 1000;
     volume = Math.min(1, Math.max(0, volume));
+    // @ts-ignore
     elVolume.value = volume;
 
     fileElement.removeAttribute('disabled');
@@ -66,15 +77,19 @@ document.addEventListener('DOMContentLoaded', () => {
     trackStates = [true];
   }
 
+  // @ts-ignore
   fileElement.addEventListener('change', () => {
+    // @ts-ignore
     const file = fileElement.files[0];
     const headerReader = new FileReader();
+    // @ts-ignore
     headerReader.addEventListener('loadend', async (ev) => {
       try {
         elErrors.textContent = '';
 
         const buffer = headerReader.result;
 
+        // @ts-ignore
         const brstm = new Brstm(buffer);
 
         // console.log('brstm', brstm);
@@ -110,6 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Reset elTrackSelect
         elTrackSelect.removeAttribute('style');
+        // @ts-ignore
         elTrackSelect.setAttribute('tabindex', 0);
         elTrackSelect.innerHTML = '';
 
@@ -142,9 +158,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const amountTimeInS =
           brstm.metadata.totalSamples / brstm.metadata.sampleRate;
         elTimeAmount.textContent = formatTime(amountTimeInS);
+        // @ts-ignore
         elTime.max = amountTimeInS;
 
         audioPlayer.setVolume(volume);
+        // @ts-ignore
         audioPlayer.setLoop(elLoop.checked);
         startRenderCurrentTime();
       } catch (e) {
@@ -182,6 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
         continue;
       }
       const clone = document.importNode(
+        // @ts-ignore
         metadataRowTemplateElement.content,
         true
       );
@@ -195,6 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderCurrentTime() {
     const currentTime = audioPlayer.getCurrrentPlaybackTime();
     if (!isElTimeDragging) {
+      // @ts-ignore
       elTime.value = currentTime;
     }
     elTimeCurrent.textContent = formatTime(currentTime);
@@ -215,6 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
     shouldCurrentTimeRender = false;
   }
 
+  // @ts-ignore
   elPlayPause.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -240,12 +261,14 @@ document.addEventListener('DOMContentLoaded', () => {
     audioPlayer.setTrackStates(trackStates);
   }
 
+  // @ts-ignore
   elLoop.addEventListener('input', (e) => {
     e.preventDefault();
     e.stopPropagation();
     if (!audioPlayer) {
       return;
     }
+    // @ts-ignore
     audioPlayer.setLoop(e.target.checked);
   });
 
@@ -265,6 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     // Make sure targetTimeInMs is at most "xx.xx" (chop off the 0.00000000000001 floating point error)
     let targetTimeInS =
+      // @ts-ignore
       Math.round(parseFloat(e.target.value) * 1000 + 150) / 1000;
     isElTimeDraggingTimeoutId = setTimeout(() => {
       isElTimeDragging = false;
@@ -279,6 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!audioPlayer) {
       return;
     }
+    // @ts-ignore
     volume = Math.round(parseFloat(e.target.value) * 1000) / 1000;
     audioPlayer.setVolume(volume);
   });
@@ -292,15 +317,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function disableTrackCheckboxes() {
     for (const child of elTrackSelect.childNodes) {
+      // @ts-ignore
       child.disabled = true;
     }
   }
   function enableTrackCheckboxes() {
     for (const child of elTrackSelect.childNodes) {
+      // @ts-ignore
       child.disabled = false;
     }
   }
 
+  // @ts-ignore
   if (isCompatible()) {
     reset();
   } else {

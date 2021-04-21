@@ -1,3 +1,5 @@
+import { parseHTML } from './utils.js';
+
 //@ts-check
 class ControlsPlayPause extends HTMLElement {
   constructor() {
@@ -5,36 +7,26 @@ class ControlsPlayPause extends HTMLElement {
 
     this.attachShadow({ mode: 'open' });
     /**
-     * - icon: Which icon is showing: play icon or pause icon?
-     * @type {{ icon: 'play' | 'pause' }}
+     * - mode: Which icon is showing: play icon or pause icon?
+     * @type {{ mode: 'play' | 'pause' }}
      */
     this.state = {
-      icon:
-        /** @type {'play' | 'pause'} */ (this.getAttribute('icon')) || 'play',
+      mode:
+        /** @type {'play' | 'pause'} */ (this.getAttribute('mode')) || 'play',
     };
     this.init();
   }
-  /**
-   *
-   * @param {string} html
-   */
-  parseHTML(html) {
-    var t = document.createElement('template');
-    t.innerHTML = html;
-    return t.content.cloneNode(true).childNodes[0];
-  }
-
   async init() {
     let [iconPlayString, iconPauseString] = await Promise.all([
       fetch('../assets/play-icon.svg').then((res) => res.text()),
       fetch('../assets/pause-icon.svg').then((res) => res.text()),
     ]);
-    this.iconPlay = this.parseHTML(iconPlayString);
-    this.iconPause = this.parseHTML(iconPauseString);
+    this.iconPlay = parseHTML(iconPlayString);
+    this.iconPause = parseHTML(iconPauseString);
     this.button = document.createElement('button');
-    this.button.setAttribute('class', 'button');
+    this.button.classList.add('button');
 
-    const icon = this.state.icon === 'play' ? this.iconPlay : this.iconPause;
+    const icon = this.state.mode === 'play' ? this.iconPlay : this.iconPause;
     this.button.appendChild(icon);
 
     const style = document.createElement('style');
@@ -42,10 +34,22 @@ class ControlsPlayPause extends HTMLElement {
 
     this.shadowRoot.innerHTML = '';
     this.shadowRoot.append(style, this.button);
+
+    this.button.addEventListener('click', () => {
+      const newMode = this.state.mode === 'play' ? 'pause' : 'play';
+      this.dispatchEvent(
+        new CustomEvent('playPauseClick', {
+          detail: {
+            mode: newMode,
+          },
+        })
+      );
+      this.setAttribute('mode', newMode);
+    });
   }
 
   static get observedAttributes() {
-    return ['icon'];
+    return ['mode'];
   }
 
   /**
@@ -57,9 +61,9 @@ class ControlsPlayPause extends HTMLElement {
   attributeChangedCallback(name, oldValue, newValue) {
     this.state[name] = newValue;
     if (oldValue != null && oldValue != newValue) {
-      if (name === 'icon' && this.button) {
+      if (name === 'mode' && this.button) {
         const icon =
-          this.state.icon === 'play' ? this.iconPlay : this.iconPause;
+          this.state.mode === 'play' ? this.iconPlay : this.iconPause;
         this.button.replaceChild(icon, this.button.firstChild);
       }
     }
@@ -80,6 +84,7 @@ class ControlsPlayPause extends HTMLElement {
     .button:hover {
       background: var(--primary-lightest-1);
       box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.24);
+      cursor: pointer;
     }`;
   }
 }

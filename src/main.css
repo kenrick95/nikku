@@ -101,11 +101,19 @@ body {
 }
 #controls-play-pause {
   grid-column: 2;
-  grid-row: 3;
+  grid-row: 4;
 }
 #controls-others {
   grid-column: 3;
-  grid-row: 3;
+  grid-row: 4;
+
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+}
+#controls-volume {
+  margin-inline-start: 10px;
 }
 
 #footer {
