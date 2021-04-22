@@ -4,6 +4,7 @@ import { AudioPlayer } from './audioPlayer.js';
 import './controls-progress.js';
 import './controls-play-pause.js';
 import './controls-loop.js';
+import './controls-volume.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   let playPauseState = 'play';
