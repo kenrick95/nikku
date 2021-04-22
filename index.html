@@ -31,7 +31,7 @@
       </div>
       <div id="controls-others">
         <controls-loop mode="on"></controls-loop>
-        <div id="controls-volume">volume</div>
+        <controls-volume volume="0.8"></controls-volume>
       </div>
     </main>
     <footer id="footer">
@@ -79,7 +79,7 @@
       <div class="progress-bar">
         <div class="progress-background"></div>
         <div class="progress-active"></div>
-        <div class="progress-indicator"></div>
+        <div class="progress-indicator" draggable="true"></div>
       </div>
     </template>
 
@@ -108,6 +108,63 @@
           fill: var(--primary-lighter);
         }
       </style>
+    </template>
+
+    <template id="template-volume">
+      <style>
+        :root {
+          margin: 0;
+          padding: 0;
+        }
+        svg {
+          width: 100%;
+          height: 100%;
+        }
+        .volume-icon {
+          width: 40px;
+        }
+        .volume-container {
+          display: flex;
+          align-items: center;
+        }
+        .volume-bar {
+          position: relative;
+          width: 100px;
+          height: 10px;
+          margin-left: 8px;
+        }
+        .volume-background {
+          position: absolute;
+          top: 4px;
+          width: 100%;
+          height: 2px;
+          border-radius: 1px;
+          background-color: #e0e4e8;
+        }
+        .volume-fill {
+          position: absolute;
+          top: 4px;
+          width: 50%;
+          height: 2px;
+          border-radius: 1px;
+          background-color: var(--primary);
+        }
+        .volume-indicator {
+          position: absolute;
+          left: calc(50% - 5px);
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          background-color: var(--primary);
+        }
+      </style>
+      <div class="volume-container">
+        <div class="volume-bar">
+          <div class="volume-background"></div>
+          <div class="volume-fill"></div>
+          <div class="volume-indicator" draggable="true"></div>
+        </div>
+      </div>
     </template>
 
     <script type="module" src="./src/main.js"></script>

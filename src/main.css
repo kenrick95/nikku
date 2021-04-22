@@ -65,7 +65,7 @@ body {
 
   /* To align with logo's text baseline */
   margin-top: 10px;
-  margin-left: 8px;
+  margin-inline-start: 8px;
 }
 
 #main {
@@ -109,11 +109,15 @@ body {
 
   display: flex;
   flex-direction: row;
-  justify-content: flex-start;
+  justify-content: flex-end;
   align-items: center;
 }
-#controls-volume {
+controls-loop {
+  height: 40px;
+}
+controls-volume {
   margin-inline-start: 10px;
+  height: 40px;
 }
 
 #footer {
