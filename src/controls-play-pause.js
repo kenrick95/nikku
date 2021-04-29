@@ -32,8 +32,10 @@ class ControlsPlayPause extends HTMLElement {
     const style = document.createElement('style');
     style.textContent = this.elementStyle;
 
-    this.shadowRoot.innerHTML = '';
-    this.shadowRoot.append(style, this.button);
+    if (this.shadowRoot) {
+      this.shadowRoot.innerHTML = '';
+      this.shadowRoot.append(style, this.button);
+    }
 
     this.button.addEventListener('click', () => {
       const newMode = this.state.mode === 'play' ? 'pause' : 'play';
@@ -59,12 +61,14 @@ class ControlsPlayPause extends HTMLElement {
    * @param {string} newValue
    */
   attributeChangedCallback(name, oldValue, newValue) {
-    this.state[name] = newValue;
     if (oldValue != null && oldValue != newValue) {
-      if (name === 'mode' && this.button) {
+      if (name === 'mode' && (newValue == 'play' || newValue == 'pause')) {
+        this.state.mode = newValue;
         const icon =
           this.state.mode === 'play' ? this.iconPlay : this.iconPause;
-        this.button.replaceChild(icon, this.button.firstChild);
+        if (icon && this.button?.firstChild) {
+          this.button.replaceChild(icon, this.button.firstChild);
+        }
       }
     }
   }
