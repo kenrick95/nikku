@@ -73,14 +73,21 @@ class ControlsVolume extends HTMLElement {
       if (!cachedVolumeBarClientWidth || cachedVolumeBarClientWidth === 1) {
         cachedVolumeBarClientWidth = volumeBar?.clientWidth ?? 1;
       }
-      this.updateStateVolume(
-        Math.min(
-          1,
-          Math.max(
-            0,
-            (e.clientX - cachedVolumeBarOffsetLeft) / cachedVolumeBarClientWidth
-          )
+      const newVolume = Math.min(
+        1,
+        Math.max(
+          0,
+          (e.clientX - cachedVolumeBarOffsetLeft) / cachedVolumeBarClientWidth
         )
+      );
+      this.updateStateVolume(newVolume);
+
+      this.dispatchEvent(
+        new CustomEvent('volumeChange', {
+          detail: {
+            volume: newVolume,
+          },
+        })
       );
     };
 
@@ -92,7 +99,7 @@ class ControlsVolume extends HTMLElement {
       },
       { passive: true }
     );
-    volumeBar?.addEventListener(
+    document?.addEventListener(
       'mousemove',
       (e) => {
         if (this._isDragging) {
