@@ -9,6 +9,7 @@ import './controls-volume.js';
 document.addEventListener('DOMContentLoaded', () => {
   let playPauseState = 'play';
   let loopState = 'on';
+  let volumeState = 0.8;
 
   {
     const elControlsPlayPause = document.querySelector('controls-play-pause');
@@ -23,6 +24,15 @@ document.addEventListener('DOMContentLoaded', () => {
     elControlsLoop.addEventListener('loopClick', (e) => {
       // @ts-ignore
       loopState = e.detail.mode;
+    });
+  }
+
+  {
+    const elControlsVolume = document.querySelector('controls-volume');
+    elControlsVolume.addEventListener('volumeChange', (e) => {
+      // @ts-ignore
+      volumeState = e.detail.volume;
+      console.log('volume', volumeState)
     });
   }
 
@@ -67,10 +77,10 @@ document.addEventListener('DOMContentLoaded', () => {
     elLoop.setAttribute('checked', 'true');
     elVolume.setAttribute('disabled', 'disabled');
     // @ts-ignore
-    volume = Math.round(parseFloat(elVolume.value) * 1000) / 1000;
-    volume = Math.min(1, Math.max(0, volume));
+    volumeState = Math.round(parseFloat(elVolume.value) * 1000) / 1000;
+    volumeState = Math.min(1, Math.max(0, volumeState));
     // @ts-ignore
-    elVolume.value = volume;
+    elVolume.value = volumeState;
 
     fileElement.removeAttribute('disabled');
     elTrackSelect.removeAttribute('style');
@@ -162,7 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // @ts-ignore
         elTime.max = amountTimeInS;
 
-        audioPlayer.setVolume(volume);
+        audioPlayer.setVolume(volumeState);
         // @ts-ignore
         audioPlayer.setLoop(elLoop.checked);
         startRenderCurrentTime();
@@ -305,8 +315,8 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     // @ts-ignore
-    volume = Math.round(parseFloat(e.target.value) * 1000) / 1000;
-    audioPlayer.setVolume(volume);
+    volumeState = Math.round(parseFloat(e.target.value) * 1000) / 1000;
+    audioPlayer.setVolume(volumeState);
   });
 
   function displayUnsupported() {
