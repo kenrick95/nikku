@@ -7,34 +7,139 @@ import './controls-loop.js';
 import './controls-volume.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-  let playPauseState = 'play';
-  let loopState = 'on';
-  let volumeState = 0.8;
-  let progressMaxState = 100;
-  let progressValueState = 80;
+  /**
+   * @type {null|AudioPlayer}
+   */
+  let audioPlayer = null;
+
+  const state = {
+    _playPause: 'play',
+    _loop: 'on',
+    _volume: 0.8,
+    _progressMax: 100,
+    _progressValue: 80,
+
+    get playPause() {
+      return this._playPause;
+    },
+    set playPause(newValue) {
+      this._playPause = newValue;
+
+      if (audioPlayer) {
+        if (newValue === 'pause') {
+          audioPlayer.pause();
+        } else {
+          audioPlayer.play();
+        }
+      }
+    },
+    get loop() {
+      return this._loop;
+    },
+    set loop(newValue) {
+      this._loop = newValue;
+    },
+    get volume() {
+      return this._volume;
+    },
+    set volume(newValue) {
+      this._volume = newValue;
+    },
+    get progressMax() {
+      return this._progressMax;
+    },
+    set progressMax(newValue) {
+      this._progressMax = newValue;
+    },
+    get progressValue() {
+      return this._progressValue;
+    },
+    set progressValue(newValue) {
+      this._progressValue = newValue;
+    },
+  };
+  {
+    const elControlsSelectFile = /** @type {HTMLInputElement} */ (document.getElementById(
+      'controls-select-file'
+    ));
+
+    /**
+     *
+     * @param {(error: Error | null, buffer?: string | ArrayBuffer | null) => void} callback
+     */
+    function onFileSelected(callback) {
+      elControlsSelectFile.addEventListener('change', () => {
+        const files = elControlsSelectFile.files;
+        if (!files || !files.length) {
+          callback(new Error('No file read'));
+          return;
+        }
+
+        const file = files[0];
+        const fileReader = new FileReader();
+        fileReader.addEventListener('loadend', (ev) => {
+          const buffer = fileReader.result;
+          callback(null, buffer);
+        });
+        fileReader.readAsArrayBuffer(file);
+      });
+    }
+
+    onFileSelected(async (error, buffer) => {
+      if (error || !buffer || !(buffer instanceof ArrayBuffer)) {
+        return;
+      }
+      const brstm = new Brstm(buffer);
+      console.log('brstm', brstm);
+      if (audioPlayer) {
+        audioPlayer.destroy();
+      }
+
+      audioPlayer = new AudioPlayer(brstm.metadata, {
+        onPlay: () => {
+          // elPlayPause.textContent = 'Pause';
+        },
+        onPause: () => {
+          // elPlayPause.textContent = 'Play';
+        },
+      });
+
+      console.time('brstm.getAllSamples');
+      const allSamples = brstm.getAllSamples();
+      console.timeEnd('brstm.getAllSamples');
+
+      await audioPlayer.readyPromise;
+      audioPlayer.load(allSamples);
+    });
+  }
 
   {
-    const elControlsPlayPause = /** @type {import('./controls-play-pause').ControlsPlayPause} */ (document.querySelector('controls-play-pause'));
+    const elControlsPlayPause = /** @type {import('./controls-play-pause').ControlsPlayPause} */ (document.querySelector(
+      'controls-play-pause'
+    ));
     elControlsPlayPause.addEventListener('playPauseClick', (e) => {
       // @ts-ignore
-      playPauseState = e.detail.mode;
+      state.playPause = e.detail.mode;
     });
   }
 
   {
-    const elControlsLoop = /** @type {import('./controls-loop').ControlsLoop} */ (document.querySelector('controls-loop'));
+    const elControlsLoop = /** @type {import('./controls-loop').ControlsLoop} */ (document.querySelector(
+      'controls-loop'
+    ));
     elControlsLoop.addEventListener('loopClick', (e) => {
       // @ts-ignore
-      loopState = e.detail.mode;
+      state.loop = e.detail.mode;
     });
   }
 
   {
-    const elControlsVolume = /** @type {import('./controls-volume').ControlsVolume} */ (document.querySelector('controls-volume'));
+    const elControlsVolume = /** @type {import('./controls-volume').ControlsVolume} */ (document.querySelector(
+      'controls-volume'
+    ));
     elControlsVolume.addEventListener('volumeChange', (e) => {
       // @ts-ignore
-      volumeState = e.detail.volume;
-      console.log('volume', volumeState);
+      state.volume = e.detail.volume;
     });
   }
   {
@@ -43,13 +148,13 @@ document.addEventListener('DOMContentLoaded', () => {
     ));
     elProgressBar.addEventListener('progressValueChange', (e) => {
       // @ts-ignore
-      progressValueState = e.detail.value;
-      console.log('value', progressValueState);
+      state.progressValue = e.detail.value;
     });
   }
 
   return;
-
+});
+function _() {
   // @ts-ignore
   const fileElement = document.getElementById('file');
   /**
@@ -357,4 +462,4 @@ document.addEventListener('DOMContentLoaded', () => {
   } else {
     displayUnsupported();
   }
-});
+}
