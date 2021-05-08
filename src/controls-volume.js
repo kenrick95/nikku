@@ -50,8 +50,8 @@ class ControlsVolume extends HTMLElement {
     this.volumeFill = /** @type {HTMLDivElement} */ (volumeElement.querySelector(
       '.volume-fill'
     ));
-    const volumeBar = /** @type {HTMLDivElement} */ (volumeElement.querySelector(
-      '.volume-bar'
+    const volumeBarContainer = /** @type {HTMLDivElement} */ (volumeElement.querySelector(
+      '.volume-bar-container'
     ));
 
     this.volumeContainer?.prepend(/** @type {SVGElement} */ (this.iconVolume));
@@ -68,10 +68,10 @@ class ControlsVolume extends HTMLElement {
      */
     const updateVolumeFromEvent = (e) => {
       if (!cachedVolumeBarOffsetLeft) {
-        cachedVolumeBarOffsetLeft = volumeBar?.offsetLeft ?? 0;
+        cachedVolumeBarOffsetLeft = volumeBarContainer?.offsetLeft ?? 0;
       }
       if (!cachedVolumeBarClientWidth || cachedVolumeBarClientWidth === 1) {
-        cachedVolumeBarClientWidth = volumeBar?.clientWidth ?? 1;
+        cachedVolumeBarClientWidth = volumeBarContainer?.clientWidth ?? 1;
       }
       const newVolume = Math.min(
         1,
@@ -91,7 +91,7 @@ class ControlsVolume extends HTMLElement {
       );
     };
 
-    volumeBar?.addEventListener(
+    volumeBarContainer?.addEventListener(
       'mousedown',
       (e) => {
         this._isDragging = true;
