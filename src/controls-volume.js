@@ -1,6 +1,6 @@
 import { parseHTML } from './utils.js';
 
-class ControlsVolume extends HTMLElement {
+export class ControlsVolume extends HTMLElement {
   constructor() {
     super();
 
