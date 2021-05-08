@@ -1,7 +1,7 @@
 import { parseHTML } from './utils.js';
 
 //@ts-check
-class ControlsLoop extends HTMLElement {
+export class ControlsLoop extends HTMLElement {
   constructor() {
     super();
 
@@ -13,10 +13,17 @@ class ControlsLoop extends HTMLElement {
     this.state = {
       mode: /** @type {'on' | 'off'} */ (this.getAttribute('mode')) || 'on',
     };
+    /**
+     * @type {undefined | HTMLButtonElement}
+     */
+    this.button = undefined;
     this.init();
   }
 
   updateButtonClass() {
+    if (!this.button) {
+      return;
+    }
     this.button.classList.remove('on');
     this.button.classList.remove('off');
     this.button.classList.add(this.state.mode);
@@ -37,8 +44,9 @@ class ControlsLoop extends HTMLElement {
     this.button.appendChild(this.iconLoop);
     loopElement.appendChild(this.button);
 
+    //@ts-ignore
     this.shadowRoot.innerHTML = '';
-    this.shadowRoot.append(loopElement);
+    this.shadowRoot?.append(loopElement);
 
     this.button.addEventListener('click', () => {
       const newMode = this.state.mode === 'on' ? 'off' : 'on';
@@ -64,9 +72,9 @@ class ControlsLoop extends HTMLElement {
    * @param {string} newValue
    */
   attributeChangedCallback(name, oldValue, newValue) {
-    this.state[name] = newValue;
     if (oldValue != null && oldValue != newValue) {
       if (name === 'mode') {
+        this.state.mode = this.state.mode === 'on' ? 'on' : 'off';
         this.updateButtonClass();
       }
     }

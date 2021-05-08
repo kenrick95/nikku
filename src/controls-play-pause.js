@@ -1,7 +1,7 @@
 import { parseHTML } from './utils.js';
 
 //@ts-check
-class ControlsPlayPause extends HTMLElement {
+export class ControlsPlayPause extends HTMLElement {
   constructor() {
     super();
 

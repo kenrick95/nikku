@@ -10,9 +10,11 @@ document.addEventListener('DOMContentLoaded', () => {
   let playPauseState = 'play';
   let loopState = 'on';
   let volumeState = 0.8;
+  let progressMaxState = 100;
+  let progressValueState = 80;
 
   {
-    const elControlsPlayPause = document.querySelector('controls-play-pause');
+    const elControlsPlayPause = /** @type {import('./controls-play-pause').ControlsPlayPause} */ (document.querySelector('controls-play-pause'));
     elControlsPlayPause.addEventListener('playPauseClick', (e) => {
       // @ts-ignore
       playPauseState = e.detail.mode;
@@ -20,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   {
-    const elControlsLoop = document.querySelector('controls-loop');
+    const elControlsLoop = /** @type {import('./controls-loop').ControlsLoop} */ (document.querySelector('controls-loop'));
     elControlsLoop.addEventListener('loopClick', (e) => {
       // @ts-ignore
       loopState = e.detail.mode;
@@ -28,11 +30,21 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   {
-    const elControlsVolume = document.querySelector('controls-volume');
+    const elControlsVolume = /** @type {import('./controls-volume').ControlsVolume} */ (document.querySelector('controls-volume'));
     elControlsVolume.addEventListener('volumeChange', (e) => {
       // @ts-ignore
       volumeState = e.detail.volume;
-      console.log('volume', volumeState)
+      console.log('volume', volumeState);
+    });
+  }
+  {
+    const elProgressBar = /** @type {import('./controls-progress').ControlsProgress} */ (document.querySelector(
+      'controls-progress'
+    ));
+    elProgressBar.addEventListener('progressValueChange', (e) => {
+      // @ts-ignore
+      progressValueState = e.detail.value;
+      console.log('value', progressValueState);
     });
   }
 
