@@ -1,6 +1,7 @@
 //@ts-check
 import { Brstm } from './brstm/index.js';
 import { AudioPlayer } from './audioPlayer.js';
+import { Reactive } from './reactive.js';
 import './controls-progress.js';
 import './controls-play-pause.js';
 import './controls-loop.js';
@@ -12,51 +13,12 @@ document.addEventListener('DOMContentLoaded', () => {
    */
   let audioPlayer = null;
 
-  const state = {
-    _playPause: 'play',
-    _loop: 'on',
-    _volume: 0.8,
-    _progressMax: 100,
-    _progressValue: 80,
-
-    get playPause() {
-      return this._playPause;
-    },
-    set playPause(newValue) {
-      this._playPause = newValue;
-
-      if (audioPlayer) {
-        if (newValue === 'pause') {
-          audioPlayer.pause();
-        } else {
-          audioPlayer.play();
-        }
-      }
-    },
-    get loop() {
-      return this._loop;
-    },
-    set loop(newValue) {
-      this._loop = newValue;
-    },
-    get volume() {
-      return this._volume;
-    },
-    set volume(newValue) {
-      this._volume = newValue;
-    },
-    get progressMax() {
-      return this._progressMax;
-    },
-    set progressMax(newValue) {
-      this._progressMax = newValue;
-    },
-    get progressValue() {
-      return this._progressValue;
-    },
-    set progressValue(newValue) {
-      this._progressValue = newValue;
-    },
+  const uiState = {
+    playPause: new Reactive('play'),
+    loop: new Reactive('on'),
+    volume: new Reactive(0.8),
+    progressMax: new Reactive(100),
+    progressValue: new Reactive(80),
   };
   {
     const elControlsSelectFile = /** @type {HTMLInputElement} */ (document.getElementById(
@@ -110,6 +72,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       await audioPlayer.readyPromise;
       audioPlayer.load(allSamples);
+
+      uiState.playPause.set('pause');
     });
   }
 
@@ -118,8 +82,15 @@ document.addEventListener('DOMContentLoaded', () => {
       'controls-play-pause'
     ));
     elControlsPlayPause.addEventListener('playPauseClick', (e) => {
-      // @ts-ignore
-      state.playPause = e.detail.mode;
+      uiState.playPause.set(/** @type {any} */ (e).detail.mode);
+    });
+    uiState.playPause.on('change', (newPlayPause) => {
+      elControlsPlayPause.setAttribute('mode', newPlayPause);
+      if (newPlayPause === 'play') {
+        audioPlayer?.pause();
+      } else if (newPlayPause === 'pause') {
+        audioPlayer?.play();
+      }
     });
   }
 
@@ -128,8 +99,14 @@ document.addEventListener('DOMContentLoaded', () => {
       'controls-loop'
     ));
     elControlsLoop.addEventListener('loopClick', (e) => {
-      // @ts-ignore
-      state.loop = e.detail.mode;
+      uiState.loop.set(/** @type {any} */ (e).detail.mode);
+    });
+    uiState.loop.on('change', (newLoop) => {
+      if (newLoop === 'on') {
+        audioPlayer?.setLoop(true);
+      } else {
+        audioPlayer?.setLoop(false);
+      }
     });
   }
 
@@ -138,8 +115,10 @@ document.addEventListener('DOMContentLoaded', () => {
       'controls-volume'
     ));
     elControlsVolume.addEventListener('volumeChange', (e) => {
-      // @ts-ignore
-      state.volume = e.detail.volume;
+      uiState.volume.set(/** @type {any} */ (e).detail.volume);
+    });
+    uiState.volume.on('change', (newVolume) => {
+      audioPlayer?.setVolume(newVolume);
     });
   }
   {
@@ -147,8 +126,13 @@ document.addEventListener('DOMContentLoaded', () => {
       'controls-progress'
     ));
     elProgressBar.addEventListener('progressValueChange', (e) => {
-      // @ts-ignore
-      state.progressValue = e.detail.value;
+      uiState.progressValue.set(/** @type {any} */ (e).detail.value);
+    });
+    uiState.progressValue.on('change', (newProgressValue) => {
+      let targetTimeInS = Math.round(newProgressValue * 1000 + 150) / 1000;
+
+      // TODO: Differentiate changes due to input change vs due to player playback
+      audioPlayer?.seek(targetTimeInS);
     });
   }
 
