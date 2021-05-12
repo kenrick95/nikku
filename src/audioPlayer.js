@@ -230,6 +230,7 @@ export class AudioPlayer {
    * @param {number} playbackTimeInS
    */
   async seek(playbackTimeInS) {
+    console.log('playbackTimeInS', playbackTimeInS)
     this._isSeeking = true;
     this.initPlayback(playbackTimeInS);
     if (!this.isPlaying) {

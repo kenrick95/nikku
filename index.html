@@ -20,9 +20,11 @@
     </header>
     <main id="main">
       <div id="track-title">music.brstm</div>
-      <div id="controls-time-display">00:42 / 01:23</div>
+      <div id="controls-time-display">
+        <controls-time-display value="0" max="0"></controls-time-display>
+      </div>
       <div id="controls-progress">
-        <controls-progress value="0" max="100"></controls-progress>
+        <controls-progress value="0" max="1"></controls-progress>
       </div>
       <label id="controls-select-file-container">
         <input type="file" id="controls-select-file" accept=".brstm" />
@@ -57,6 +59,7 @@
         .progress-bar {
           position: relative;
           height: 15px;
+          user-select: none;
         }
         .progress-background {
           position: absolute;
@@ -90,6 +93,28 @@
           <div class="progress-active"></div>
           <div class="progress-indicator" draggable="true"></div>
         </div>
+      </div>
+    </template>
+
+    <template id="template-time-display">
+      <style>
+        .progress-time-display {
+          display: flex;
+          justify-content: flex-end;
+        }
+        .separator {
+          margin-inline-start: 4px;
+          margin-inline-end: 4px;
+        }
+        .time {
+          width: 3em;
+          text-align: center;
+        }
+      </style>
+      <div class="progress-time-display">
+        <div class="time" id="current">00:00</div>
+        <div class="separator">/</div>
+        <div class="time" id="total">00:00</div>
       </div>
     </template>
 
