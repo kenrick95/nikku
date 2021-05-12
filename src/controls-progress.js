@@ -19,50 +19,62 @@ export class ControlsProgress extends HTMLElement {
     /** @type {HTMLDivElement | undefined} */
     this.progressIndicator = undefined;
 
+    // Cache the values because they cause page reflow
+    /** @type {number | null} */
+    this._cachedProgressBarOffsetLeft = null;
+    /** @type {number | null} */
+    this._cachedProgressBarClientWidth = null;
+
     this.init();
+  }
+
+  refreshCachedValues() {
+    const progressBar = /** @type {HTMLDivElement} */ (
+      this.shadowRoot?.querySelector('.progress-bar')
+    );
+
+    if (!this._cachedProgressBarOffsetLeft) {
+      this._cachedProgressBarOffsetLeft = progressBar?.offsetLeft ?? 0;
+    }
+    if (
+      !this._cachedProgressBarClientWidth ||
+      this._cachedProgressBarClientWidth === 1
+    ) {
+      this._cachedProgressBarClientWidth = progressBar?.clientWidth ?? 1;
+    }
   }
 
   async init() {
     let progressElement = /** @type {DocumentFragment} */ (
-      /** @type {HTMLTemplateElement} */ (document.getElementById(
-        'template-progress'
-      )).content.cloneNode(true)
+      /** @type {HTMLTemplateElement} */ (
+        document.getElementById('template-progress')
+      ).content.cloneNode(true)
     );
 
-    this.progressActive = /** @type {HTMLDivElement} */ (progressElement.querySelector(
-      '.progress-active'
-    ));
-    this.progressIndicator = /** @type {HTMLDivElement} */ (progressElement.querySelector(
-      '.progress-indicator'
-    ));
-    const progressBar = /** @type {HTMLDivElement} */ (progressElement.querySelector(
-      '.progress-bar'
-    ));
-
-    // Cache the values because they cause page reflow
-    /** @type {number | null} */
-    let cachedProgressBarOffsetLeft = null;
-    /** @type {number | null} */
-    let cachedProgressBarClientWidth = null;
+    this.progressActive = /** @type {HTMLDivElement} */ (
+      progressElement.querySelector('.progress-active')
+    );
+    this.progressIndicator = /** @type {HTMLDivElement} */ (
+      progressElement.querySelector('.progress-indicator')
+    );
+    const progressBar = /** @type {HTMLDivElement} */ (
+      progressElement.querySelector('.progress-bar')
+    );
 
     /**
      *
      * @param {MouseEvent} e
      */
     const updateVolumeFromEvent = (e) => {
-      if (!cachedProgressBarOffsetLeft) {
-        cachedProgressBarOffsetLeft = progressBar?.offsetLeft ?? 0;
-      }
-      if (!cachedProgressBarClientWidth || cachedProgressBarClientWidth === 1) {
-        cachedProgressBarClientWidth = progressBar?.clientWidth ?? 1;
-      }
+      this.refreshCachedValues();
+
       const newValue =
         Math.min(
           1,
           Math.max(
             0,
-            (e.clientX - cachedProgressBarOffsetLeft) /
-              cachedProgressBarClientWidth
+            (e.clientX - (this._cachedProgressBarOffsetLeft ?? 0)) /
+              (this._cachedProgressBarClientWidth ?? 1)
           )
         ) * this.state.max;
       this.updateStateValue(newValue);
@@ -103,13 +115,17 @@ export class ControlsProgress extends HTMLElement {
 
     // Invalidate cached values because they have changed
     window.addEventListener('resize', () => {
-      cachedProgressBarOffsetLeft = null;
-      cachedProgressBarClientWidth = null;
+      this._cachedProgressBarOffsetLeft = null;
+      this._cachedProgressBarClientWidth = null;
+      this.refreshCachedValues();
     });
 
     // @ts-ignore
     this.shadowRoot.innerHTML = '';
     this.shadowRoot?.append(progressElement);
+
+    this.refreshCachedValues();
+    this.render();
   }
 
   static get observedAttributes() {
@@ -133,12 +149,17 @@ export class ControlsProgress extends HTMLElement {
   }
 
   render() {
+
     const percentage = this.state.value / this.state.max;
     if (this.progressActive) {
-      this.progressActive.style.width = `${percentage * 100}%`;
+      this.progressActive.style.transform = `scaleX(${
+        percentage 
+      })`;
     }
     if (this.progressIndicator) {
-      this.progressIndicator.style.left = `calc(${percentage * 100}% - 5px)`;
+      this.progressIndicator.style.transform = `translateX(calc(${
+        percentage * (this._cachedProgressBarClientWidth ?? 0)
+      }px - 50%))`;
     }
   }
 

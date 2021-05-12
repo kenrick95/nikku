@@ -6,6 +6,7 @@ import './controls-progress.js';
 import './controls-play-pause.js';
 import './controls-loop.js';
 import './controls-volume.js';
+import { Timer } from './timer.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   /**
@@ -16,14 +17,27 @@ document.addEventListener('DOMContentLoaded', () => {
   const uiState = {
     playPause: new Reactive('play'),
     loop: new Reactive('on'),
-    volume: new Reactive(0.8),
+    volume: new Reactive(1),
     progressMax: new Reactive(100),
-    progressValue: new Reactive(80),
+    progressValue: new Reactive(0),
   };
+
+  const timer = new Timer({
+    renderCallback: () => {
+      if (!audioPlayer) {
+        return;
+      }
+
+      const currentTime = audioPlayer.getCurrrentPlaybackTime();
+      uiState.progressValue.set(currentTime);
+      // elTimeCurrent.textContent = formatTime(currentTime);
+    },
+  });
+
   {
-    const elControlsSelectFile = /** @type {HTMLInputElement} */ (document.getElementById(
-      'controls-select-file'
-    ));
+    const elControlsSelectFile = /** @type {HTMLInputElement} */ (
+      document.getElementById('controls-select-file')
+    );
 
     /**
      *
@@ -38,6 +52,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const file = files[0];
+        let elTrackTitle = document.querySelector('#track-title');
+        if (elTrackTitle) {
+          elTrackTitle.textContent = file.name;
+        }
+
         const fileReader = new FileReader();
         fileReader.addEventListener('loadend', (ev) => {
           const buffer = fileReader.result;
@@ -52,7 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       const brstm = new Brstm(buffer);
-      console.log('brstm', brstm);
+      // console.log('brstm', brstm);
       if (audioPlayer) {
         audioPlayer.destroy();
       }
@@ -69,18 +88,22 @@ document.addEventListener('DOMContentLoaded', () => {
       console.time('brstm.getAllSamples');
       const allSamples = brstm.getAllSamples();
       console.timeEnd('brstm.getAllSamples');
+      const amountTimeInS =
+        brstm.metadata.totalSamples / brstm.metadata.sampleRate;
 
       await audioPlayer.readyPromise;
       audioPlayer.load(allSamples);
 
       uiState.playPause.set('pause');
+      uiState.progressMax.set(amountTimeInS);
     });
   }
 
   {
-    const elControlsPlayPause = /** @type {import('./controls-play-pause').ControlsPlayPause} */ (document.querySelector(
-      'controls-play-pause'
-    ));
+    const elControlsPlayPause =
+      /** @type {import('./controls-play-pause').ControlsPlayPause} */ (
+        document.querySelector('controls-play-pause')
+      );
     elControlsPlayPause.addEventListener('playPauseClick', (e) => {
       uiState.playPause.set(/** @type {any} */ (e).detail.mode);
     });
@@ -88,20 +111,24 @@ document.addEventListener('DOMContentLoaded', () => {
       elControlsPlayPause.setAttribute('mode', newPlayPause);
       if (newPlayPause === 'play') {
         audioPlayer?.pause();
+        timer.stop();
       } else if (newPlayPause === 'pause') {
         audioPlayer?.play();
+        timer.start();
       }
     });
   }
 
   {
-    const elControlsLoop = /** @type {import('./controls-loop').ControlsLoop} */ (document.querySelector(
-      'controls-loop'
-    ));
+    const elControlsLoop =
+      /** @type {import('./controls-loop').ControlsLoop} */ (
+        document.querySelector('controls-loop')
+      );
     elControlsLoop.addEventListener('loopClick', (e) => {
       uiState.loop.set(/** @type {any} */ (e).detail.mode);
     });
     uiState.loop.on('change', (newLoop) => {
+      elControlsLoop.setAttribute('mode', newLoop);
       if (newLoop === 'on') {
         audioPlayer?.setLoop(true);
       } else {
@@ -111,9 +138,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   {
-    const elControlsVolume = /** @type {import('./controls-volume').ControlsVolume} */ (document.querySelector(
-      'controls-volume'
-    ));
+    const elControlsVolume =
+      /** @type {import('./controls-volume').ControlsVolume} */ (
+        document.querySelector('controls-volume')
+      );
     elControlsVolume.addEventListener('volumeChange', (e) => {
       uiState.volume.set(/** @type {any} */ (e).detail.volume);
     });
@@ -122,17 +150,28 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   {
-    const elProgressBar = /** @type {import('./controls-progress').ControlsProgress} */ (document.querySelector(
-      'controls-progress'
-    ));
+    const elProgressBar =
+      /** @type {import('./controls-progress').ControlsProgress} */ (
+        document.querySelector('controls-progress')
+      );
     elProgressBar.addEventListener('progressValueChange', (e) => {
-      uiState.progressValue.set(/** @type {any} */ (e).detail.value);
-    });
-    uiState.progressValue.on('change', (newProgressValue) => {
-      let targetTimeInS = Math.round(newProgressValue * 1000 + 150) / 1000;
+      /**
+       * @type {number}
+       */
+      const newProgressValue = /** @type {any} */ (e).detail.value;
 
-      // TODO: Differentiate changes due to input change vs due to player playback
+      uiState.progressValue.set(newProgressValue);
+      let targetTimeInS = newProgressValue; //Math.round(newProgressValue * 1000 + 150) / 1000;
       audioPlayer?.seek(targetTimeInS);
+    });
+    uiState.progressValue.on(
+      'change',
+      (/** @type {number} */ newProgressValue) => {
+        elProgressBar.setAttribute('value', String(newProgressValue));
+      }
+    );
+    uiState.progressMax.on('change', (/** @type {number} */ newMaxValue) => {
+      elProgressBar.setAttribute('max', String(newMaxValue));
     });
   }
 
@@ -300,9 +339,8 @@ function _() {
   }
 
   function renderMetadata(metadata) {
-    const metadataContainerElement = document.getElementById(
-      'metadata-container'
-    );
+    const metadataContainerElement =
+      document.getElementById('metadata-container');
     metadataContainerElement.style.display = 'block';
     const metadataBodyElement = document.getElementById('metadata-body');
     const metadataRowTemplateElement = document.getElementById('metadata-row');
