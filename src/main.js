@@ -3,6 +3,7 @@ import { Brstm } from './brstm/index.js';
 import { AudioPlayer } from './audioPlayer.js';
 import { Reactive } from './reactive.js';
 import './controls-progress.js';
+import './controls-time-display.js';
 import './controls-play-pause.js';
 import './controls-loop.js';
 import './controls-volume.js';
@@ -18,8 +19,10 @@ document.addEventListener('DOMContentLoaded', () => {
     playPause: new Reactive('play'),
     loop: new Reactive('on'),
     volume: new Reactive(1),
-    progressMax: new Reactive(100),
+    progressMax: new Reactive(0),
     progressValue: new Reactive(0),
+    timeDisplayMax: new Reactive(0),
+    timeDisplayValue: new Reactive(0),
   };
 
   const timer = new Timer({
@@ -29,8 +32,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const currentTime = audioPlayer.getCurrrentPlaybackTime();
+      // console.log('currentTime', currentTime) TODO: BUG: 1. play, 2. pause, 3. play --> for 2 frames, the "currentTime" is wrong (showing few seconds ahead)
       uiState.progressValue.set(currentTime);
-      // elTimeCurrent.textContent = formatTime(currentTime);
+      uiState.timeDisplayValue.set(currentTime);
     },
   });
 
@@ -96,6 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       uiState.playPause.set('pause');
       uiState.progressMax.set(amountTimeInS);
+      uiState.timeDisplayMax.set(amountTimeInS);
     });
   }
 
@@ -161,7 +166,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const newProgressValue = /** @type {any} */ (e).detail.value;
 
       uiState.progressValue.set(newProgressValue);
-      let targetTimeInS = newProgressValue; //Math.round(newProgressValue * 1000 + 150) / 1000;
+      uiState.timeDisplayValue.set(newProgressValue);
+      let targetTimeInS = newProgressValue;
       audioPlayer?.seek(targetTimeInS);
     });
     uiState.progressValue.on(
@@ -172,6 +178,20 @@ document.addEventListener('DOMContentLoaded', () => {
     );
     uiState.progressMax.on('change', (/** @type {number} */ newMaxValue) => {
       elProgressBar.setAttribute('max', String(newMaxValue));
+    });
+  }
+
+  {
+    const elTimeDisplay =
+      /** @type {import('./controls-time-display').ControlsTimeDisplay} */ (
+        document.querySelector('controls-time-display')
+      );
+
+    uiState.timeDisplayMax.on('change', (/** @type {number} */ newMaxValue) => {
+      elTimeDisplay.setAttribute('max', String(newMaxValue));
+    });
+    uiState.timeDisplayValue.on('change', (/** @type {number} */ newValue) => {
+      elTimeDisplay.setAttribute('value', String(newValue));
     });
   }
 
