@@ -74,7 +74,7 @@ export class ControlsLoop extends HTMLElement {
   attributeChangedCallback(name, oldValue, newValue) {
     if (oldValue != null && oldValue != newValue) {
       if (name === 'mode') {
-        this.state.mode = this.state.mode === 'on' ? 'on' : 'off';
+        this.state.mode = this.state.mode === 'on' ? 'off' : 'on';
         this.updateButtonClass();
       }
     }

@@ -28,6 +28,9 @@
     --main-text-color: white;
   }
 }
+* {
+  box-sizing: border-box;
+}
 html,
 body {
   background-color: var(--main-bg-color);
@@ -95,8 +98,8 @@ body {
   grid-column: 1 / span 3;
   grid-row: 2;
 }
-#controls-select-file {
-  grid-column: 1;
+#controls-select-file-container {
+  grid-column: 1 / span 3;
   grid-row: 3;
 }
 #controls-play-pause {
@@ -123,4 +126,44 @@ controls-volume {
 #footer {
   font-size: 10px;
   line-height: 14px;
+}
+
+/* Modified from "file" from https://github.com/mdo/wtf-forms/blob/master/wtf-forms.css */
+#controls-select-file-container {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+  width: 65px;
+}
+#controls-select-file-container > input {
+  margin: 0;
+  opacity: 0;
+  height: 20px;
+}
+#controls-select-file-custom {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+
+  z-index: 5;
+
+  border-radius: 5px;
+  color: var(--primary);
+  background-color: var(--primary-lightest-2);
+  user-select: none;
+  font-size: 10px;
+  line-height: 14px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 4px;
+  text-align: center;
+}
+#controls-select-file-custom:after {
+  content: 'Choose file';
+}
+
+#controls-select-fileinput:focus ~ #controls-select-file-custom {
+  box-shadow: 0 0 0 0.075rem #fff, 0 0 0 0.2rem var(--primary-dark);
 }

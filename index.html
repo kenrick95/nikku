@@ -22,16 +22,19 @@
       <div id="track-title">music.brstm</div>
       <div id="controls-time-display">00:42 / 01:23</div>
       <div id="controls-progress">
-        <!-- NOTE: self-closing tag isn't allowed: https://stackoverflow.com/questions/45418556/whats-the-reason-behind-not-allowing-self-closing-tag-in-custom-element-in-spec  -->
-        <controls-progress value="50" max="100"></controls-progress>
+        <controls-progress value="0" max="100"></controls-progress>
       </div>
-      <input id="controls-select-file" type="file" accept=".brstm"></input>
+      <label id="controls-select-file-container">
+        <input type="file" id="controls-select-file" accept=".brstm" />
+        <span id="controls-select-file-custom"></span>
+      </label>
+
       <div id="controls-play-pause">
         <controls-play-pause mode="play"></controls-play-pause>
       </div>
       <div id="controls-others">
         <controls-loop mode="on"></controls-loop>
-        <controls-volume volume="0.8"></controls-volume>
+        <controls-volume volume="1"></controls-volume>
       </div>
     </main>
     <footer id="footer">
@@ -66,14 +69,15 @@
         .progress-active {
           position: absolute;
           top: 5px;
-          width: 50%;
+          width: 100%;
+          transform-origin: left;
           height: 4px;
-          border-radius: 2px;
+          /* NOTE: Because of scaleX transform, this border-radius is also "scaled", need to find a way to have a fixed border-radius*/
+          /* border-radius: 2px; */
           background-color: var(--primary);
         }
         .progress-indicator {
           position: absolute;
-          left: calc(50% - 7.5px);
           width: 15px;
           height: 15px;
           border-radius: 50%;
