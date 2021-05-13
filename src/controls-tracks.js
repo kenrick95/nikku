@@ -3,6 +3,7 @@
  * Attributes
  * - "active" {string} comma-separated index of active tracks (0-based)
  * - "count" {string} number of tracks
+ * - "disabled" {string} if attribute is present, the UI is not interactable
  */
 export class ControlsTracks extends HTMLElement {
   constructor() {
@@ -12,7 +13,7 @@ export class ControlsTracks extends HTMLElement {
     const count = parseInt(this.getAttribute('count') || '0', 10) || 0;
     /**
      *
-     * @type {{ active: Array<boolean>, count: number }}
+     * @type {{ active: Array<boolean>, count: number, disabled: boolean }}
      */
     this.state = {
       active: this.parseActiveAttribute(
@@ -20,6 +21,7 @@ export class ControlsTracks extends HTMLElement {
         count
       ),
       count: count,
+      disabled: this.getAttribute('disabled') != null,
     };
 
     this.init();
@@ -62,7 +64,7 @@ export class ControlsTracks extends HTMLElement {
   }
 
   static get observedAttributes() {
-    return ['active', 'count'];
+    return ['active', 'count', 'disabled'];
   }
 
   /**
@@ -80,6 +82,14 @@ export class ControlsTracks extends HTMLElement {
     this.state.active = [...newActive];
     this.render();
   }
+  /**
+   *
+   * @param {boolean} newValue
+   */
+  updateStateDisabled(newValue) {
+    this.state.disabled = newValue;
+    this.render();
+  }
 
   renderList() {
     const { count, active } = this.state;
@@ -95,6 +105,9 @@ export class ControlsTracks extends HTMLElement {
           elInput.checked = true;
         }
         elInput.addEventListener('input', (e) => {
+          if (this.state.disabled) {
+            return;
+          }
           // @ts-ignore
           const newChecked = e.target?.checked;
           const newStateActive = [...this.state.active];
@@ -119,11 +132,11 @@ export class ControlsTracks extends HTMLElement {
   }
 
   render() {
-    const { count, active } = this.state;
+    const { count, active, disabled } = this.state;
 
     const elContainer = this.shadowRoot?.getElementById('container');
     if (elContainer) {
-      if (count === 1) {
+      if (count === 1 || disabled) {
         elContainer.classList.add('hidden');
       } else {
         elContainer.classList.remove('hidden');
@@ -144,13 +157,15 @@ export class ControlsTracks extends HTMLElement {
    * @param {string} newValue
    */
   attributeChangedCallback(name, oldValue, newValue) {
-    if (oldValue != null && oldValue != newValue) {
+    if (oldValue != newValue) {
       if (name === 'count') {
         this.updateStateCount(parseFloat(newValue));
       } else if (name === 'active') {
         this.updateStateActive(
           this.parseActiveAttribute(newValue, this.state.count)
         );
+      } else if (name === 'disabled') {
+        this.updateStateDisabled(newValue != null);
       }
     }
   }

@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     timeDisplayValue: new Reactive(0),
     tracksCount: new Reactive(1),
     tracksActive: new Reactive([true]),
+    disabled: new Reactive(true),
   };
 
   const timer = new Timer({
@@ -112,6 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
           .fill(true)
           .map((_, i) => (i === 0 ? true : false))
       );
+      uiState.disabled.set(false);
     });
   }
 
@@ -131,6 +133,13 @@ document.addEventListener('DOMContentLoaded', () => {
       } else if (newPlayPause === 'pause') {
         audioPlayer?.play();
         timer.start();
+      }
+    });
+    uiState.disabled.on('change', (newDisabledValue) => {
+      if (newDisabledValue) {
+        elControlsPlayPause.setAttribute('disabled', '');
+      } else {
+        elControlsPlayPause.removeAttribute('disabled');
       }
     });
   }
@@ -164,6 +173,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
       audioPlayer?.setTrackStates(newActive);
     });
+    uiState.disabled.on('change', (newDisabledValue) => {
+      if (newDisabledValue) {
+        elControlsTracks.setAttribute('disabled', '');
+      } else {
+        elControlsTracks.removeAttribute('disabled');
+      }
+    });
   }
 
   {
@@ -182,6 +198,13 @@ document.addEventListener('DOMContentLoaded', () => {
         audioPlayer?.setLoop(false);
       }
     });
+    uiState.disabled.on('change', (newDisabledValue) => {
+      if (newDisabledValue) {
+        elControlsLoop.setAttribute('disabled', '');
+      } else {
+        elControlsLoop.removeAttribute('disabled');
+      }
+    });
   }
 
   {
@@ -194,6 +217,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     uiState.volume.on('change', (newVolume) => {
       audioPlayer?.setVolume(newVolume);
+    });
+    uiState.disabled.on('change', (newDisabledValue) => {
+      if (newDisabledValue) {
+        elControlsVolume.setAttribute('disabled', '');
+      } else {
+        elControlsVolume.removeAttribute('disabled');
+      }
     });
   }
   {
@@ -221,6 +251,13 @@ document.addEventListener('DOMContentLoaded', () => {
     uiState.progressMax.on('change', (/** @type {number} */ newMaxValue) => {
       elProgressBar.setAttribute('max', String(newMaxValue));
     });
+    uiState.disabled.on('change', (newDisabledValue) => {
+      if (newDisabledValue) {
+        elProgressBar.setAttribute('disabled', '');
+      } else {
+        elProgressBar.removeAttribute('disabled');
+      }
+    });
   }
 
   {
@@ -234,6 +271,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     uiState.timeDisplayValue.on('change', (/** @type {number} */ newValue) => {
       elTimeDisplay.setAttribute('value', String(newValue));
+    });
+    uiState.disabled.on('change', (newDisabledValue) => {
+      if (newDisabledValue) {
+        elTimeDisplay.setAttribute('disabled', '');
+      } else {
+        elTimeDisplay.removeAttribute('disabled');
+      }
     });
   }
 

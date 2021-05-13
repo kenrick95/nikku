@@ -8,11 +8,13 @@ export class ControlsVolume extends HTMLElement {
     /**
      * - muted: whether the volume is muted (true) or not (false)
      * - volume: floating point number indicating silent (0.0) to loudest (1.0)
-     * @type {{ muted: boolean; volume: number }}
+     * - disabled: whether value is changable or not
+     * @type {{ muted: boolean; volume: number, disabled: boolean }}
      */
     this.state = {
-      muted: /** @type {boolean} */ (!!this.getAttribute('muted')),
+      muted: this.getAttribute('muted') != null,
       volume: parseFloat(this.getAttribute('volume') || '1.0'),
+      disabled: this.getAttribute('disabled') != null,
     };
 
     this._isDragging = false;
@@ -33,26 +35,28 @@ export class ControlsVolume extends HTMLElement {
   async init() {
     this._isDragging = false;
     let volumeElement = /** @type {DocumentFragment} */ (
-      /** @type {HTMLTemplateElement} */ (document.getElementById(
-        'template-volume'
-      )).content.cloneNode(true)
+      /** @type {HTMLTemplateElement} */ (
+        document.getElementById('template-volume')
+      ).content.cloneNode(true)
     );
-    this.iconVolume = /** @type {SVGElement} */ (parseHTML(
-      await fetch('../assets/volume-icon.svg').then((res) => res.text())
-    ));
+    this.iconVolume = /** @type {SVGElement} */ (
+      parseHTML(
+        await fetch('../assets/volume-icon.svg').then((res) => res.text())
+      )
+    );
     this.iconVolume?.classList.add('volume-icon');
-    this.volumeContainer = /** @type {HTMLDivElement} */ (volumeElement.querySelector(
-      '.volume-container'
-    ));
-    this.volumeIndicator = /** @type {HTMLDivElement} */ (volumeElement.querySelector(
-      '.volume-indicator'
-    ));
-    this.volumeFill = /** @type {HTMLDivElement} */ (volumeElement.querySelector(
-      '.volume-fill'
-    ));
-    const volumeBarContainer = /** @type {HTMLDivElement} */ (volumeElement.querySelector(
-      '.volume-bar-container'
-    ));
+    this.volumeContainer = /** @type {HTMLDivElement} */ (
+      volumeElement.querySelector('.volume-container')
+    );
+    this.volumeIndicator = /** @type {HTMLDivElement} */ (
+      volumeElement.querySelector('.volume-indicator')
+    );
+    this.volumeFill = /** @type {HTMLDivElement} */ (
+      volumeElement.querySelector('.volume-fill')
+    );
+    const volumeBarContainer = /** @type {HTMLDivElement} */ (
+      volumeElement.querySelector('.volume-bar-container')
+    );
 
     this.volumeContainer?.prepend(/** @type {SVGElement} */ (this.iconVolume));
 
@@ -94,6 +98,9 @@ export class ControlsVolume extends HTMLElement {
     volumeBarContainer?.addEventListener(
       'mousedown',
       (e) => {
+        if (this.state.disabled) {
+          return;
+        }
         this._isDragging = true;
         updateVolumeFromEvent(/** @type {MouseEvent} */ (e));
       },
@@ -102,6 +109,9 @@ export class ControlsVolume extends HTMLElement {
     document?.addEventListener(
       'mousemove',
       (e) => {
+        if (this.state.disabled) {
+          return;
+        }
         if (this._isDragging) {
           updateVolumeFromEvent(/** @type {MouseEvent} */ (e));
         }
@@ -111,6 +121,9 @@ export class ControlsVolume extends HTMLElement {
     document?.addEventListener(
       'mouseup',
       (_e) => {
+        if (this.state.disabled) {
+          return;
+        }
         this._isDragging = false;
       },
       { passive: true }
@@ -128,11 +141,11 @@ export class ControlsVolume extends HTMLElement {
 
     // Force reflow
     this.volumeContainer.clientWidth;
-    this.updateStateVolume(this.state.volume);
+    this.render();
   }
 
   static get observedAttributes() {
-    return ['muted', 'volume'];
+    return ['muted', 'volume', 'disabled'];
   }
 
   /**
@@ -141,6 +154,16 @@ export class ControlsVolume extends HTMLElement {
    */
   updateStateMode(newValue) {
     this.state.muted = newValue;
+    this.render();
+  }
+
+  /**
+   *
+   * @param {boolean} newValue
+   */
+  updateStateDisabled(newValue) {
+    this.state.disabled = newValue;
+    this.render();
   }
 
   /**
@@ -148,12 +171,29 @@ export class ControlsVolume extends HTMLElement {
    */
   updateStateVolume(newValue) {
     this.state.volume = newValue;
+    this.render();
+  }
 
+  render() {
+    // TODO: Use transform translateX
     if (this.volumeFill) {
-      this.volumeFill.style.width = `${newValue * 100}%`;
+      this.volumeFill.style.width = `${this.state.volume * 100}%`;
     }
     if (this.volumeIndicator) {
-      this.volumeIndicator.style.left = `calc(${newValue * 100}% - 5px)`;
+      this.volumeIndicator.style.left = `calc(${
+        this.state.volume * 100
+      }% - 5px)`;
+    }
+
+    const volumeBarContainer = /** @type {HTMLDivElement} */ (
+      this.shadowRoot?.querySelector('.volume-bar-container')
+    );
+    if (volumeBarContainer) {
+      if (this.state.disabled) {
+        volumeBarContainer.classList.add('disabled');
+      } else {
+        volumeBarContainer.classList.remove('disabled');
+      }
     }
   }
 
@@ -164,11 +204,13 @@ export class ControlsVolume extends HTMLElement {
    * @param {string} newValue
    */
   attributeChangedCallback(name, oldValue, newValue) {
-    if (oldValue != null && oldValue != newValue) {
+    if (oldValue != newValue) {
       if (name === 'muted') {
-        this.updateStateMode(!!newValue);
+        this.updateStateMode(newValue != null);
       } else if (name === 'volume') {
         this.updateStateVolume(parseFloat(newValue));
+      } else if (name === 'disabled') {
+        this.updateStateDisabled(newValue != null);
       }
     }
   }

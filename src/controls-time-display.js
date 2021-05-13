@@ -5,11 +5,13 @@ export class ControlsTimeDisplay extends HTMLElement {
     this.attachShadow({ mode: 'open' });
     /**
      *
-     * @type {{ value: number, max: number }}
+     * - disabled: whether value is changable or not
+     * @type {{ value: number, max: number, disabled: boolean }}
      */
     this.state = {
       value: parseInt(this.getAttribute('value') || '0', 10) || 0,
       max: parseInt(this.getAttribute('max') || '0', 10) || 0,
+      disabled: this.getAttribute('disabled') != null,
     };
 
     this.init();
@@ -30,7 +32,7 @@ export class ControlsTimeDisplay extends HTMLElement {
   }
 
   static get observedAttributes() {
-    return ['max', 'value'];
+    return ['max', 'value', 'disabled'];
   }
 
   /**
@@ -47,10 +49,19 @@ export class ControlsTimeDisplay extends HTMLElement {
     this.state.value = newValue;
     this.render();
   }
+  /**
+   *
+   * @param {boolean} newValue
+   */
+  updateStateDisabled(newValue) {
+    this.state.disabled = newValue;
+    this.render();
+  }
 
   render() {
     const elCurrentTime = this.shadowRoot?.getElementById('current');
     const elTotalTime = this.shadowRoot?.getElementById('total');
+
 
     if (elCurrentTime) {
       elCurrentTime.textContent = getFormattedTime(this.state.value);
@@ -72,6 +83,8 @@ export class ControlsTimeDisplay extends HTMLElement {
         this.updateStateMax(parseFloat(newValue));
       } else if (name === 'value') {
         this.updateStateValue(parseFloat(newValue));
+      } else if (name === 'disabled') {
+        this.updateStateDisabled(newValue != null);
       }
     }
   }
