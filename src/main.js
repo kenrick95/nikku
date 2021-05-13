@@ -7,6 +7,7 @@ import './controls-time-display.js';
 import './controls-play-pause.js';
 import './controls-loop.js';
 import './controls-volume.js';
+import './controls-tracks.js';
 import { Timer } from './timer.js';
 
 document.addEventListener('DOMContentLoaded', () => {

@@ -51,7 +51,10 @@ body {
   padding: 50px 70px;
   margin: auto;
   font-family: 'Open Sans', sans-serif;
-  line-height: 1.6;
+
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
 }
 #header {
   display: flex;
@@ -83,16 +86,10 @@ body {
 #track-title {
   grid-column: 1 / span 2;
   grid-row: 1;
-  font-size: 14px;
-  line-height: 20px;
-  font-weight: 600;
 }
 #controls-time-display {
   grid-column: 3;
   grid-row: 1;
-  font-size: 14px;
-  line-height: 20px;
-  font-weight: 600;
 }
 #controls-progress {
   grid-column: 1 / span 3;
