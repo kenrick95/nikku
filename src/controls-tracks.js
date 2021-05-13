@@ -12,7 +12,7 @@ export class ControlsTracks extends HTMLElement {
     const count = parseInt(this.getAttribute('count') || '0', 10) || 0;
     /**
      *
-     * @type {{ active: { [trackNumber: number]: boolean }, count: number }}
+     * @type {{ active: Array<boolean>, count: number }}
      */
     this.state = {
       active: this.parseActiveAttribute(
@@ -29,14 +29,12 @@ export class ControlsTracks extends HTMLElement {
    *
    * @param {string} activeAttribute
    * @param {number} count
-   * @returns {{ [trackNumber: number]: boolean }}
+   * @returns {Array<boolean>}
    */
   parseActiveAttribute(activeAttribute, count) {
-    /** @type {{ [trackNumber: number]: boolean }} */
-    const activeTracks = {};
-    for (let i = 0; i < count; i++) {
-      activeTracks[i] = false;
-    }
+    /** @type {Array<boolean>} */
+    const activeTracks = new Array(count).fill(false);
+
     activeAttribute
       .split(',')
       .map((el) => {
@@ -76,10 +74,10 @@ export class ControlsTracks extends HTMLElement {
     this.render();
   }
   /**
-   * @param {{ [trackNumber: number]: boolean }} newActive
+   * @param {Array<boolean>} newActive
    */
   updateStateActive(newActive) {
-    this.state.active = newActive;
+    this.state.active = [...newActive];
     this.render();
   }
 
@@ -87,6 +85,7 @@ export class ControlsTracks extends HTMLElement {
     const { count, active } = this.state;
     const elList = this.shadowRoot?.getElementById('list');
     if (elList) {
+      elList.innerHTML = '';
       for (let i = 0; i < count; i++) {
         const elLi = document.createElement('li');
         const elLabel = document.createElement('label');
@@ -98,10 +97,17 @@ export class ControlsTracks extends HTMLElement {
         elInput.addEventListener('input', (e) => {
           // @ts-ignore
           const newChecked = e.target?.checked;
-          this.updateStateActive({
-            ...active,
-            [i]: newChecked,
-          });
+          const newStateActive = [...this.state.active];
+          newStateActive[i] = newChecked;
+          this.updateStateActive(newStateActive);
+
+          this.dispatchEvent(
+            new CustomEvent('tracksActiveChange', {
+              detail: {
+                active: newStateActive,
+              },
+            })
+          );
         });
 
         elLabel.appendChild(elInput);

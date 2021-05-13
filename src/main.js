@@ -24,6 +24,8 @@ document.addEventListener('DOMContentLoaded', () => {
     progressValue: new Reactive(0),
     timeDisplayMax: new Reactive(0),
     timeDisplayValue: new Reactive(0),
+    tracksCount: new Reactive(1),
+    tracksActive: new Reactive([true]),
   };
 
   const timer = new Timer({
@@ -95,6 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
       console.timeEnd('brstm.getAllSamples');
       const amountTimeInS =
         brstm.metadata.totalSamples / brstm.metadata.sampleRate;
+      const numberTracks = brstm.metadata.numberTracks;
 
       await audioPlayer.readyPromise;
       audioPlayer.load(allSamples);
@@ -102,6 +105,9 @@ document.addEventListener('DOMContentLoaded', () => {
       uiState.playPause.set('pause');
       uiState.progressMax.set(amountTimeInS);
       uiState.timeDisplayMax.set(amountTimeInS);
+
+      uiState.tracksCount.set(numberTracks);
+      uiState.tracksActive.set(new Array(numberTracks).fill(true));
     });
   }
 
@@ -122,6 +128,39 @@ document.addEventListener('DOMContentLoaded', () => {
         audioPlayer?.play();
         timer.start();
       }
+    });
+  }
+  {
+    const elControlsTracks =
+      /** @type {import('./controls-tracks').ControlsTracks} */ (
+        document.querySelector('controls-tracks')
+      );
+    uiState.tracksCount.on('change', (/** @type {number} */ newCount) => {
+      elControlsTracks.setAttribute('count', String(newCount));
+    });
+    uiState.tracksActive.on(
+      'change',
+      (/** @type {Array<boolean>} */ newActiveStates) => {
+        elControlsTracks.setAttribute(
+          'active',
+          newActiveStates
+            .map((v, i) => {
+              return v ? i : -1;
+            })
+            .filter((v) => v !== -1)
+            .join(',')
+        );
+      }
+    );
+    
+    elControlsTracks.addEventListener('tracksActiveChange', (e) => {
+      /** @type {Array<boolean>} */
+      const newActive = /** @type {any} */ (e).detail.active;
+      uiState.tracksActive.set(newActive);
+
+      
+
+      audioPlayer?.setTrackStates(newActive);
     });
   }
 
