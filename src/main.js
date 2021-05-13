@@ -107,7 +107,11 @@ document.addEventListener('DOMContentLoaded', () => {
       uiState.timeDisplayMax.set(amountTimeInS);
 
       uiState.tracksCount.set(numberTracks);
-      uiState.tracksActive.set(new Array(numberTracks).fill(true));
+      uiState.tracksActive.set(
+        new Array(numberTracks)
+          .fill(true)
+          .map((_, i) => (i === 0 ? true : false))
+      );
     });
   }
 
@@ -152,13 +156,11 @@ document.addEventListener('DOMContentLoaded', () => {
         );
       }
     );
-    
+
     elControlsTracks.addEventListener('tracksActiveChange', (e) => {
       /** @type {Array<boolean>} */
       const newActive = /** @type {any} */ (e).detail.active;
       uiState.tracksActive.set(newActive);
-
-      
 
       audioPlayer?.setTrackStates(newActive);
     });
