@@ -20,6 +20,9 @@
     </header>
     <main id="main">
       <div id="track-title">music.brstm</div>
+      <div id="controls-tracks">
+        <controls-tracks count="1" active="0"></controls-tracks>
+      </div>
       <div id="controls-time-display">
         <controls-time-display value="0" max="0"></controls-time-display>
       </div>
@@ -206,6 +209,23 @@
             <div class="volume-indicator"></div>
           </div>
         </div>
+      </div>
+    </template>
+
+    <template id="template-tracks">
+      <style>
+        .hidden {
+          display: none;
+        }
+        #list  {
+          list-style: none;
+          padding-left: 0;
+        }
+        /* TODO: Style checkbox */
+      </style>
+      <div id="container">
+        Active tracks:
+        <ol id="list"></ol>
       </div>
     </template>
 
