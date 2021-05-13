@@ -78,9 +78,10 @@ body {
   margin-top: 100px;
   display: grid;
   grid-template-columns: 1fr 80px 1fr;
-  grid-template-rows: 20px 15px 20px 80px;
+  grid-template-rows: 20px 15px 24px 80px auto;
   row-gap: 10px;
   column-gap: 2rem;
+  margin-bottom: 10px;
 }
 
 #track-title {
@@ -98,6 +99,10 @@ body {
 #controls-select-file-container {
   grid-column: 1 / span 3;
   grid-row: 3;
+}
+#controls-tracks {
+  grid-column: 1;
+  grid-row: 4 / span 2;
 }
 #controls-play-pause {
   grid-column: 2;
@@ -123,6 +128,7 @@ controls-volume {
 #footer {
   font-size: 10px;
   line-height: 14px;
+  margin-bottom: 10px;
 }
 
 /* Modified from "file" from https://github.com/mdo/wtf-forms/blob/master/wtf-forms.css */
@@ -130,12 +136,12 @@ controls-volume {
   position: relative;
   display: inline-block;
   cursor: pointer;
-  width: 65px;
+  width: 80px;
 }
 #controls-select-file-container > input {
   margin: 0;
   opacity: 0;
-  height: 20px;
+  height: 24px;
 }
 #controls-select-file-custom {
   position: absolute;
@@ -149,16 +155,19 @@ controls-volume {
   color: var(--primary);
   background-color: var(--primary-lightest-2);
   user-select: none;
-  font-size: 10px;
-  line-height: 14px;
-  height: 20px;
+  font-size: 12px;
+  line-height: 16px;
+  height: 24px;
   display: inline-flex;
   align-items: center;
   padding: 2px 4px;
   text-align: center;
 }
 #controls-select-file-custom:after {
-  content: 'Choose file';
+  content: 'Select file...';
+}
+#controls-select-file-custom:hover {
+  background-color: var(--primary-lightest-1);
 }
 
 #controls-select-fileinput:focus ~ #controls-select-file-custom {
