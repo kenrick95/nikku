@@ -5,11 +5,13 @@ export class ControlsProgress extends HTMLElement {
     this.attachShadow({ mode: 'open' });
     /**
      *
-     * @type {{ value: number, max: number }}
+     * - disabled: whether value is changable or not
+     * @type {{ value: number, max: number, disabled: boolean }}
      */
     this.state = {
       value: parseInt(this.getAttribute('value') || '0', 10) || 0,
       max: parseInt(this.getAttribute('max') || '0', 10) || 0,
+      disabled: this.getAttribute('disabled') != null,
     };
     this._isDragging = false;
 
@@ -91,6 +93,9 @@ export class ControlsProgress extends HTMLElement {
     progressBar?.addEventListener(
       'mousedown',
       (e) => {
+        if (this.state.disabled) {
+          return;
+        }
         this._isDragging = true;
         updateVolumeFromEvent(/** @type {MouseEvent} */ (e));
       },
@@ -99,6 +104,9 @@ export class ControlsProgress extends HTMLElement {
     document?.addEventListener(
       'mousemove',
       (e) => {
+        if (this.state.disabled) {
+          return;
+        }
         if (this._isDragging) {
           updateVolumeFromEvent(/** @type {MouseEvent} */ (e));
         }
@@ -108,6 +116,9 @@ export class ControlsProgress extends HTMLElement {
     document?.addEventListener(
       'mouseup',
       (_e) => {
+        if (this.state.disabled) {
+          return;
+        }
         this._isDragging = false;
       },
       { passive: true }
@@ -129,7 +140,7 @@ export class ControlsProgress extends HTMLElement {
   }
 
   static get observedAttributes() {
-    return ['max', 'value'];
+    return ['max', 'value', 'disabled'];
   }
 
   /**
@@ -137,7 +148,6 @@ export class ControlsProgress extends HTMLElement {
    */
   updateStateMax(newMax) {
     this.state.max = newMax;
-
     this.render();
   }
   /**
@@ -147,19 +157,35 @@ export class ControlsProgress extends HTMLElement {
     this.state.value = newValue;
     this.render();
   }
+  /**
+   *
+   * @param {boolean} newValue
+   */
+  updateStateDisabled(newValue) {
+    this.state.disabled = newValue;
+    this.render();
+  }
 
   render() {
-
     const percentage = this.state.value / this.state.max;
     if (this.progressActive) {
-      this.progressActive.style.transform = `scaleX(${
-        percentage 
-      })`;
+      this.progressActive.style.transform = `scaleX(${percentage})`;
     }
     if (this.progressIndicator) {
       this.progressIndicator.style.transform = `translateX(calc(${
         percentage * (this._cachedProgressBarClientWidth ?? 0)
       }px - 50%))`;
+    }
+
+    const progressBar = /** @type {HTMLDivElement} */ (
+      this.shadowRoot?.querySelector('.progress-bar')
+    );
+    if (progressBar) {
+      if (this.state.disabled) {
+        progressBar.classList.add('disabled');
+      } else {
+        progressBar.classList.remove('disabled');
+      }
     }
   }
 
@@ -170,11 +196,13 @@ export class ControlsProgress extends HTMLElement {
    * @param {string} newValue
    */
   attributeChangedCallback(name, oldValue, newValue) {
-    if (oldValue != null && oldValue != newValue) {
+    if (oldValue != newValue) {
       if (name === 'max') {
         this.updateStateMax(parseFloat(newValue));
       } else if (name === 'value') {
         this.updateStateValue(parseFloat(newValue));
+      } else if (name === 'disabled') {
+        this.updateStateDisabled(newValue != null);
       }
     }
   }

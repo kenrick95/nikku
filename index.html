@@ -19,15 +19,19 @@
       <span id="subtitle">Web-based BRSTM player</span>
     </header>
     <main id="main">
-      <div id="track-title">music.brstm</div>
+      <div id="track-title"></div>
       <div id="controls-tracks">
-        <controls-tracks count="1" active="0"></controls-tracks>
+        <controls-tracks disabled count="1" active="0"></controls-tracks>
       </div>
       <div id="controls-time-display">
-        <controls-time-display value="0" max="0"></controls-time-display>
+        <controls-time-display
+          disabled
+          value="0"
+          max="0"
+        ></controls-time-display>
       </div>
       <div id="controls-progress">
-        <controls-progress value="0" max="1"></controls-progress>
+        <controls-progress disabled value="0" max="1"></controls-progress>
       </div>
       <label id="controls-select-file-container">
         <input type="file" id="controls-select-file" accept=".brstm" />
@@ -35,11 +39,11 @@
       </label>
 
       <div id="controls-play-pause">
-        <controls-play-pause mode="play"></controls-play-pause>
+        <controls-play-pause disabled mode="play"></controls-play-pause>
       </div>
       <div id="controls-others">
-        <controls-loop mode="on"></controls-loop>
-        <controls-volume volume="1"></controls-volume>
+        <controls-loop disabled mode="on"></controls-loop>
+        <controls-volume disabled volume="1"></controls-volume>
       </div>
     </main>
     <footer id="footer">
@@ -170,6 +174,7 @@
           margin-left: 8px;
           display: flex;
           align-items: center;
+          user-select: none;
         }
         .volume-bar {
           position: relative;
@@ -217,7 +222,7 @@
         .hidden {
           display: none;
         }
-        #list  {
+        #list {
           list-style: none;
           padding-left: 0;
           margin-top: 6px;
