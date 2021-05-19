@@ -227,8 +227,32 @@
           list-style: none;
           padding-left: 0;
           margin-top: 6px;
+          user-select: none;
         }
-        /* TODO: Style checkbox */
+        input[type='checkbox'] {
+          appearance: none;
+          position: relative;
+          background: var(--primary-lightest-2);
+          border-radius: 2px;
+          padding: 2px;
+          margin: 0;
+
+          width: 15px;
+          height: 15px;
+          display: inline-block;
+          vertical-align: middle;
+          top: -1px;
+        }
+        input[type='checkbox']:checked:after {
+          content: '\2714';
+          position: absolute;
+          left: 2px;
+          top: 0;
+
+          font-size: 12px;
+          line-height: 13px;
+          color: var(--primary-darker);
+        }
       </style>
       <div id="container">
         Active tracks:
