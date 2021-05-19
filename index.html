@@ -93,6 +93,9 @@
           border-radius: 50%;
           background-color: var(--primary);
         }
+        .disabled {
+          cursor: not-allowed;
+        }
       </style>
       <div class="progress-bar-container">
         <div class="progress-bar">
@@ -141,13 +144,16 @@
           width: 100%;
           height: 100%;
         }
-        .button:hover {
+        .button:not(.disabled):hover {
           background: var(--primary-lightest-1);
           box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.24);
           cursor: pointer;
         }
         .button.off > svg {
           fill: var(--primary-lighter);
+        }
+        .button.disabled:hover {
+          cursor: not-allowed;
         }
       </style>
     </template>
@@ -205,6 +211,9 @@
           height: 10px;
           border-radius: 50%;
           background-color: var(--primary);
+        }
+        .disabled {
+          cursor: not-allowed;
         }
       </style>
       <div class="volume-container">
