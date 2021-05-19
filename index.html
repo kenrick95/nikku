@@ -192,14 +192,15 @@
         .volume-fill {
           position: absolute;
           top: 4px;
-          width: 50%;
+          width: 100%;
+          transform-origin: left;
           height: 2px;
-          border-radius: 1px;
+          /* NOTE: Because of scaleX transform, this border-radius is also "scaled", need to find a way to have a fixed border-radius*/
+          /* border-radius: 1px; */
           background-color: var(--primary);
         }
         .volume-indicator {
           position: absolute;
-          left: calc(50% - 5px);
           width: 10px;
           height: 10px;
           border-radius: 50%;
