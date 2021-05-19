@@ -29,7 +29,29 @@ export class ControlsVolume extends HTMLElement {
     /** @type {HTMLDivElement | undefined} */
     this.volumeIndicator = undefined;
 
+    // Cache the values because they cause page reflow
+    /** @type {number | null} */
+    this._cachedVolumeBarOffsetLeft = null;
+    /** @type {number | null} */
+    this._cachedVolumeBarClientWidth = null;
+
     this.init();
+  }
+
+  refreshCachedValues() {
+    const volumeBarContainer = /** @type {HTMLDivElement} */ (
+      this.shadowRoot?.querySelector('.volume-bar-container')
+    );
+
+    if (!this._cachedVolumeBarOffsetLeft) {
+      this._cachedVolumeBarOffsetLeft = volumeBarContainer?.offsetLeft ?? 0;
+    }
+    if (
+      !this._cachedVolumeBarClientWidth ||
+      this._cachedVolumeBarClientWidth === 1
+    ) {
+      this._cachedVolumeBarClientWidth = volumeBarContainer?.clientWidth ?? 1;
+    }
   }
 
   async init() {
@@ -60,28 +82,18 @@ export class ControlsVolume extends HTMLElement {
 
     this.volumeContainer?.prepend(/** @type {SVGElement} */ (this.iconVolume));
 
-    // Cache the values because they cause page reflow
-    /** @type {number | null} */
-    let cachedVolumeBarOffsetLeft = null;
-    /** @type {number | null} */
-    let cachedVolumeBarClientWidth = null;
-
     /**
      *
      * @param {MouseEvent} e
      */
     const updateVolumeFromEvent = (e) => {
-      if (!cachedVolumeBarOffsetLeft) {
-        cachedVolumeBarOffsetLeft = volumeBarContainer?.offsetLeft ?? 0;
-      }
-      if (!cachedVolumeBarClientWidth || cachedVolumeBarClientWidth === 1) {
-        cachedVolumeBarClientWidth = volumeBarContainer?.clientWidth ?? 1;
-      }
+      this.refreshCachedValues();
       const newVolume = Math.min(
         1,
         Math.max(
           0,
-          (e.clientX - cachedVolumeBarOffsetLeft) / cachedVolumeBarClientWidth
+          (e.clientX - (this._cachedVolumeBarOffsetLeft ?? 0)) /
+            (this._cachedVolumeBarClientWidth ?? 1)
         )
       );
       this.updateStateVolume(newVolume);
@@ -131,8 +143,9 @@ export class ControlsVolume extends HTMLElement {
 
     // Invalidate cached values because they have changed
     window.addEventListener('resize', () => {
-      cachedVolumeBarOffsetLeft = null;
-      cachedVolumeBarClientWidth = null;
+      this._cachedVolumeBarOffsetLeft = null;
+      this._cachedVolumeBarClientWidth = null;
+      this.refreshCachedValues();
     });
 
     // @ts-ignore
@@ -141,6 +154,7 @@ export class ControlsVolume extends HTMLElement {
 
     // Force reflow
     this.volumeContainer.clientWidth;
+    this.refreshCachedValues();
     this.render();
   }
 
@@ -175,14 +189,13 @@ export class ControlsVolume extends HTMLElement {
   }
 
   render() {
-    // TODO: Use transform translateX
     if (this.volumeFill) {
-      this.volumeFill.style.width = `${this.state.volume * 100}%`;
+      this.volumeFill.style.transform = `scaleX(${this.state.volume})`;
     }
     if (this.volumeIndicator) {
-      this.volumeIndicator.style.left = `calc(${
-        this.state.volume * 100
-      }% - 5px)`;
+      this.volumeIndicator.style.transform = `translateX(calc(${
+        this.state.volume * (this._cachedVolumeBarClientWidth ?? 0)
+      }px - 50%))`;
     }
 
     const volumeBarContainer = /** @type {HTMLDivElement} */ (
