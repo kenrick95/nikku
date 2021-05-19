@@ -6,16 +6,20 @@
  */
 
 class AudioMixerProcessor extends AudioWorkletProcessor {
+  /**
+   * 
+   * @param {AudioWorkletNodeOptions=} options 
+   */
   constructor(options) {
     super();
     /**
      * @type {AudioPlayerTrackStates}
      */
-    this._trackStates = options.processorOptions.trackStates || {};
+    this._trackStates = options?.processorOptions?.trackStates || {};
     /**
      * @type {Array<TrackDescription>}
      */
-    this._trackDescriptions = options.processorOptions.trackDescriptions || [];
+    this._trackDescriptions = options?.processorOptions?.trackDescriptions || [];
     this.port.onmessage = (event) => {
       if (event.data.trackStates) this._trackStates = event.data.trackStates;
       if (event.data.trackDescriptions)
@@ -82,6 +86,13 @@ class AudioMixerProcessor extends AudioWorkletProcessor {
   }
 }
 
+/**
+ * 
+ * @param {number} value 
+ * @param {number} min 
+ * @param {number} max 
+ * @returns {number}
+ */
 function clamp(value, min, max) {
   return value <= min ? min : value >= max ? max : value;
 }

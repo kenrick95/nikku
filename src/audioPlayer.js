@@ -28,6 +28,8 @@ export class AudioPlayer {
    */
   constructor(metadata, hooks) {
     this.hooks = hooks;
+    /** @type {null | ((value?: any) => void)} */
+    this._readyPromiseCallback = null;
     this.readyPromise = new Promise((resolve) => {
       this._readyPromiseCallback = resolve;
     });
@@ -46,7 +48,9 @@ export class AudioPlayer {
       if (this.audioContext.audioWorklet) {
         await this.audioContext.audioWorklet.addModule('src/audioMixer.js');
       }
-      this._readyPromiseCallback();
+      if (this._readyPromiseCallback) {
+        this._readyPromiseCallback();
+      }
     } else {
       // For destroy
       this.metadata = null;
@@ -107,6 +111,9 @@ export class AudioPlayer {
    * @param {Array<Int16Array>} samples per-channel PCM samples
    */
   load(samples) {
+    if (!this.metadata || !this.audioContext) {
+      return;
+    }
     const floatSamples = samples.map((sample) => {
       return this.convertToAudioBufferData(sample);
     });
@@ -138,6 +145,14 @@ export class AudioPlayer {
    * @param {number=} bufferStart
    */
   initPlayback(bufferStart = 0) {
+    if (
+      !this.metadata ||
+      !this.audioContext ||
+      !this._audioBuffer ||
+      this._volume == null
+    ) {
+      return;
+    }
     const {
       loopStartSample,
       totalSamples,
@@ -206,7 +221,7 @@ export class AudioPlayer {
 
     this.bufferSource.loopStart = this._loopStartInS;
     this.bufferSource.loopEnd = this._loopEndInS;
-    this.bufferSource.loop = this._shouldLoop;
+    this.bufferSource.loop = !!this._shouldLoop;
     this.bufferSource.onended = () => {
       if (!this._isSeeking) {
         this.pause();
@@ -230,7 +245,9 @@ export class AudioPlayer {
    * @param {number} playbackTimeInS
    */
   async seek(playbackTimeInS) {
-    console.log('playbackTimeInS', playbackTimeInS)
+    if (!this.audioContext) {
+      return;
+    }
     this._isSeeking = true;
     this.initPlayback(playbackTimeInS);
     if (!this.isPlaying) {
@@ -242,7 +259,7 @@ export class AudioPlayer {
   }
 
   async play() {
-    if (this.isPlaying) {
+    if (this.isPlaying || !this.audioContext) {
       return;
     }
     this.isPlaying = true;
@@ -253,11 +270,11 @@ export class AudioPlayer {
       this.initPlayback();
     } else {
       this._startTimestamp =
-        this._startTimestamp + Date.now() - this._pauseTimestamp;
+        this._startTimestamp + Date.now() - (this._pauseTimestamp ?? 0);
     }
   }
   async pause() {
-    if (!this.isPlaying) {
+    if (!this.isPlaying || !this.audioContext) {
       return;
     }
     this.isPlaying = false;
@@ -292,7 +309,9 @@ export class AudioPlayer {
    */
   setLoop(value) {
     this._shouldLoop = value;
-    this.bufferSource.loop = this._shouldLoop;
+    if (this.bufferSource) {
+      this.bufferSource.loop = this._shouldLoop;
+    }
   }
 
   /**
@@ -300,6 +319,10 @@ export class AudioPlayer {
    * @returns {number} current time in seconds, accounted for looping
    */
   getCurrrentPlaybackTime() {
+    if (this._loopDurationInS == null || this._loopEndInS == null) {
+      return 0;
+    }
+
     const currentTimestamp = Date.now();
     const playbackTime = currentTimestamp - this._startTimestamp;
     let playbackTimeInS = playbackTime / 1000;
