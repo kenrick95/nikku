@@ -22,14 +22,15 @@ There are no polyfill included in [the demo](https://kenrick95.github.io/nikku/)
 
 Browser needs to support the following features without any vendor prefix:
 
-- [Audio Worklet API](https://caniuse.com/mdn-api_audioworklet)
-- [Web Audio API](https://caniuse.com/#feat=audio-api)
-- [`<script type="module"> `](https://caniuse.com/#feat=es6-module)
-- [ES2016 class](https://caniuse.com/#feat=es6-class)
-- [ES2015 in general](https://caniuse.com/#feat=es6)
-- [`<template>`](https://caniuse.com/#feat=template)
-
-Developed and tested in Firefox 66
+- [Web Audio API](https://caniuse.com/audio-api)
+- [Audio Worklet API](https://caniuse.com/mdn-api_audioworklet) (for multi-track BRSTM files)
+- [`<template>`](https://caniuse.com/template)
+- [`<script type="module"> `](https://caniuse.com/es6-module)
+- [`Custom Elements](https://caniuse.com/custom-elementsv1)
+- [ES2015 in general](https://caniuse.com/es6)
+- [ES2016 class](https://caniuse.com/es6-class)
+- [ES2020 optional chaining](https://caniuse.com/mdn-javascript_operators_optional_chaining) and [nullish coalescing](https://caniuse.com/mdn-javascript_operators_nullish_coalescing)
+Developed and tested in Firefox 88
 
 ## References
 
