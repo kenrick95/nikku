@@ -73,7 +73,20 @@ body {
   margin-top: 10px;
   margin-inline-start: 8px;
 }
-
+.error {
+  color: #ff4136;
+  border: 1px solid currentColor;
+  padding: 0.6rem;
+}
+#error, #unsupported {
+  display: none;
+  padding: 0.6rem;
+  margin-top: 0.6rem;
+  margin-bottom: 0.6rem;
+}
+template {
+  display: none;
+}
 #main {
   margin-top: 100px;
   display: grid;
