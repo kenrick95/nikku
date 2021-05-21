@@ -188,9 +188,9 @@ export type Metadata = {
      */
     endianness: number;
     /**
-     * - 0 - 8-bit PCM
-     * - 1 - 16-bit PCM
-     * - 2 - 4-bit ADPCM
+     *   - 0 - 8-bit PCM
+     *   - 1 - 16-bit PCM
+     *   - 2 - 4-bit ADPCM
      */
     codec: number;
     loopFlag: number;
