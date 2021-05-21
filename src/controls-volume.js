@@ -63,7 +63,7 @@ export class ControlsVolume extends HTMLElement {
     );
     this.iconVolume = /** @type {SVGElement} */ (
       parseHTML(
-        await fetch('../assets/volume-icon.svg').then((res) => res.text())
+        await fetch('./assets/volume-icon.svg').then((res) => res.text())
       )
     );
     this.iconVolume?.classList.add('volume-icon');

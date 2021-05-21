@@ -20,8 +20,8 @@ export class ControlsPlayPause extends HTMLElement {
   }
   async init() {
     let [iconPlayString, iconPauseString] = await Promise.all([
-      fetch('../assets/play-icon.svg').then((res) => res.text()),
-      fetch('../assets/pause-icon.svg').then((res) => res.text()),
+      fetch('./assets/play-icon.svg').then((res) => res.text()),
+      fetch('./assets/pause-icon.svg').then((res) => res.text()),
     ]);
     this.iconPlay = parseHTML(iconPlayString);
     this.iconPause = parseHTML(iconPauseString);

@@ -47,7 +47,7 @@ export class ControlsLoop extends HTMLElement {
     ).content.cloneNode(true);
 
     this.iconLoop = parseHTML(
-      await fetch('../assets/loop-icon.svg').then((res) => res.text())
+      await fetch('./assets/loop-icon.svg').then((res) => res.text())
     );
     this.button = document.createElement('button');
     this.button.classList.add('button');
