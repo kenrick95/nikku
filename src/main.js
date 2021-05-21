@@ -10,6 +10,25 @@ import './controls-volume.js';
 import './controls-tracks.js';
 import { Timer } from './timer.js';
 
+/**
+ *
+ * @param {Error} e
+ */
+function showError(e) {
+  const elError = document.getElementById('error');
+  if (elError) {
+    elError.style.display = 'block';
+    elError.textContent = e.message;
+  }
+}
+function clearError() {
+  const elError = document.getElementById('error');
+  if (elError) {
+    elError.style.display = 'none';
+    elError.textContent = '';
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   /**
    * @type {null|AudioPlayer}
@@ -75,45 +94,51 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     onFileSelected(async (error, buffer) => {
-      if (error || !buffer || !(buffer instanceof ArrayBuffer)) {
+      clearError();
+      if (error) {
+        showError(error);
         return;
       }
-      const brstm = new Brstm(buffer);
-      // console.log('brstm', brstm);
-      if (audioPlayer) {
-        audioPlayer.destroy();
+      if (!buffer || !(buffer instanceof ArrayBuffer)) {
+        return;
       }
 
-      audioPlayer = new AudioPlayer(brstm.metadata, {
-        onPlay: () => {
-          // elPlayPause.textContent = 'Pause';
-        },
-        onPause: () => {
-          // elPlayPause.textContent = 'Play';
-        },
-      });
+      try {
+        const brstm = new Brstm(buffer);
+        // console.log('brstm', brstm);
+        if (audioPlayer) {
+          audioPlayer.destroy();
+        }
 
-      console.time('brstm.getAllSamples');
-      const allSamples = brstm.getAllSamples();
-      console.timeEnd('brstm.getAllSamples');
-      const amountTimeInS =
-        brstm.metadata.totalSamples / brstm.metadata.sampleRate;
-      const numberTracks = brstm.metadata.numberTracks;
+        audioPlayer = new AudioPlayer(brstm.metadata, {
+          onPlay: () => {},
+          onPause: () => {},
+        });
 
-      await audioPlayer.readyPromise;
-      audioPlayer.load(allSamples);
+        console.time('brstm.getAllSamples');
+        const allSamples = brstm.getAllSamples();
+        console.timeEnd('brstm.getAllSamples');
+        const amountTimeInS =
+          brstm.metadata.totalSamples / brstm.metadata.sampleRate;
+        const numberTracks = brstm.metadata.numberTracks;
 
-      uiState.playPause.set('pause');
-      uiState.progressMax.set(amountTimeInS);
-      uiState.timeDisplayMax.set(amountTimeInS);
+        await audioPlayer.readyPromise;
+        audioPlayer.load(allSamples);
 
-      uiState.tracksCount.set(numberTracks);
-      uiState.tracksActive.set(
-        new Array(numberTracks)
-          .fill(true)
-          .map((_, i) => (i === 0 ? true : false))
-      );
-      uiState.disabled.set(false);
+        uiState.playPause.set('pause');
+        uiState.progressMax.set(amountTimeInS);
+        uiState.timeDisplayMax.set(amountTimeInS);
+
+        uiState.tracksCount.set(numberTracks);
+        uiState.tracksActive.set(
+          new Array(numberTracks)
+            .fill(true)
+            .map((_, i) => (i === 0 ? true : false))
+        );
+        uiState.disabled.set(false);
+      } catch (e) {
+        showError(e);
+      }
     });
   }
 

@@ -12,12 +12,42 @@
     />
     <link rel="stylesheet" href="./src/main.css" />
     <link rel="icon" type="image/svg+xml" href="/assets/logo.svg" />
+    <script>
+      if (
+        (function () {
+          try {
+            eval(
+              '(async () => { class Something { constructor() { this.there = { number: 42 }; } async hello() { let value = this.there?.number ?? `100`; return value; } } await new Something().hello();})();'
+            );
+          } catch (e) {
+            return true;
+          }
+
+          if (
+            !window.customElements ||
+            !('content' in document.createElement('template')) ||
+            !('AudioContext' in window)
+          ) {
+            return false;
+          }
+
+          return false;
+        })()
+      ) {
+        document.addEventListener('DOMContentLoaded', function () {
+          document.getElementById('unsupported').style.display = 'block';
+          document.getElementById('main').style.display = 'none';
+        });
+      }
+    </script>
   </head>
   <body>
     <header id="header">
       <img src="./assets/logo-full.svg" alt="Nikku logo" />
       <span id="subtitle">Web-based BRSTM player</span>
     </header>
+    <div id="unsupported" class="error">Sorry, this browser is unsupported</div>
+    <div id="error" class="error"></div>
     <main id="main">
       <div id="track-title"></div>
       <div id="controls-tracks">
