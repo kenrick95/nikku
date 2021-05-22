@@ -60,25 +60,28 @@ body {
   display: flex;
   align-items: center;
   justify-content: flex-start;
+  flex-wrap: wrap;
+}
+#logo {
+  margin-inline-end: 8px;
 }
 #subtitle {
   font-style: normal;
   font-weight: 600;
   font-size: 18px;
   line-height: 24px;
-
   color: var(--primary-light);
 
   /* To align with logo's text baseline */
   margin-top: 10px;
-  margin-inline-start: 8px;
 }
 .error {
   color: #ff4136;
   border: 1px solid currentColor;
   padding: 0.6rem;
 }
-#error, #unsupported {
+#error,
+#unsupported {
   display: none;
   padding: 0.6rem;
   margin-top: 0.6rem;
@@ -96,10 +99,11 @@ template {
   column-gap: 2rem;
   margin-bottom: 10px;
 }
-
 #track-title {
   grid-column: 1 / span 2;
   grid-row: 1;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
 #controls-time-display {
   grid-column: 3;
@@ -138,6 +142,42 @@ controls-volume {
   height: 40px;
 }
 
+@media (max-width: 640px) {
+  #main {
+    margin-top: 50px;
+    grid-template-rows: 20px 20px 15px 24px 80px auto;
+  }
+  #track-title {
+    grid-column: 1 / span 3;
+    grid-row: 1;
+  }
+  #controls-time-display {
+    grid-column: 1 / span 3;
+    grid-row: 2;
+  }
+  #controls-progress {
+    grid-column: 1 / span 3;
+    grid-row: 3;
+  }
+  #controls-select-file-container {
+    grid-column: 1 / span 3;
+    grid-row: 4;
+  }
+  #controls-play-pause {
+    grid-column: 2;
+    grid-row: 5;
+  }
+  #controls-others {
+    grid-column: 1 / span 3;
+    grid-row: 6;
+    justify-content: center;
+  }
+  #controls-tracks {
+    grid-column: 1 / span 3;
+    grid-row: 7;
+  }
+}
+
 #footer {
   font-size: 10px;
   line-height: 14px;
@@ -155,6 +195,7 @@ controls-volume {
   margin: 0;
   opacity: 0;
   height: 24px;
+  width: 100%;
 }
 #controls-select-file-custom {
   position: absolute;

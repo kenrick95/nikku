@@ -70,7 +70,13 @@
   </head>
   <body>
     <header id="header">
-      <img src="./assets/logo-full.svg" alt="Nikku logo" />
+      <img
+        id="logo"
+        src="./assets/logo-full.svg"
+        alt="Nikku logo"
+        width="147"
+        height="50"
+      />
       <span id="subtitle">Web-based BRSTM player</span>
     </header>
     <div id="unsupported" class="error">Sorry, this browser is unsupported</div>
@@ -176,6 +182,14 @@
         .time {
           width: 3em;
           text-align: center;
+        }
+        @media (max-width: 640px) {
+          .progress-time-display {
+            justify-content: flex-start;
+          }
+          .time {
+            text-align: left;
+          }
         }
       </style>
       <div class="progress-time-display">
