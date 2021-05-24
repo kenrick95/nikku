@@ -118,6 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (
           !ev.dataTransfer ||
           !ev.dataTransfer.items ||
+          !ev.dataTransfer.items[0] ||
           ev.dataTransfer.items[0].kind !== 'file'
         ) {
           callback(new Error('No file read'));
