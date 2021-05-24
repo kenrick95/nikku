@@ -46,6 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
     tracksCount: new Reactive(1),
     tracksActive: new Reactive([true]),
     disabled: new Reactive(true),
+    fileDraggingOver: new Reactive(false),
   };
 
   const timer = new Timer({
@@ -66,9 +67,37 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('controls-select-file')
     );
 
+    window.addEventListener('dragover', (ev) => {
+      // Prevent opening file
+      ev.preventDefault();
+
+      // Display drag & drop overlay
+      uiState.fileDraggingOver.set(true);
+    });
+    window.addEventListener('dragend', (ev) => {
+      uiState.fileDraggingOver.set(false);
+    });
+    window.addEventListener('dragleave', (ev) => {
+      uiState.fileDraggingOver.set(false);
+    });
+
+    const elDragAndDropOverlay = document.getElementById(
+      'drag-and-drop-overlay'
+    );
+    uiState.fileDraggingOver.on('change', (newValue) => {
+      if (!elDragAndDropOverlay) {
+        return;
+      }
+      if (newValue) {
+        elDragAndDropOverlay.classList.remove('hidden');
+      } else {
+        elDragAndDropOverlay.classList.add('hidden');
+      }
+    });
+
     /**
      *
-     * @param {(error: Error | null, buffer?: string | ArrayBuffer | null) => void} callback
+     * @param {(error: Error | null, buffer?: string | ArrayBuffer | null, fileName?: string | null) => void} callback
      */
     function onFileSelected(callback) {
       elControlsSelectFile.addEventListener('change', () => {
@@ -79,21 +108,46 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const file = files[0];
-        let elTrackTitle = document.querySelector('#track-title');
-        if (elTrackTitle) {
-          elTrackTitle.textContent = file.name;
+        readFile(file);
+      });
+
+      window.addEventListener('drop', (ev) => {
+        // Prevent opening file
+        ev.preventDefault();
+        uiState.fileDraggingOver.set(false);
+        if (
+          !ev.dataTransfer ||
+          !ev.dataTransfer.items ||
+          ev.dataTransfer.items[0].kind !== 'file'
+        ) {
+          callback(new Error('No file read'));
+          return;
         }
 
+        const file = ev.dataTransfer.items[0].getAsFile();
+        if (!file) {
+          callback(new Error('No file read'));
+          return;
+        }
+
+        readFile(file);
+      });
+
+      /**
+       *
+       * @param {File} file
+       */
+      function readFile(file) {
         const fileReader = new FileReader();
         fileReader.addEventListener('loadend', (ev) => {
           const buffer = fileReader.result;
-          callback(null, buffer);
+          callback(null, buffer, file.name);
         });
         fileReader.readAsArrayBuffer(file);
-      });
+      }
     }
 
-    onFileSelected(async (error, buffer) => {
+    onFileSelected(async (error, buffer, fileName) => {
       clearError();
       if (error) {
         showError(error);
@@ -101,6 +155,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (!buffer || !(buffer instanceof ArrayBuffer)) {
         return;
+      }
+
+      let elTrackTitle = document.querySelector('#track-title');
+      if (elTrackTitle && fileName) {
+        elTrackTitle.textContent = fileName;
       }
 
       try {

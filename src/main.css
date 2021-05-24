@@ -87,6 +87,33 @@ body {
   margin-top: 0.6rem;
   margin-bottom: 0.6rem;
 }
+#drag-and-drop-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--primary);
+  font-size: 2rem;
+  background: var(--white-lighter);
+  z-index: 100;
+  user-select: none;
+}
+#drag-and-drop-overlay:before {
+  content: ' ';
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  top: 1rem;
+  bottom: 1rem;
+  border: 1rem dashed currentColor;
+}
+#drag-and-drop-overlay.hidden {
+  display: none;
+}
 template {
   display: none;
 }
