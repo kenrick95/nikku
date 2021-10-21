@@ -197,7 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
         );
         uiState.disabled.set(false);
       } catch (e) {
-        showError(e);
+        showError(/** @type {Error} */ (e));
       }
     });
   }
