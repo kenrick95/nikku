@@ -184,6 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         await audioPlayer.readyPromise;
         audioPlayer.load(allSamples);
+        audioPlayer.setVolume(uiState.volume.get());
 
         uiState.playPause.set('pause');
         uiState.progressMax.set(amountTimeInS);
