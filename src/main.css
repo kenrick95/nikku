@@ -1,11 +1,11 @@
 :root {
-  --primary: #198813;
-  --primary-dark: #13660e;
-  --primary-darker: #0d440a;
-  --primary-light: #8cc389;
-  --primary-lighter: #c5e1c4;
-  --primary-lightest-2: #e8f3e7;
-  --primary-lightest-1: #f3f9f3;
+  --primary: hsl(117, 75%, 30%);
+  --primary-dark: hsl(117, 76%, 23%);
+  --primary-darker: hsl(117, 74%, 15%);
+  --primary-light: hsl(117, 33%, 65%);
+  --primary-lighter: hsl(117, 33%, 83%);
+  --primary-lightest-2: hsl(117, 33%, 93%);
+  --primary-lightest-1: hsl(117, 33%, 96%);
 
   --black: black;
   --black-light: rgba(0, 0, 0, 0.5);
@@ -26,6 +26,12 @@
   :root {
     --main-bg-color: black;
     --main-text-color: white;
+    --primary-dark: hsl(117, 33%, 65%);
+    --primary-darker: hsl(117, 33%, 83%);
+    --primary-light: hsl(117, 75%, 23%);
+    --primary-lighter: hsl(117, 75%, 20%);
+    --primary-lightest-2: hsl(117, 75%, 15%);
+    --primary-lightest-1: hsl(117, 75%, 9%);
   }
 }
 * {
@@ -253,4 +259,10 @@ controls-volume {
 
 #controls-select-fileinput:focus ~ #controls-select-file-custom {
   box-shadow: 0 0 0 0.075rem #fff, 0 0 0 0.2rem var(--primary-dark);
+}
+
+@media (prefers-color-scheme: dark) {
+  #controls-select-file-custom {
+    color: var(--main-text-color);
+  }
 }
