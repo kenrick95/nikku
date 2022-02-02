@@ -1,8 +1,8 @@
 /**
- * @typedef {import("./audioPlayer.js").AudioPlayerTrackStates} AudioPlayerTrackStates
+ * @typedef {import("./web-audio.js").AudioPlayerTrackStates} AudioPlayerTrackStates
  */
 /**
- * @typedef {import("./brstm/index.js").TrackDescription} TrackDescription
+ * @typedef {import("../brstm/index.js").TrackDescription} TrackDescription
  */
 
 class AudioMixerProcessor extends AudioWorkletProcessor {

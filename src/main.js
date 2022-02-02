@@ -1,6 +1,8 @@
 //@ts-check
 import { Brstm } from './brstm/index.js';
-import { AudioPlayer } from './audioPlayer.js';
+import { AudioPlayerBase } from './audio-player/base.js';
+import { AudioPlayerWebAudio } from './audio-player/web-audio.js';
+import { AudioPlayerMediaSource } from './audio-player/media-source.js';
 import { Reactive } from './reactive.js';
 import './controls-progress.js';
 import './controls-time-display.js';
@@ -31,7 +33,7 @@ function clearError() {
 
 document.addEventListener('DOMContentLoaded', () => {
   /**
-   * @type {null|AudioPlayer}
+   * @type {null|AudioPlayerBase}
    */
   let audioPlayer = null;
 
@@ -170,7 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
           audioPlayer.destroy();
         }
 
-        audioPlayer = new AudioPlayer(brstm.metadata, {
+        audioPlayer = new AudioPlayerMediaSource(brstm.metadata, {
           onPlay: () => {},
           onPause: () => {},
         });

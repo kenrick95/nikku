@@ -1,9 +1,10 @@
 // @ts-check
+import { AudioPlayerBase } from './base.js';
+import { convertToAudioBufferData } from './utils.js';
 
 /**
- * @typedef {import("./brstm/index.js").Metadata} Metadata
+ * @typedef {import("../brstm/index.js").Metadata} Metadata
  */
-
 /**
  * @typedef {Object} AudioPlayerHooks
  * @property {() => void} onPlay
@@ -18,21 +19,15 @@
  */
 
 /**
- * @class AudioPlayer
+ * @implements {AudioPlayerBase}
  */
-
-export class AudioPlayer {
+export class AudioPlayerWebAudio extends AudioPlayerBase {
   /**
    * @param {Metadata} metadata
    * @param {AudioPlayerHooks} hooks
    */
   constructor(metadata, hooks) {
-    this.hooks = hooks;
-    /** @type {null | ((value?: any) => void)} */
-    this._readyPromiseCallback = null;
-    this.readyPromise = new Promise((resolve) => {
-      this._readyPromiseCallback = resolve;
-    });
+    super(metadata, hooks);
     this.init(metadata);
   }
 
@@ -46,7 +41,11 @@ export class AudioPlayer {
         sampleRate: metadata.sampleRate,
       });
       if (this.audioContext.audioWorklet) {
-        await this.audioContext.audioWorklet.addModule('src/audioMixer.js');
+        const workletPath = new URL(
+          './web-audio-mixer-worklet.js',
+          import.meta.url
+        ).href;
+        await this.audioContext.audioWorklet.addModule(workletPath);
       }
       if (this._readyPromiseCallback) {
         this._readyPromiseCallback();
@@ -92,21 +91,6 @@ export class AudioPlayer {
   }
 
   /**
-   * Interpotale [-32768..32767] (Int16) to [-1..1] (Float32)
-   * @returns {Float32Array} audio buffer's channel data
-   * @param {Int16Array} pcmSamples
-   */
-  convertToAudioBufferData(pcmSamples) {
-    // https://stackoverflow.com/a/17888298/917957
-    const floats = new Float32Array(pcmSamples.length);
-    for (let i = 0; i < pcmSamples.length; i++) {
-      const sample = pcmSamples[i];
-      floats[i] = sample < 0 ? sample / 0x8000 : sample / 0x7fff;
-    }
-    return floats;
-  }
-
-  /**
    *
    * @param {Array<Int16Array>} samples per-channel PCM samples
    */
@@ -115,7 +99,7 @@ export class AudioPlayer {
       return;
     }
     const floatSamples = samples.map((sample) => {
-      return this.convertToAudioBufferData(sample);
+      return convertToAudioBufferData(sample);
     });
 
     const { numberChannels, numberTracks } = this.metadata;
