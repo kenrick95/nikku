@@ -20,8 +20,13 @@ export class ControlsVolume extends HTMLElement {
     this._isDragging = false;
     /** @type {HTMLDivElement | undefined} */
     this.volumeContainer = undefined;
+    /** @type {HTMLDivElement | undefined} */
+    this.volumeIconContainer = undefined;
+
     /** @type {SVGElement | undefined} */
-    this.iconVolume = undefined;
+    this.iconVolumeNormal = undefined;
+    /** @type {SVGElement | undefined} */
+    this.iconVolumeMuted = undefined;
 
     /** @type {HTMLDivElement | undefined} */
     this.volumeFill = undefined;
@@ -61,12 +66,19 @@ export class ControlsVolume extends HTMLElement {
         document.getElementById('template-volume')
       ).content.cloneNode(true)
     );
-    this.iconVolume = /** @type {SVGElement} */ (
+    this.iconVolumeNormal = /** @type {SVGElement} */ (
       parseHTML(
         await fetch('./assets/volume-icon.svg').then((res) => res.text())
       )
     );
-    this.iconVolume?.classList.add('volume-icon');
+    this.iconVolumeMuted = /** @type {SVGElement} */ (
+      parseHTML(
+        await fetch('./assets/volume-icon-muted.svg').then((res) => res.text())
+      )
+    );
+    this.volumeIconContainer = /** @type {HTMLDivElement} */ (
+      volumeElement.querySelector('.volume-icon-container')
+    );
     this.volumeContainer = /** @type {HTMLDivElement} */ (
       volumeElement.querySelector('.volume-container')
     );
@@ -80,7 +92,26 @@ export class ControlsVolume extends HTMLElement {
       volumeElement.querySelector('.volume-bar-container')
     );
 
-    this.volumeContainer?.prepend(/** @type {SVGElement} */ (this.iconVolume));
+    if (this.state.muted) {
+      this.volumeIconContainer.appendChild(this.iconVolumeMuted);
+    } else {
+      this.volumeIconContainer.appendChild(this.iconVolumeNormal);
+    }
+
+    this.volumeContainer?.prepend(this.volumeIconContainer);
+
+    this.volumeIconContainer?.addEventListener('click', (e) => {
+      const newMuted = !this.state.muted;
+      this.updateStateMuted(newMuted);
+
+      this.dispatchEvent(
+        new CustomEvent('mutedChange', {
+          detail: {
+            muted: newMuted,
+          },
+        })
+      );
+    });
 
     /**
      *
@@ -166,8 +197,29 @@ export class ControlsVolume extends HTMLElement {
    *
    * @param {boolean} newValue
    */
-  updateStateMode(newValue) {
+  updateStateMuted(newValue) {
     this.state.muted = newValue;
+    if (this.volumeIconContainer) {
+      const firstChild = this.volumeIconContainer.firstChild;
+      if (
+        newValue &&
+        firstChild &&
+        this.iconVolumeMuted &&
+        firstChild !== this.iconVolumeMuted
+      ) {
+        this.volumeIconContainer.replaceChild(this.iconVolumeMuted, firstChild);
+      } else if (
+        !newValue &&
+        firstChild &&
+        this.iconVolumeNormal &&
+        firstChild !== this.iconVolumeNormal
+      ) {
+        this.volumeIconContainer.replaceChild(
+          this.iconVolumeNormal,
+          firstChild
+        );
+      }
+    }
     this.render();
   }
 
@@ -190,12 +242,20 @@ export class ControlsVolume extends HTMLElement {
 
   render() {
     if (this.volumeFill) {
-      this.volumeFill.style.transform = `scaleX(${this.state.volume})`;
+      if (this.state.muted) {
+        this.volumeFill.style.transform = `scaleX(0)`;
+      } else {
+        this.volumeFill.style.transform = `scaleX(${this.state.volume})`;
+      }
     }
     if (this.volumeIndicator) {
-      this.volumeIndicator.style.transform = `translateX(calc(${
-        this.state.volume * (this._cachedVolumeBarClientWidth ?? 0)
-      }px - 50%))`;
+      if (this.state.muted) {
+        this.volumeIndicator.style.transform = ``;
+      } else {
+        this.volumeIndicator.style.transform = `translateX(calc(${
+          this.state.volume * (this._cachedVolumeBarClientWidth ?? 0)
+        }px - 50%))`;
+      }
     }
 
     const volumeBarContainer = /** @type {HTMLDivElement} */ (
@@ -219,7 +279,7 @@ export class ControlsVolume extends HTMLElement {
   attributeChangedCallback(name, oldValue, newValue) {
     if (oldValue != newValue) {
       if (name === 'muted') {
-        this.updateStateMode(newValue != null);
+        this.updateStateMuted(newValue != null);
       } else if (name === 'volume') {
         this.updateStateVolume(parseFloat(newValue));
       } else if (name === 'disabled') {

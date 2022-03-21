@@ -39,6 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
     playPause: new Reactive('play'),
     loop: new Reactive('on'),
     volume: new Reactive(1),
+    muted: new Reactive(false),
     progressMax: new Reactive(0),
     progressValue: new Reactive(0),
     timeDisplayMax: new Reactive(0),
@@ -184,7 +185,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         await audioPlayer.readyPromise;
         audioPlayer.load(allSamples);
-        audioPlayer.setVolume(uiState.volume.get());
+        if (uiState.muted.get()) {
+          audioPlayer.setVolume(0);
+        } else {
+          audioPlayer.setVolume(uiState.volume.get());
+        }
 
         uiState.playPause.set('pause');
         uiState.progressMax.set(amountTimeInS);
@@ -300,15 +305,28 @@ document.addEventListener('DOMContentLoaded', () => {
       );
     elControlsVolume.addEventListener('volumeChange', (e) => {
       uiState.volume.set(/** @type {any} */ (e).detail.volume);
+      uiState.muted.set(false);
     });
     uiState.volume.on('change', (newVolume) => {
       audioPlayer?.setVolume(newVolume);
     });
     uiState.disabled.on('change', (newDisabledValue) => {
       if (newDisabledValue) {
-        elControlsVolume.setAttribute('disabled', '');
       } else {
         elControlsVolume.removeAttribute('disabled');
+      }
+    });
+
+    elControlsVolume.addEventListener('mutedChange', (e) => {
+      uiState.muted.set(/** @type {any} */ (e).detail.muted);
+    });
+    uiState.muted.on('change', (newMuted) => {
+      if (newMuted) {
+        audioPlayer?.setVolume(0);
+        elControlsVolume.setAttribute('muted', 'muted');
+      } else {
+        audioPlayer?.setVolume(uiState.volume.get());
+        elControlsVolume.removeAttribute('muted');
       }
     });
   }
