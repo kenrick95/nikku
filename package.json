@@ -1,6 +1,6 @@
 {
-  "name": "@kenrick95/nikku",
-  "version": "0.1.0",
+  "name": "@kenrick95/nikku-root",
+  "version": "1.0.0",
   "description": "BRSTM Music Player",
   "main": "index.js",
   "private": true,
