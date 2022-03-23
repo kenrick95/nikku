@@ -18,6 +18,6 @@
     "useDefineForClassFields": false,
     "target": "ESNext"
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "src/audio-player/audioMixer.js"],
   "exclude": []
 }

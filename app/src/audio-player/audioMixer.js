@@ -1,24 +1,22 @@
-import type { TrackDescription } from 'brstm';
-
-import type { AudioPlayerTrackStates } from './audioPlayer';
+// @ts-check
+// Cannot be in TypeScript yet
+// See: https://github.com/vitejs/vite/discussions/3804
+/** @typedef {import('brstm').TrackDescription} TrackDescription */
+/** @typedef {import('./audioPlayer').AudioPlayerTrackStates} AudioPlayerTrackStates */
 
 class AudioMixerProcessor extends AudioWorkletProcessor {
-  #trackStates: AudioPlayerTrackStates;
-  #trackDescriptions: TrackDescription[];
-
   /**
    *
    * @param {AudioWorkletNodeOptions=} options
    */
-  constructor(options: AudioWorkletNodeOptions | undefined) {
-    super(); 
-    this.#trackStates = options?.processorOptions?.trackStates || {}; 
-    this.#trackDescriptions =
-      options?.processorOptions?.trackDescriptions || [];
+  constructor(options) {
+    super();
+    this.trackStates = options?.processorOptions?.trackStates || {};
+    this.trackDescriptions = options?.processorOptions?.trackDescriptions || [];
     this.port.onmessage = (event) => {
-      if (event.data.trackStates) this.#trackStates = event.data.trackStates;
+      if (event.data.trackStates) this.trackStates = event.data.trackStates;
       if (event.data.trackDescriptions)
-        this.#trackDescriptions = event.data.trackDescriptions;
+        this.trackDescriptions = event.data.trackDescriptions;
     };
   }
 
@@ -28,11 +26,7 @@ class AudioMixerProcessor extends AudioWorkletProcessor {
    * @param {Array<Array<Float32Array>>} outputs
    * @param {Object} _parameters
    */
-  process(
-    inputs: Array<Array<Float32Array>>,
-    outputs: Array<Array<Float32Array>>,
-    _parameters: object
-  ) {
+  process(inputs, outputs, _parameters) {
     const input = inputs[0];
     const output = outputs[0];
     if (!input) {
@@ -52,12 +46,12 @@ class AudioMixerProcessor extends AudioWorkletProcessor {
 
       for (
         let trackIndex = 0, channelIndex = 0;
-        trackIndex < this.#trackStates.length;
+        trackIndex < this.trackStates.length;
         trackIndex++
       ) {
         const trackChannelCount =
-          this.#trackDescriptions[trackIndex].numberChannels;
-        if (this.#trackStates[trackIndex]) {
+          this.trackDescriptions[trackIndex].numberChannels;
+        if (this.trackStates[trackIndex]) {
           const finalOddTrackChannelCountIndex =
             trackChannelCount - (trackChannelCount % 2);
 
@@ -92,8 +86,9 @@ class AudioMixerProcessor extends AudioWorkletProcessor {
  * @param {number} max
  * @returns {number}
  */
-function clamp(value: number, min: number, max: number): number {
+function clamp(value, min, max) {
   return value <= min ? min : value >= max ? max : value;
 }
 
+// TODO: https://github.com/microsoft/TypeScript-DOM-lib-generator/issues/1298 
 registerProcessor('audio-mixer-processor', AudioMixerProcessor);
