@@ -1,100 +1,76 @@
-import { parseHTML } from './utils.js';
+import { html, css, LitElement } from 'lit';
+import { customElement, property } from 'lit/decorators.js';
+import { unsafeHTML } from 'lit/directives/unsafe-html.js';
+import { classMap } from 'lit/directives/class-map.js';
+import IconLoop from '../../assets/loop-icon.svg?raw';
 
-export class ControlsLoop extends HTMLElement {
-  state: {
-    /** Which icon is showing: ON (looping) or OFF (not looping) */
-    mode: 'on' | 'off';
-    /** whether value is changable or not */
-    disabled: boolean;
-  };
-  button: HTMLButtonElement | undefined;
-  iconLoop: SVGElement | undefined;
-  constructor() {
-    super();
+@customElement('controls-loop')
+export class ControlsLoop extends LitElement {
+  /** Which icon is showing: ON (looping) or OFF (not looping) */
+  @property({ type: Boolean }) disabled: boolean = false;
+  /** whether value is changable or not */
+  @property({ type: String }) mode: 'on' | 'off' = 'on';
 
-    this.attachShadow({ mode: 'open' });
-    this.state = {
-      mode: (this.getAttribute('mode') as 'on' | 'off') || 'on',
-      disabled: this.getAttribute('disabled') != null,
-    };
-    this.button = undefined;
-    this.init();
+  static styles = css`
+    :root {
+      margin: 0;
+      padding: 0;
+    }
+    .button {
+      all: initial;
+      width: 40px;
+      height: 40px;
+      border-radius: 20px;
+    }
+    svg {
+      width: 100%;
+      height: 100%;
+    }
+    .button:not(.disabled):hover {
+      background: var(--primary-lightest-1);
+      box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.24);
+      cursor: pointer;
+    }
+    .button.off > svg {
+      fill: var(--primary-lighter);
+    }
+    .button.disabled:hover {
+      cursor: not-allowed;
+    }
+  `;
+
+  render() {
+    return html`<button
+      class=${classMap({
+        on: this.mode === 'on',
+        off: this.mode === 'off',
+        disabled: this.disabled,
+        button: true,
+      })}
+      @click="${this.#loopClick}"
+    >
+      ${unsafeHTML(IconLoop)}
+    </button>`;
   }
 
-  updateButtonClass() {
-    if (!this.button) {
+  #loopClick() {
+    if (this.disabled) {
       return;
     }
-    if (this.state.mode === 'on') {
-      this.button.classList.add('on');
-      this.button.classList.remove('off');
-    } else {
-      this.button.classList.remove('on');
-      this.button.classList.add('off');
-    }
-
-    if (this.state.disabled) {
-      this.button.classList.add('disabled');
-    } else {
-      this.button.classList.remove('disabled');
-    }
-  }
-
-  async init() {
-    let loopElement = (
-      document.getElementById('template-loop') as HTMLTemplateElement
-    ).content.cloneNode(true);
-
-    this.iconLoop = parseHTML(
-      await fetch('./assets/loop-icon.svg').then((res) => res.text())
-    ) as SVGElement;
-    this.button = document.createElement('button');
-    this.button.classList.add('button');
-    this.updateButtonClass();
-
-    this.button.appendChild(this.iconLoop);
-    loopElement.appendChild(this.button);
-
-    //@ts-ignore
-    this.shadowRoot.innerHTML = '';
-    this.shadowRoot?.append(loopElement);
-
-    this.button.addEventListener('click', () => {
-      if (this.state.disabled) {
-        return;
-      }
-      const newMode = this.state.mode === 'on' ? 'off' : 'on';
-      this.dispatchEvent(
-        new CustomEvent('loopClick', {
-          detail: {
-            mode: newMode,
-          },
-        })
-      );
-      this.setAttribute('mode', newMode);
-    });
-  }
-
-  static get observedAttributes() {
-    return ['mode', 'disabled'];
-  }
-
-  /**
-   *
-   * @param {string} name
-   * @param {string} oldValue
-   * @param {string} newValue
-   */
-  attributeChangedCallback(name: string, oldValue: string, newValue: string) {
-    if (oldValue != newValue) {
-      if (name === 'mode') {
-        this.state.mode = newValue as 'on' | 'off';
-        this.updateButtonClass();
-      } else if (name === 'disabled') {
-        this.state.disabled = newValue != null;
-        this.updateButtonClass();
-      }
-    }
+    const newMode = this.mode === 'on' ? 'off' : 'on';
+    this.dispatchEvent(
+      new CustomEvent('loopClick', {
+        detail: {
+          mode: newMode,
+        },
+      })
+    );
+    this.mode = newMode;
   }
 }
-customElements.define('controls-loop', ControlsLoop);
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'controls-loop': ControlsLoop;
+  }
+}
