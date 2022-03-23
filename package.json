@@ -19,5 +19,8 @@
   "bugs": {
     "url": "https://github.com/kenrick95/nikku/issues"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "scripts": {
+    "dev": "pnpm run --filter brstm build && pnpm run --filter @kenrick95/nikku --stream dev "
+  }
 }
