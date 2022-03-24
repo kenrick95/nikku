@@ -79,7 +79,7 @@
     <main id="main">
       <div id="track-title"></div>
       <div id="controls-tracks">
-        <controls-tracks disabled count="1" active="0"></controls-tracks>
+        <controls-tracks disabled count="1" active="[true]"></controls-tracks>
       </div>
       <div id="controls-time-display">
         <controls-time-display
@@ -237,47 +237,6 @@
       </div>
     </template>
 
-    <template id="template-tracks">
-      <style>
-        .hidden {
-          display: none;
-        }
-        #list {
-          list-style: none;
-          padding-left: 0;
-          margin-top: 6px;
-          user-select: none;
-        }
-        input[type='checkbox'] {
-          appearance: none;
-          position: relative;
-          background: var(--primary-lightest-2);
-          border-radius: 2px;
-          padding: 2px;
-          margin: 0;
-
-          width: 15px;
-          height: 15px;
-          display: inline-block;
-          vertical-align: middle;
-          top: -1px;
-        }
-        input[type='checkbox']:checked:after {
-          content: '\2714';
-          position: absolute;
-          left: 2px;
-          top: 0;
-
-          font-size: 12px;
-          line-height: 13px;
-          color: var(--primary-darker);
-        }
-      </style>
-      <div id="container">
-        Active tracks:
-        <ol id="list"></ol>
-      </div>
-    </template>
 
     <script type="module" src="./src/main.ts"></script>
     <script nomodule src="./src/nomodule.ts"></script>

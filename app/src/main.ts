@@ -239,15 +239,7 @@ document.addEventListener('DOMContentLoaded', () => {
       elControlsTracks.setAttribute('count', String(newCount));
     });
     uiState.tracksActive.on('change', (newActiveStates: Array<boolean>) => {
-      elControlsTracks.setAttribute(
-        'active',
-        newActiveStates
-          .map((v, i) => {
-            return v ? i : -1;
-          })
-          .filter((v) => v !== -1)
-          .join(',')
-      );
+      elControlsTracks.setAttribute('active', JSON.stringify(newActiveStates));
     });
 
     elControlsTracks.addEventListener('tracksActiveChange', (e) => {
