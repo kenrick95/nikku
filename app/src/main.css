@@ -1,3 +1,20 @@
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-stretch: normal;
+  font-display: swap;
+  src: local('Open Sans'), url('../assets/OpenSans-Regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-stretch: normal;
+  font-display: swap;
+  src: local('Open Sans SemiBold'), url('../assets/OpenSans-SemiBold.ttf') format('truetype');
+}
+
 :root {
   --primary: hsl(117, 75%, 30%);
   --primary-dark: hsl(117, 76%, 23%);
