@@ -174,3 +174,9 @@ export class ControlsProgress extends LitElement {
     this.refreshCachedValues();
   }
 }
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'controls-progress': ControlsProgress;
+  }
+}
