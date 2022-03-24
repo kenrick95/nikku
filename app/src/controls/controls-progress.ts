@@ -129,6 +129,7 @@ export class ControlsProgress extends LitElement {
           },
         })
       );
+      this.value = newValue;
     };
     this.progressBar.value?.addEventListener(
       'mousedown',
