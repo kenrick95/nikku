@@ -57,7 +57,7 @@ export class ControlsPlayPause extends LitElement {
         },
       })
     );
-    this.setAttribute('mode', newMode);
+    this.mode = newMode;
   }
 }
 
