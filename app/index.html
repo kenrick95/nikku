@@ -172,36 +172,6 @@
       </div>
     </template>
 
-    <template id="template-time-display">
-      <style>
-        .progress-time-display {
-          display: flex;
-          justify-content: flex-end;
-        }
-        .separator {
-          margin-inline-start: 4px;
-          margin-inline-end: 4px;
-        }
-        .time {
-          width: 3em;
-          text-align: center;
-        }
-        @media (max-width: 640px) {
-          .progress-time-display {
-            justify-content: flex-start;
-          }
-          .time {
-            text-align: left;
-          }
-        }
-      </style>
-      <div class="progress-time-display">
-        <div class="time" id="current">00:00</div>
-        <div class="separator">/</div>
-        <div class="time" id="total">00:00</div>
-      </div>
-    </template>
-
     <template id="template-volume">
       <style>
         :root {
