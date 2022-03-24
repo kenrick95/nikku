@@ -1,110 +1,152 @@
-import { parseHTML } from './utils.js';
+import { html, css, LitElement } from 'lit';
+import { customElement, property } from 'lit/decorators.js';
+import { classMap } from 'lit/directives/class-map.js';
+import { createRef, ref, Ref } from 'lit/directives/ref.js';
+import { styleMap } from 'lit/directives/style-map.js';
+import { unsafeHTML } from 'lit/directives/unsafe-html.js';
+import IconVolumeNormal from '../../assets/volume-icon.svg?raw';
+import IconVolumeMuted from '../../assets/volume-icon-muted.svg?raw';
 
-export class ControlsVolume extends HTMLElement {
-  state: { muted: boolean; volume: number; disabled: boolean };
-  _isDragging: boolean;
-  volumeContainer: HTMLDivElement | undefined;
-  volumeIconContainer: HTMLDivElement | undefined;
-  iconVolumeNormal: SVGElement | undefined;
-  iconVolumeMuted: SVGElement | undefined;
-  volumeFill: HTMLDivElement | undefined;
-  volumeIndicator: HTMLDivElement | undefined;
-  _cachedVolumeBarOffsetLeft: number | null;
-  _cachedVolumeBarClientWidth: number | null;
-  constructor() {
-    super();
+@customElement('controls-volume')
+export class ControlsVolume extends LitElement {
+  /** Whether value is changable or not */
+  @property({ type: Boolean }) disabled: boolean = false;
+  /** whether the volume is muted (true) or not (false) */
+  @property({ type: Boolean }) muted: boolean = false;
+  /** floating point number indicating silent (0.0) to loudest (1.0) */
+  @property({ type: Number }) volume: number = 1;
 
-    this.attachShadow({ mode: 'open' });
-    /**
-     * - muted: whether the volume is muted (true) or not (false)
-     * - volume: floating point number indicating silent (0.0) to loudest (1.0)
-     * - disabled: whether value is changable or not
-     * @type {{ muted: boolean; volume: number, disabled: boolean }}
-     */
-    this.state = {
-      muted: this.getAttribute('muted') != null,
-      volume: parseFloat(this.getAttribute('volume') || '1.0'),
-      disabled: this.getAttribute('disabled') != null,
-    };
+  static styles = css`
+    :root {
+      margin: 0;
+      padding: 0;
+    }
+    svg {
+      width: 100%;
+      height: 100%;
+    }
+    .volume-icon-container {
+      width: 40px;
+    }
+    .volume-container {
+      display: flex;
+      align-items: center;
+    }
+    .volume-bar-container {
+      height: 40px;
+      margin-left: 8px;
+      display: flex;
+      align-items: center;
+      user-select: none;
+    }
+    .volume-bar {
+      position: relative;
+      width: 100px;
+      height: 10px;
+    }
+    .volume-background {
+      position: absolute;
+      top: 4px;
+      width: 100%;
+      height: 2px;
+      border-radius: 1px;
+      background-color: #e0e4e8;
+    }
+    .volume-fill {
+      position: absolute;
+      top: 4px;
+      width: 100%;
+      transform-origin: left;
+      height: 2px;
+      /* NOTE: Because of scaleX transform, this border-radius is also "scaled", need to find a way to have a fixed border-radius*/
+      /* border-radius: 1px; */
+      background-color: var(--primary);
+    }
+    .volume-indicator {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: var(--primary);
+    }
+    .disabled {
+      cursor: not-allowed;
+    }
+  `;
 
-    this._isDragging = false;
-    this.volumeContainer = undefined;
-    this.volumeIconContainer = undefined;
-    this.iconVolumeNormal = undefined;
-    this.iconVolumeMuted = undefined;
-    this.volumeFill = undefined;
-    this.volumeIndicator = undefined;
+  #isDragging: boolean = false;
+  #cachedVolumeBarOffsetLeft: number | null = null;
+  #cachedVolumeBarClientWidth: number | null = null;
+  volumeBarContainer: Ref<HTMLDivElement> = createRef();
+  volumeFill: Ref<HTMLDivElement> = createRef();
+  volumeIndicator: Ref<HTMLDivElement> = createRef();
 
-    // Cache the values because they cause page reflow
-    this._cachedVolumeBarOffsetLeft = null;
-    this._cachedVolumeBarClientWidth = null;
-
-    this.init();
+  render() {
+    return html`<div class="volume-container">
+      <div class="volume-icon-container" @click=${this.#handleVolumeIconClick}>
+        ${this.muted
+          ? unsafeHTML(IconVolumeMuted)
+          : unsafeHTML(IconVolumeNormal)}
+      </div>
+      <div
+        class=${classMap({
+          'volume-bar-container': true,
+          disabled: this.disabled,
+        })}
+        ${ref(this.volumeBarContainer)}
+      >
+        <div class="volume-bar">
+          <div class="volume-background"></div>
+          <div
+            class="volume-fill"
+            style=${styleMap({
+              transform: this.muted ? `scaleX(0)` : `scaleX(${this.volume})`,
+            })}
+            ${ref(this.volumeFill)}
+          ></div>
+          <div
+            class="volume-indicator"
+            style=${styleMap({
+              transform: this.muted
+                ? ``
+                : `translateX(calc(${
+                    this.volume * (this.#cachedVolumeBarClientWidth ?? 0)
+                  }px - 50%))`,
+            })}
+            ${ref(this.volumeIndicator)}
+          ></div>
+        </div>
+      </div>
+    </div>`;
+  }
+  #handleVolumeIconClick() {
+    const newMuted = !this.muted;
+    this.muted = newMuted;
+    this.dispatchEvent(
+      new CustomEvent('mutedChange', {
+        detail: {
+          muted: newMuted,
+        },
+      })
+    );
   }
 
   refreshCachedValues() {
-    const volumeBarContainer = this.shadowRoot?.querySelector(
-      '.volume-bar-container'
-    ) as HTMLDivElement;
-
-    if (!this._cachedVolumeBarOffsetLeft) {
-      this._cachedVolumeBarOffsetLeft = volumeBarContainer?.offsetLeft ?? 0;
+    if (!this.#cachedVolumeBarOffsetLeft) {
+      this.#cachedVolumeBarOffsetLeft =
+        this.volumeBarContainer.value?.offsetLeft ?? 0;
     }
     if (
-      !this._cachedVolumeBarClientWidth ||
-      this._cachedVolumeBarClientWidth === 1
+      !this.#cachedVolumeBarClientWidth ||
+      this.#cachedVolumeBarClientWidth === 1
     ) {
-      this._cachedVolumeBarClientWidth = volumeBarContainer?.clientWidth ?? 1;
+      this.#cachedVolumeBarClientWidth =
+        this.volumeBarContainer.value?.clientWidth ?? 1;
     }
   }
 
-  async init() {
-    this._isDragging = false;
-    let volumeElement = (
-      document.getElementById('template-volume') as HTMLTemplateElement
-    ).content.cloneNode(true) as DocumentFragment;
-    this.iconVolumeNormal = parseHTML(
-      await fetch('./assets/volume-icon.svg').then((res) => res.text())
-    ) as SVGElement;
-    this.iconVolumeMuted = parseHTML(
-      await fetch('./assets/volume-icon-muted.svg').then((res) => res.text())
-    ) as SVGElement;
-    this.volumeIconContainer = volumeElement.querySelector(
-      '.volume-icon-container'
-    ) as HTMLDivElement;
-    this.volumeContainer = volumeElement.querySelector(
-      '.volume-container'
-    ) as HTMLDivElement;
-    this.volumeIndicator = volumeElement.querySelector(
-      '.volume-indicator'
-    ) as HTMLDivElement;
-    this.volumeFill = volumeElement.querySelector(
-      '.volume-fill'
-    ) as HTMLDivElement;
-    const volumeBarContainer = volumeElement.querySelector(
-      '.volume-bar-container'
-    ) as HTMLDivElement;
-
-    if (this.state.muted) {
-      this.volumeIconContainer.appendChild(this.iconVolumeMuted);
-    } else {
-      this.volumeIconContainer.appendChild(this.iconVolumeNormal);
-    }
-
-    this.volumeContainer?.prepend(this.volumeIconContainer);
-
-    this.volumeIconContainer?.addEventListener('click', (_e: MouseEvent) => {
-      const newMuted = !this.state.muted;
-      this.updateStateMuted(newMuted);
-
-      this.dispatchEvent(
-        new CustomEvent('mutedChange', {
-          detail: {
-            muted: newMuted,
-          },
-        })
-      );
-    });
+  firstUpdated() {
+    this.#isDragging = false;
 
     const updateVolumeFromEvent = (e: MouseEvent) => {
       this.refreshCachedValues();
@@ -112,12 +154,11 @@ export class ControlsVolume extends HTMLElement {
         1,
         Math.max(
           0,
-          (e.clientX - (this._cachedVolumeBarOffsetLeft ?? 0)) /
-            (this._cachedVolumeBarClientWidth ?? 1)
+          (e.clientX - (this.#cachedVolumeBarOffsetLeft ?? 0)) /
+            (this.#cachedVolumeBarClientWidth ?? 1)
         )
       );
-      this.updateStateVolume(newVolume);
-
+      this.volume = newVolume;
       this.dispatchEvent(
         new CustomEvent('volumeChange', {
           detail: {
@@ -127,13 +168,13 @@ export class ControlsVolume extends HTMLElement {
       );
     };
 
-    volumeBarContainer?.addEventListener(
+    this.volumeBarContainer.value?.addEventListener(
       'mousedown',
       (e) => {
-        if (this.state.disabled) {
+        if (this.disabled) {
           return;
         }
-        this._isDragging = true;
+        this.#isDragging = true;
         updateVolumeFromEvent(/** @type {MouseEvent} */ e);
       },
       { passive: true }
@@ -141,10 +182,10 @@ export class ControlsVolume extends HTMLElement {
     document?.addEventListener(
       'mousemove',
       (e) => {
-        if (this.state.disabled) {
+        if (this.disabled) {
           return;
         }
-        if (this._isDragging) {
+        if (this.#isDragging) {
           updateVolumeFromEvent(/** @type {MouseEvent} */ e);
         }
       },
@@ -153,121 +194,28 @@ export class ControlsVolume extends HTMLElement {
     document?.addEventListener(
       'mouseup',
       (_e) => {
-        if (this.state.disabled) {
+        if (this.disabled) {
           return;
         }
-        this._isDragging = false;
+        this.#isDragging = false;
       },
       { passive: true }
     );
 
     // Invalidate cached values because they have changed
     window.addEventListener('resize', () => {
-      this._cachedVolumeBarOffsetLeft = null;
-      this._cachedVolumeBarClientWidth = null;
+      this.#cachedVolumeBarOffsetLeft = null;
+      this.#cachedVolumeBarClientWidth = null;
       this.refreshCachedValues();
     });
 
-    // @ts-ignore
-    this.shadowRoot.innerHTML = '';
-    this.shadowRoot?.append(volumeElement);
-
-    // Force reflow
-    this.volumeContainer.clientWidth;
     this.refreshCachedValues();
     this.render();
   }
+}
 
-  static get observedAttributes() {
-    return ['muted', 'volume', 'disabled'];
-  }
-
-  /**
-   *
-   * @param {boolean} newValue
-   */
-  updateStateMuted(newValue: boolean) {
-    this.state.muted = newValue;
-    if (this.volumeIconContainer) {
-      const firstChild = this.volumeIconContainer.firstChild;
-      if (
-        newValue &&
-        firstChild &&
-        this.iconVolumeMuted &&
-        firstChild !== this.iconVolumeMuted
-      ) {
-        this.volumeIconContainer.replaceChild(this.iconVolumeMuted, firstChild);
-      } else if (
-        !newValue &&
-        firstChild &&
-        this.iconVolumeNormal &&
-        firstChild !== this.iconVolumeNormal
-      ) {
-        this.volumeIconContainer.replaceChild(
-          this.iconVolumeNormal,
-          firstChild
-        );
-      }
-    }
-    this.render();
-  }
-  updateStateDisabled(newValue: boolean) {
-    this.state.disabled = newValue;
-    this.render();
-  }
-
-  updateStateVolume(newValue: number) {
-    this.state.volume = newValue;
-    this.render();
-  }
-
-  render() {
-    if (this.volumeFill) {
-      if (this.state.muted) {
-        this.volumeFill.style.transform = `scaleX(0)`;
-      } else {
-        this.volumeFill.style.transform = `scaleX(${this.state.volume})`;
-      }
-    }
-    if (this.volumeIndicator) {
-      if (this.state.muted) {
-        this.volumeIndicator.style.transform = ``;
-      } else {
-        this.volumeIndicator.style.transform = `translateX(calc(${
-          this.state.volume * (this._cachedVolumeBarClientWidth ?? 0)
-        }px - 50%))`;
-      }
-    }
-
-    const volumeBarContainer =
-      /** @type {HTMLDivElement} */ this.shadowRoot?.querySelector(
-        '.volume-bar-container'
-      );
-    if (volumeBarContainer) {
-      if (this.state.disabled) {
-        volumeBarContainer.classList.add('disabled');
-      } else {
-        volumeBarContainer.classList.remove('disabled');
-      }
-    }
-  }
-
-  /**
-   *
-   * @param {string} name
-   * @param {string} oldValue
-   * @param {string} newValue
-   */
-  attributeChangedCallback(name: string, oldValue: string, newValue: string) {
-    if (oldValue != newValue) {
-      if (name === 'muted') {
-        this.updateStateMuted(newValue != null);
-      } else if (name === 'volume') {
-        this.updateStateVolume(parseFloat(newValue));
-      } else if (name === 'disabled') {
-        this.updateStateDisabled(newValue != null);
-      }
-    }
+declare global {
+  interface HTMLElementTagNameMap {
+    'controls-volume': ControlsVolume;
   }
 }
-customElements.define('controls-volume', ControlsVolume);
