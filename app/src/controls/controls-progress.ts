@@ -1,67 +1,114 @@
+import { html, css, LitElement } from 'lit';
+import { customElement, property } from 'lit/decorators.js';
+import { classMap } from 'lit/directives/class-map.js';
+import { createRef, ref, Ref } from 'lit/directives/ref.js';
+import { styleMap } from 'lit/directives/style-map.js';
 
-export class ControlsProgress extends HTMLElement {
-  state: {
-    value: number;
-    max: number;
-    /** whether value is changable or not */
-    disabled: boolean;
-  };
-  _isDragging: boolean;
-  progressActive: HTMLDivElement | undefined;
-  progressIndicator: HTMLDivElement | undefined;
-  _cachedProgressBarOffsetLeft: number | null;
-  _cachedProgressBarClientWidth: number | null;
-  constructor() {
-    super();
-    this.attachShadow({ mode: 'open' });
-    this.state = {
-      value: parseInt(this.getAttribute('value') || '0', 10) || 0,
-      max: parseInt(this.getAttribute('max') || '0', 10) || 0,
-      disabled: this.getAttribute('disabled') != null,
-    };
-    this._isDragging = false;
+@customElement('controls-progress')
+export class ControlsProgress extends LitElement {
+  /** Whether value is changable or not */
+  @property({ type: Boolean }) disabled: boolean = false;
+  /** Current time in seconds */
+  @property({ type: Number }) value: number = 0;
+  /** Max time in seconds */
+  @property({ type: Number }) max: number = 0;
 
-    this.progressActive = undefined;
-    this.progressIndicator = undefined;
+  static styles = css`
+    .progress-bar-container {
+      height: 15px;
+    }
+    .progress-bar {
+      position: relative;
+      height: 15px;
+      user-select: none;
+    }
+    .progress-background {
+      position: absolute;
+      top: 5px;
+      width: 100%;
+      height: 4px;
+      border-radius: 2px;
+      background-color: #e0e4e8;
+    }
+    .progress-active {
+      position: absolute;
+      top: 5px;
+      width: 100%;
+      transform-origin: left;
+      height: 4px;
+      /* NOTE: Because of scaleX transform, this border-radius is also "scaled", need to find a way to have a fixed border-radius*/
+      /* border-radius: 2px; */
+      background-color: var(--primary);
+    }
+    .progress-indicator {
+      position: absolute;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background-color: var(--primary);
+    }
+    .disabled {
+      cursor: not-allowed;
+    }
+  `;
 
-    // Cache the values because they cause page reflow
-    this._cachedProgressBarOffsetLeft = null;
-    this._cachedProgressBarClientWidth = null;
+  #isDragging: boolean = false;
+  #cachedProgressBarOffsetLeft: number | null = null;
+  #cachedProgressBarClientWidth: number | null = null;
 
-    this.init();
+  progressBar: Ref<HTMLDivElement> = createRef();
+  progressActive: Ref<HTMLDivElement> = createRef();
+  progressIndicator: Ref<HTMLDivElement> = createRef();
+
+  render() {
+    const percentage = this.value / this.max;
+
+    return html`
+      <div class="progress-bar-container">
+        <div
+          class=${classMap({
+            'progress-bar': true,
+            disabled: this.disabled,
+          })}
+          ${ref(this.progressBar)}
+        >
+          <div class="progress-background"></div>
+          <div
+            class="progress-active"
+            ${ref(this.progressActive)}
+            style=${styleMap({
+              transform: `scaleX(${percentage})`,
+            })}
+          ></div>
+          <div
+            class="progress-indicator"
+            ${ref(this.progressIndicator)}
+            style=${styleMap({
+              transform: `translateX(calc(${
+                percentage * (this.#cachedProgressBarClientWidth ?? 0)
+              }px - 50%))`,
+            })}
+          ></div>
+        </div>
+      </div>
+    `;
   }
 
   refreshCachedValues() {
-    const progressBar = this.shadowRoot?.querySelector(
-      '.progress-bar'
-    ) as HTMLDivElement;
-
-    if (!this._cachedProgressBarOffsetLeft) {
-      this._cachedProgressBarOffsetLeft = progressBar?.offsetLeft ?? 0;
+    if (!this.#cachedProgressBarOffsetLeft) {
+      this.#cachedProgressBarOffsetLeft =
+        this.progressBar.value?.offsetLeft ?? 0;
     }
     if (
-      !this._cachedProgressBarClientWidth ||
-      this._cachedProgressBarClientWidth === 1
+      !this.#cachedProgressBarClientWidth ||
+      this.#cachedProgressBarClientWidth === 1
     ) {
-      this._cachedProgressBarClientWidth = progressBar?.clientWidth ?? 1;
+      this.#cachedProgressBarClientWidth =
+        this.progressBar.value?.clientWidth ?? 1;
     }
   }
 
-  async init() {
-    let progressElement = (
-      document.getElementById('template-progress') as HTMLTemplateElement
-    ).content.cloneNode(true) as DocumentFragment;
-
-    this.progressActive = progressElement.querySelector(
-      '.progress-active'
-    ) as HTMLDivElement;
-    this.progressIndicator = progressElement.querySelector(
-      '.progress-indicator'
-    ) as HTMLDivElement;
-    const progressBar = progressElement.querySelector(
-      '.progress-bar'
-    ) as HTMLDivElement;
-
+  firstUpdated() {
     const updateVolumeFromEvent = (e: MouseEvent) => {
       this.refreshCachedValues();
 
@@ -70,11 +117,10 @@ export class ControlsProgress extends HTMLElement {
           1,
           Math.max(
             0,
-            (e.clientX - (this._cachedProgressBarOffsetLeft ?? 0)) /
-              (this._cachedProgressBarClientWidth ?? 1)
+            (e.clientX - (this.#cachedProgressBarOffsetLeft ?? 0)) /
+              (this.#cachedProgressBarClientWidth ?? 1)
           )
-        ) * this.state.max;
-      this.updateStateValue(newValue);
+        ) * this.max;
 
       this.dispatchEvent(
         new CustomEvent('progressValueChange', {
@@ -84,14 +130,13 @@ export class ControlsProgress extends HTMLElement {
         })
       );
     };
-
-    progressBar?.addEventListener(
+    this.progressBar.value?.addEventListener(
       'mousedown',
       (e) => {
-        if (this.state.disabled) {
+        if (this.disabled) {
           return;
         }
-        this._isDragging = true;
+        this.#isDragging = true;
         updateVolumeFromEvent(/** @type {MouseEvent} */ e);
       },
       { passive: true }
@@ -99,10 +144,10 @@ export class ControlsProgress extends HTMLElement {
     document?.addEventListener(
       'mousemove',
       (e) => {
-        if (this.state.disabled) {
+        if (this.disabled) {
           return;
         }
-        if (this._isDragging) {
+        if (this.#isDragging) {
           updateVolumeFromEvent(/** @type {MouseEvent} */ e);
         }
       },
@@ -111,86 +156,21 @@ export class ControlsProgress extends HTMLElement {
     document?.addEventListener(
       'mouseup',
       (_e) => {
-        if (this.state.disabled) {
+        if (this.disabled) {
           return;
         }
-        this._isDragging = false;
+        this.#isDragging = false;
       },
       { passive: true }
     );
 
     // Invalidate cached values because they have changed
     window.addEventListener('resize', () => {
-      this._cachedProgressBarOffsetLeft = null;
-      this._cachedProgressBarClientWidth = null;
+      this.#cachedProgressBarOffsetLeft = null;
+      this.#cachedProgressBarClientWidth = null;
       this.refreshCachedValues();
     });
 
-    // @ts-ignore
-    this.shadowRoot.innerHTML = '';
-    this.shadowRoot?.append(progressElement);
-
     this.refreshCachedValues();
-    this.render();
-  }
-
-  static get observedAttributes() {
-    return ['max', 'value', 'disabled'];
-  }
-
-  updateStateMax(newMax: number) {
-    this.state.max = newMax;
-    this.render();
-  }
-  updateStateValue(newValue: number) {
-    this.state.value = newValue;
-    this.render();
-  }
-  updateStateDisabled(newValue: boolean) {
-    this.state.disabled = newValue;
-    this.render();
-  }
-
-  render() {
-    const percentage = this.state.value / this.state.max;
-    if (this.progressActive) {
-      this.progressActive.style.transform = `scaleX(${percentage})`;
-    }
-    if (this.progressIndicator) {
-      this.progressIndicator.style.transform = `translateX(calc(${
-        percentage * (this._cachedProgressBarClientWidth ?? 0)
-      }px - 50%))`;
-    }
-
-    const progressBar =
-      /** @type {HTMLDivElement} */ this.shadowRoot?.querySelector(
-        '.progress-bar'
-      );
-    if (progressBar) {
-      if (this.state.disabled) {
-        progressBar.classList.add('disabled');
-      } else {
-        progressBar.classList.remove('disabled');
-      }
-    }
-  }
-
-  /**
-   *
-   * @param {string} name
-   * @param {string} oldValue
-   * @param {string} newValue
-   */
-  attributeChangedCallback(name: string, oldValue: string, newValue: string) {
-    if (oldValue != newValue) {
-      if (name === 'max') {
-        this.updateStateMax(parseFloat(newValue));
-      } else if (name === 'value') {
-        this.updateStateValue(parseFloat(newValue));
-      } else if (name === 'disabled') {
-        this.updateStateDisabled(newValue != null);
-      }
-    }
   }
 }
-customElements.define('controls-progress', ControlsProgress);
