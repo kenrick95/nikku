@@ -1,109 +1,18 @@
-import { parseHTML } from './utils.js';
+import { html, css, LitElement } from 'lit';
+import { customElement, property } from 'lit/decorators.js';
+import { unsafeHTML } from 'lit/directives/unsafe-html.js';
+import { classMap } from 'lit/directives/class-map.js';
+import IconPlay from '../../assets/play-icon.svg?raw';
+import IconPause from '../../assets/pause-icon.svg?raw';
 
-export class ControlsPlayPause extends HTMLElement {
-  state: {
-    /** Which icon is showing: play icon or pause icon? */
-    mode: 'play' | 'pause';
-    /** whether value is changable or not */
-    disabled: boolean;
-  };
-  iconPlay: SVGElement | undefined;
-  iconPause: SVGElement | undefined;
-  button: HTMLButtonElement | undefined;
-  constructor() {
-    super();
+@customElement('controls-play-pause')
+export class ControlsPlayPause extends LitElement {
+  /** whether value is changable or not */
+  @property({ type: Boolean }) disabled: boolean = false;
+  /** Which icon is showing: play icon or pause icon? */
+  @property({ type: String }) mode: 'play' | 'pause' = 'play';
 
-    this.attachShadow({ mode: 'open' });
-    this.state = {
-      mode: (this.getAttribute('mode') || 'play') as 'play' | 'pause',
-      disabled: this.getAttribute('disabled') != null,
-    };
-    this.init();
-  }
-  async init() {
-    let [iconPlayString, iconPauseString] = await Promise.all([
-      fetch('./assets/play-icon.svg').then((res) => res.text()),
-      fetch('./assets/pause-icon.svg').then((res) => res.text()),
-    ]);
-    this.iconPlay = parseHTML(iconPlayString) as SVGElement;
-    this.iconPause = parseHTML(iconPauseString) as SVGElement;
-    this.button = document.createElement('button');
-    this.button.classList.add('button');
-    if (this.state.disabled) {
-      this.button.classList.add('disabled');
-      this.button.disabled = true;
-    }
-
-    const icon = this.state.mode === 'play' ? this.iconPlay : this.iconPause;
-    this.button.appendChild(icon);
-
-    const style = document.createElement('style');
-    style.textContent = this.elementStyle;
-
-    if (this.shadowRoot) {
-      this.shadowRoot.innerHTML = '';
-      this.shadowRoot.append(style, this.button);
-    }
-
-    this.button.addEventListener('click', () => {
-      if (this.state.disabled) {
-        return;
-      }
-      const newMode = this.state.mode === 'play' ? 'pause' : 'play';
-      this.dispatchEvent(
-        new CustomEvent('playPauseClick', {
-          detail: {
-            mode: newMode,
-          },
-        })
-      );
-      this.setAttribute('mode', newMode);
-    });
-  }
-  updateStateMode(newValue: 'play' | 'pause') {
-    this.state.mode = newValue;
-    const icon = this.state.mode === 'play' ? this.iconPlay : this.iconPause;
-    if (icon && this.button?.firstChild) {
-      this.button.replaceChild(icon, this.button.firstChild);
-    }
-  }
-
-  updateStateDisabled(newValue: boolean) {
-    this.state.disabled = newValue;
-    if (!this.button) {
-      return;
-    }
-    if (this.state.disabled) {
-      this.button.classList.add('disabled');
-      this.button.disabled = true;
-    } else {
-      this.button.classList.remove('disabled');
-      this.button.disabled = false;
-    }
-  }
-
-  static get observedAttributes() {
-    return ['mode', 'disabled'];
-  }
-
-  /**
-   *
-   * @param {string} name
-   * @param {string} oldValue
-   * @param {string} newValue
-   */
-  attributeChangedCallback(name: string, oldValue: string, newValue: string) {
-    if (oldValue != newValue) {
-      if (name === 'mode' && (newValue == 'play' || newValue == 'pause')) {
-        this.updateStateMode(newValue);
-      } else if (name === 'disabled') {
-        this.updateStateDisabled(newValue != null);
-      }
-    }
-  }
-
-  get elementStyle() {
-    return `
+  static styles = css`
     .button {
       all: initial;
       width: 80px;
@@ -121,7 +30,39 @@ export class ControlsPlayPause extends HTMLElement {
     }
     .button.disabled {
       cursor: not-allowed;
-    }`;
+    }
+  `;
+
+  render() {
+    return html`<button
+      class=${classMap({
+        button: true,
+        disabled: this.disabled,
+      })}
+      ?disabled=${this.disabled}
+      @click=${this.#handleClick}
+    >
+      ${this.mode === 'play' ? unsafeHTML(IconPlay) : unsafeHTML(IconPause)}
+    </button>`;
+  }
+  #handleClick() {
+    if (this.disabled) {
+      return;
+    }
+    const newMode = this.mode === 'play' ? 'pause' : 'play';
+    this.dispatchEvent(
+      new CustomEvent('playPauseClick', {
+        detail: {
+          mode: newMode,
+        },
+      })
+    );
+    this.setAttribute('mode', newMode);
   }
 }
-customElements.define('controls-play-pause', ControlsPlayPause);
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'controls-play-pause': ControlsPlayPause;
+  }
+}
