@@ -11,15 +11,21 @@ on:
 
 jobs:
   test:
-
-    runs-on: ubuntu-latest
-
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        node-version: [14]
     steps:
     - uses: actions/checkout@v2
-    - name: Use Node.js 12
-      uses: actions/setup-node@v1
+    - uses: pnpm/action-setup@v2.0.1
       with:
-          node-version: 12
-
-    - run: cd src/brstm && yarn install --frozen-lockfile && cd -
-    - run: cd src/brstm && yarn test && cd -
+        version: 6.32.3
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'pnpm'
+    - name: Install dependencies
+      run: pnpm install
+    - name: Test brstm
+      run: pnpm run --filter "brstm..." test
