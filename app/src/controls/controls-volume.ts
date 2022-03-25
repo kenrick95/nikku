@@ -1,5 +1,5 @@
 import { html, css, LitElement } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { customElement, property, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { createRef, ref, Ref } from 'lit/directives/ref.js';
 import { styleMap } from 'lit/directives/style-map.js';
@@ -75,8 +75,10 @@ export class ControlsVolume extends LitElement {
   `;
 
   #isDragging: boolean = false;
-  #cachedVolumeBarOffsetLeft: number | null = null;
-  #cachedVolumeBarClientWidth: number | null = null;
+  @state()
+  _cachedVolumeBarOffsetLeft: number | null = null;
+  @state()
+  _cachedVolumeBarClientWidth: number | null = null;
   volumeBarContainer: Ref<HTMLDivElement> = createRef();
   volumeFill: Ref<HTMLDivElement> = createRef();
   volumeIndicator: Ref<HTMLDivElement> = createRef();
@@ -110,7 +112,7 @@ export class ControlsVolume extends LitElement {
               transform: this.muted
                 ? ``
                 : `translateX(calc(${
-                    this.volume * (this.#cachedVolumeBarClientWidth ?? 0)
+                    this.volume * (this._cachedVolumeBarClientWidth ?? 0)
                   }px - 50%))`,
             })}
             ${ref(this.volumeIndicator)}
@@ -132,15 +134,15 @@ export class ControlsVolume extends LitElement {
   }
 
   refreshCachedValues() {
-    if (!this.#cachedVolumeBarOffsetLeft) {
-      this.#cachedVolumeBarOffsetLeft =
+    if (!this._cachedVolumeBarOffsetLeft) {
+      this._cachedVolumeBarOffsetLeft =
         this.volumeBarContainer.value?.offsetLeft ?? 0;
     }
     if (
-      !this.#cachedVolumeBarClientWidth ||
-      this.#cachedVolumeBarClientWidth === 1
+      !this._cachedVolumeBarClientWidth ||
+      this._cachedVolumeBarClientWidth === 1
     ) {
-      this.#cachedVolumeBarClientWidth =
+      this._cachedVolumeBarClientWidth =
         this.volumeBarContainer.value?.clientWidth ?? 1;
     }
   }
@@ -154,8 +156,8 @@ export class ControlsVolume extends LitElement {
         1,
         Math.max(
           0,
-          (e.clientX - (this.#cachedVolumeBarOffsetLeft ?? 0)) /
-            (this.#cachedVolumeBarClientWidth ?? 1)
+          (e.clientX - (this._cachedVolumeBarOffsetLeft ?? 0)) /
+            (this._cachedVolumeBarClientWidth ?? 1)
         )
       );
       this.volume = newVolume;
@@ -204,8 +206,8 @@ export class ControlsVolume extends LitElement {
 
     // Invalidate cached values because they have changed
     window.addEventListener('resize', () => {
-      this.#cachedVolumeBarOffsetLeft = null;
-      this.#cachedVolumeBarClientWidth = null;
+      this._cachedVolumeBarOffsetLeft = null;
+      this._cachedVolumeBarClientWidth = null;
       this.refreshCachedValues();
     });
 

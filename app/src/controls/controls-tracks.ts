@@ -11,7 +11,7 @@ export class ControlsTracks extends LitElement {
   /** Whether or not UI is interactable */
   @property({ type: Boolean }) disabled: boolean = false;
 
-  static styles = css` 
+  static styles = css`
     .hidden {
       display: none;
     }
@@ -21,7 +21,7 @@ export class ControlsTracks extends LitElement {
       margin-top: 6px;
       user-select: none;
     }
-    input[type="checkbox"] {
+    input[type='checkbox'] {
       appearance: none;
       position: relative;
       background: var(--primary-lightest-2);
@@ -35,8 +35,8 @@ export class ControlsTracks extends LitElement {
       vertical-align: middle;
       top: -1px;
     }
-    input[type="checkbox"]:checked:after {
-      content: "\u2714";
+    input[type='checkbox']:checked:after {
+      content: '\u2714';
       position: absolute;
       left: 2px;
       top: 0;
@@ -64,7 +64,7 @@ export class ControlsTracks extends LitElement {
                 <label>
                   <input
                     type="checkbox"
-                    checked="${this.active[i]}"
+                    ?checked="${this.active[i]}"
                     @input=${(e: InputEvent) => {
                       const newChecked = (e.target as HTMLInputElement).checked;
                       const newStateActive = [...this.active];
