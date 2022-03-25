@@ -1,8 +1,7 @@
-import { html, css, LitElement } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { html, css, LitElement, PropertyValues } from 'lit';
+import { customElement, property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
-import { createRef, ref, Ref } from 'lit/directives/ref.js';
-import { styleMap } from 'lit/directives/style-map.js';
+import { createRef, ref, Ref } from 'lit/directives/ref.js'; 
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import IconVolumeNormal from '../../assets/volume-icon.svg?raw';
 import IconVolumeMuted from '../../assets/volume-icon-muted.svg?raw';
@@ -75,9 +74,7 @@ export class ControlsVolume extends LitElement {
   `;
 
   #isDragging: boolean = false;
-  @state()
   _cachedVolumeBarOffsetLeft: number | null = null;
-  @state()
   _cachedVolumeBarClientWidth: number | null = null;
   volumeBarContainer: Ref<HTMLDivElement> = createRef();
   volumeFill: Ref<HTMLDivElement> = createRef();
@@ -99,24 +96,8 @@ export class ControlsVolume extends LitElement {
       >
         <div class="volume-bar">
           <div class="volume-background"></div>
-          <div
-            class="volume-fill"
-            style=${styleMap({
-              transform: this.muted ? `scaleX(0)` : `scaleX(${this.volume})`,
-            })}
-            ${ref(this.volumeFill)}
-          ></div>
-          <div
-            class="volume-indicator"
-            style=${styleMap({
-              transform: this.muted
-                ? ``
-                : `translateX(calc(${
-                    this.volume * (this._cachedVolumeBarClientWidth ?? 0)
-                  }px - 50%))`,
-            })}
-            ${ref(this.volumeIndicator)}
-          ></div>
+          <div class="volume-fill" ${ref(this.volumeFill)}></div>
+          <div class="volume-indicator" ${ref(this.volumeIndicator)}></div>
         </div>
       </div>
     </div>`;
@@ -133,6 +114,22 @@ export class ControlsVolume extends LitElement {
     );
   }
 
+  updateStyles() {
+    if (this.volumeIndicator.value) {
+      this.volumeIndicator.value.style.transform = this.muted
+        ? ``
+        : `translateX(calc(${
+            this.volume * (this._cachedVolumeBarClientWidth ?? 0)
+          }px - 50%))`;
+    }
+
+    if (this.volumeFill.value) {
+      this.volumeFill.value.style.transform = this.muted
+        ? `scaleX(0)`
+        : `scaleX(${this.volume})`;
+    }
+  }
+
   refreshCachedValues() {
     if (!this._cachedVolumeBarOffsetLeft) {
       this._cachedVolumeBarOffsetLeft =
@@ -144,6 +141,13 @@ export class ControlsVolume extends LitElement {
     ) {
       this._cachedVolumeBarClientWidth =
         this.volumeBarContainer.value?.clientWidth ?? 1;
+    }
+    this.updateStyles();
+  }
+
+  updated(changedProperties: PropertyValues<this>) {
+    if (changedProperties.has('muted') || changedProperties.has('volume')) {
+      this.updateStyles();
     }
   }
 
@@ -212,7 +216,6 @@ export class ControlsVolume extends LitElement {
     });
 
     this.refreshCachedValues();
-    this.render();
   }
 }
 
