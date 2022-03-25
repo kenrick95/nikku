@@ -1,7 +1,6 @@
 node_modules/
 *.log
 *.brstm
-!src/brstm/tests/assets/*.brstm
 node_modules
 .DS_Store
 dist
