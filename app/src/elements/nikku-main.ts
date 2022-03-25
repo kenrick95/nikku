@@ -130,17 +130,17 @@ export class NikkuMain extends LitElement {
   }
 
   firstUpdated() {
-    window.addEventListener('dragover', (ev) => {
+    window.addEventListener('dragover', (ev: DragEvent) => {
       // Prevent opening file
       ev.preventDefault();
 
       // Display drag & drop overlay
       this.fileDraggingOver = true;
     });
-    window.addEventListener('dragend', (ev) => {
+    window.addEventListener('dragend', (_ev: DragEvent) => {
       this.fileDraggingOver = false;
     });
-    window.addEventListener('dragleave', (ev) => {
+    window.addEventListener('dragleave', (_ev: DragEvent) => {
       this.fileDraggingOver = false;
     });
 
@@ -482,7 +482,7 @@ function readFile(
 ): Promise<{ buffer: string | ArrayBuffer | null; file: File }> {
   return new Promise((resolve) => {
     const fileReader = new FileReader();
-    fileReader.addEventListener('loadend', (ev) => {
+    fileReader.addEventListener('loadend', (_ev) => {
       const buffer = fileReader.result;
       resolve({
         buffer,
