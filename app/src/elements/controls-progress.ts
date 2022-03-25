@@ -1,4 +1,4 @@
-import { html, css, LitElement } from 'lit';
+import { html, css, LitElement, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { createRef, ref, Ref } from 'lit/directives/ref.js';
@@ -79,6 +79,12 @@ export class ControlsProgress extends LitElement {
         </div>
       </div>
     `;
+  }
+
+  updated(changedProperties: PropertyValues<this>) {
+    if (changedProperties.has('value')) {
+      this.updateStyles();
+    }
   }
 
   updateStyles() {
