@@ -21,6 +21,7 @@
   },
   "license": "MIT",
   "scripts": {
-    "dev": "pnpm run --stream --filter brstm build && pnpm run --filter @kenrick95/nikku --stream dev "
+    "dev": "pnpm run --stream --filter brstm build && pnpm run --filter @kenrick95/nikku --stream dev",
+    "build": "pnpm run --stream --filter brstm build && pnpm run --filter @kenrick95/nikku --stream build"
   }
 }
