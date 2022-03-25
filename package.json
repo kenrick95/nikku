@@ -22,6 +22,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "pnpm run --stream --filter brstm build && pnpm run --filter @kenrick95/nikku --stream dev",
-    "build": "pnpm run --stream --filter brstm build && pnpm run --filter @kenrick95/nikku --stream build"
+    "build": "pnpm run --stream --filter brstm build && pnpm run --filter @kenrick95/nikku --stream build",
+    "netlify-build": "cd packages/brstm && npm run build && cd ../../app && npm run build"
   }
 }
