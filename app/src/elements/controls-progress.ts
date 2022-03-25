@@ -1,8 +1,7 @@
 import { html, css, LitElement } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { customElement, property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { createRef, ref, Ref } from 'lit/directives/ref.js';
-import { styleMap } from 'lit/directives/style-map.js';
 
 @customElement('controls-progress')
 export class ControlsProgress extends LitElement {
@@ -53,18 +52,18 @@ export class ControlsProgress extends LitElement {
   `;
 
   #isDragging: boolean = false;
-  @state()
   _cachedProgressBarOffsetLeft: number | null = null;
-  @state()
   _cachedProgressBarClientWidth: number | null = null;
 
   progressBar: Ref<HTMLDivElement> = createRef();
   progressActive: Ref<HTMLDivElement> = createRef();
   progressIndicator: Ref<HTMLDivElement> = createRef();
 
-  render() {
-    const percentage = this.max <= 0 ? 0 : this.value / this.max;
+  get percentage() {
+    return this.max <= 0 ? 0 : this.value / this.max;
+  }
 
+  render() {
     return html`
       <div class="progress-bar-container">
         <div
@@ -75,25 +74,23 @@ export class ControlsProgress extends LitElement {
           ${ref(this.progressBar)}
         >
           <div class="progress-background"></div>
-          <div
-            class="progress-active"
-            ${ref(this.progressActive)}
-            style=${styleMap({
-              transform: `scaleX(${percentage})`,
-            })}
-          ></div>
-          <div
-            class="progress-indicator"
-            ${ref(this.progressIndicator)}
-            style=${styleMap({
-              transform: `translateX(calc(${
-                percentage * (this._cachedProgressBarClientWidth ?? 0)
-              }px - 50%))`,
-            })}
-          ></div>
+          <div class="progress-active" ${ref(this.progressActive)}></div>
+          <div class="progress-indicator" ${ref(this.progressIndicator)}></div>
         </div>
       </div>
     `;
+  }
+
+  updateStyles() {
+    if (this.progressIndicator.value) {
+      this.progressIndicator.value.style.transform = `translateX(calc(${
+        this.percentage * (this._cachedProgressBarClientWidth ?? 0)
+      }px - 50%))`;
+    }
+
+    if (this.progressActive.value) {
+      this.progressActive.value.style.transform = `scaleX(${this.percentage})`;
+    }
   }
 
   refreshCachedValues() {
@@ -108,6 +105,7 @@ export class ControlsProgress extends LitElement {
       this._cachedProgressBarClientWidth =
         this.progressBar.value?.clientWidth ?? 1;
     }
+    this.updateStyles();
   }
 
   firstUpdated() {
