@@ -90,5 +90,4 @@ function clamp(value, min, max) {
   return value <= min ? min : value >= max ? max : value;
 }
 
-// TODO: https://github.com/microsoft/TypeScript-DOM-lib-generator/issues/1298 
 registerProcessor('audio-mixer-processor', AudioMixerProcessor);

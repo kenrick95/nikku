@@ -7,7 +7,7 @@ importers:
 
   app:
     specifiers:
-      '@types/audioworklet': ^0.0.25
+      '@types/audioworklet': ^0.0.26
       brstm: ^1.6.1
       lit: ^2.2.1
       typescript: ^4.6.2
@@ -16,14 +16,14 @@ importers:
       brstm: link:../packages/brstm
       lit: 2.2.1
     devDependencies:
-      '@types/audioworklet': 0.0.25
+      '@types/audioworklet': 0.0.26
       typescript: 4.6.2
       vite: 2.8.6
 
   packages/brstm:
     specifiers:
       microbundle: ^0.14.2
-      typescript: ^4.5.2
+      typescript: ^4.6.2
     devDependencies:
       microbundle: 0.14.2
       typescript: 4.6.2
@@ -1399,8 +1399,8 @@ packages:
     engines: {node: '>=10.13.0'}
     dev: true
 
-  /@types/audioworklet/0.0.25:
-    resolution: {integrity: sha512-9v+sTF2gYuqq9GKj8Ykd0B3zmYT/6MSY/zfCW7aBFtvgNplAD9StU3ba09n2F7AHRVAK1AJcjfFFM5DBNsGaAA==}
+  /@types/audioworklet/0.0.26:
+    resolution: {integrity: sha512-NU5hfpTvPXqaGasiNkCTsjVDsagQ+DBOZEZZ6lvtdi27a/y4YDbRxJFFc6D3Ng0Iehqb8YHzB4C3I85fihGV2Q==}
     dev: true
 
   /@types/estree/0.0.39:

@@ -22,6 +22,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "vite",
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false",
     "build": "tsc && vite build"
   },
   "dependencies": {
@@ -29,7 +30,7 @@
     "lit": "^2.2.1"
   },
   "devDependencies": {
-    "@types/audioworklet": "^0.0.25",
+    "@types/audioworklet": "^0.0.26",
     "typescript": "^4.6.2",
     "vite": "^2.8.6"
   }
