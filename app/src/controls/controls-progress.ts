@@ -1,5 +1,5 @@
 import { html, css, LitElement } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { customElement, property, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { createRef, ref, Ref } from 'lit/directives/ref.js';
 import { styleMap } from 'lit/directives/style-map.js';
@@ -53,15 +53,17 @@ export class ControlsProgress extends LitElement {
   `;
 
   #isDragging: boolean = false;
-  #cachedProgressBarOffsetLeft: number | null = null;
-  #cachedProgressBarClientWidth: number | null = null;
+  @state()
+  _cachedProgressBarOffsetLeft: number | null = null;
+  @state()
+  _cachedProgressBarClientWidth: number | null = null;
 
   progressBar: Ref<HTMLDivElement> = createRef();
   progressActive: Ref<HTMLDivElement> = createRef();
   progressIndicator: Ref<HTMLDivElement> = createRef();
 
   render() {
-    const percentage = this.value / this.max;
+    const percentage = this.max <= 0 ? 0 : this.value / this.max;
 
     return html`
       <div class="progress-bar-container">
@@ -85,7 +87,7 @@ export class ControlsProgress extends LitElement {
             ${ref(this.progressIndicator)}
             style=${styleMap({
               transform: `translateX(calc(${
-                percentage * (this.#cachedProgressBarClientWidth ?? 0)
+                percentage * (this._cachedProgressBarClientWidth ?? 0)
               }px - 50%))`,
             })}
           ></div>
@@ -95,15 +97,15 @@ export class ControlsProgress extends LitElement {
   }
 
   refreshCachedValues() {
-    if (!this.#cachedProgressBarOffsetLeft) {
-      this.#cachedProgressBarOffsetLeft =
+    if (!this._cachedProgressBarOffsetLeft) {
+      this._cachedProgressBarOffsetLeft =
         this.progressBar.value?.offsetLeft ?? 0;
     }
     if (
-      !this.#cachedProgressBarClientWidth ||
-      this.#cachedProgressBarClientWidth === 1
+      !this._cachedProgressBarClientWidth ||
+      this._cachedProgressBarClientWidth === 1
     ) {
-      this.#cachedProgressBarClientWidth =
+      this._cachedProgressBarClientWidth =
         this.progressBar.value?.clientWidth ?? 1;
     }
   }
@@ -117,8 +119,8 @@ export class ControlsProgress extends LitElement {
           1,
           Math.max(
             0,
-            (e.clientX - (this.#cachedProgressBarOffsetLeft ?? 0)) /
-              (this.#cachedProgressBarClientWidth ?? 1)
+            (e.clientX - (this._cachedProgressBarOffsetLeft ?? 0)) /
+              (this._cachedProgressBarClientWidth ?? 1)
           )
         ) * this.max;
 
@@ -167,8 +169,8 @@ export class ControlsProgress extends LitElement {
 
     // Invalidate cached values because they have changed
     window.addEventListener('resize', () => {
-      this.#cachedProgressBarOffsetLeft = null;
-      this.#cachedProgressBarClientWidth = null;
+      this._cachedProgressBarOffsetLeft = null;
+      this._cachedProgressBarClientWidth = null;
       this.refreshCachedValues();
     });
 
