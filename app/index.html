@@ -47,7 +47,6 @@
 
           if (
             !window.customElements ||
-            !('content' in document.createElement('template')) ||
             !('AudioContext' in window)
           ) {
             return false;
@@ -75,35 +74,7 @@
       <span id="subtitle">Web-based BRSTM player</span>
     </header>
     <div id="unsupported" class="error">Sorry, this browser is unsupported</div>
-    <div id="error" class="error"></div>
-    <main id="main">
-      <div id="track-title"></div>
-      <div id="controls-tracks">
-        <controls-tracks disabled count="1" active="[true]"></controls-tracks>
-      </div>
-      <div id="controls-time-display">
-        <controls-time-display
-          disabled
-          value="0"
-          max="0"
-        ></controls-time-display>
-      </div>
-      <div id="controls-progress">
-        <controls-progress disabled value="0" max="1"></controls-progress>
-      </div>
-      <label id="controls-select-file-container">
-        <input type="file" id="controls-select-file" accept=".brstm" />
-        <span id="controls-select-file-custom"></span>
-      </label>
-
-      <div id="controls-play-pause">
-        <controls-play-pause disabled mode="play"></controls-play-pause>
-      </div>
-      <div id="controls-others">
-        <controls-loop disabled mode="on"></controls-loop>
-        <controls-volume disabled volume="1"></controls-volume>
-      </div>
-    </main>
+    <nikku-main></nikku-main>
     <footer id="footer">
       By
       <a href="https://github.com/kenrick95" tabindex="0" target="_blank"
@@ -115,9 +86,6 @@
         >GitHub</a
       >
     </footer>
-    <div id="drag-and-drop-overlay" class="hidden">
-      Drop BRSTM file to start playback
-    </div>
 
     <script type="module" src="./src/main.ts"></script>
     <script nomodule src="./src/nomodule.ts"></script>

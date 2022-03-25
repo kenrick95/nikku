@@ -24,12 +24,10 @@ Browser needs to support the following features without any vendor prefix:
 
 - [Web Audio API](https://caniuse.com/audio-api)
 - [Audio Worklet API](https://caniuse.com/mdn-api_audioworklet) (for multi-track BRSTM files)
-- [`<template>`](https://caniuse.com/template)
 - [`<script type="module"> `](https://caniuse.com/es6-module)
 - [`Custom Elements](https://caniuse.com/custom-elementsv1)
 - [ES2015 in general](https://caniuse.com/es6)
-- [ES2016 class](https://caniuse.com/es6-class)
-- [ES2020 optional chaining](https://caniuse.com/mdn-javascript_operators_optional_chaining) and [nullish coalescing](https://caniuse.com/mdn-javascript_operators_nullish_coalescing)
+- [ES2015 class](https://caniuse.com/es6-class)
 Developed and tested in Firefox 88
 
 ## References

@@ -4,7 +4,8 @@
   font-weight: 400;
   font-stretch: normal;
   font-display: swap;
-  src: local('Open Sans'), url('../assets/OpenSans-Regular.ttf') format('truetype');
+  src: local('Open Sans'),
+    url('../assets/OpenSans-Regular.ttf') format('truetype');
 }
 @font-face {
   font-family: 'Open Sans';
@@ -12,7 +13,8 @@
   font-weight: 600;
   font-stretch: normal;
   font-display: swap;
-  src: local('Open Sans SemiBold'), url('../assets/OpenSans-SemiBold.ttf') format('truetype');
+  src: local('Open Sans SemiBold'),
+    url('../assets/OpenSans-SemiBold.ttf') format('truetype');
 }
 
 :root {
@@ -103,183 +105,15 @@ body {
   border: 1px solid currentColor;
   padding: 0.6rem;
 }
-#error,
 #unsupported {
   display: none;
   padding: 0.6rem;
   margin-top: 0.6rem;
   margin-bottom: 0.6rem;
 }
-#drag-and-drop-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: var(--primary);
-  font-size: 2rem;
-  background: var(--white-lighter);
-  z-index: 100;
-  user-select: none;
-}
-#drag-and-drop-overlay:before {
-  content: ' ';
-  position: absolute;
-  left: 1rem;
-  right: 1rem;
-  top: 1rem;
-  bottom: 1rem;
-  border: 1rem dashed currentColor;
-}
-#drag-and-drop-overlay.hidden {
-  display: none;
-}
-template {
-  display: none;
-}
-#main {
-  margin-top: 100px;
-  display: grid;
-  grid-template-columns: 1fr 80px 1fr;
-  grid-template-rows: 20px 15px 24px 80px auto;
-  row-gap: 10px;
-  column-gap: 2rem;
-  margin-bottom: 10px;
-}
-#track-title {
-  grid-column: 1 / span 2;
-  grid-row: 1;
-  text-overflow: ellipsis;
-  overflow: hidden;
-}
-#controls-time-display {
-  grid-column: 3;
-  grid-row: 1;
-}
-#controls-progress {
-  grid-column: 1 / span 3;
-  grid-row: 2;
-}
-#controls-select-file-container {
-  grid-column: 1 / span 3;
-  grid-row: 3;
-}
-#controls-tracks {
-  grid-column: 1;
-  grid-row: 4 / span 2;
-}
-#controls-play-pause {
-  grid-column: 2;
-  grid-row: 4;
-}
-#controls-others {
-  grid-column: 3;
-  grid-row: 4;
-
-  display: flex;
-  flex-direction: row;
-  justify-content: flex-end;
-  align-items: center;
-}
-controls-loop {
-  height: 40px;
-}
-controls-volume {
-  margin-inline-start: 10px;
-  height: 40px;
-}
-
-@media (max-width: 640px) {
-  #main {
-    margin-top: 50px;
-    grid-template-rows: 20px 20px 15px 24px 80px auto;
-  }
-  #track-title {
-    grid-column: 1 / span 3;
-    grid-row: 1;
-  }
-  #controls-time-display {
-    grid-column: 1 / span 3;
-    grid-row: 2;
-  }
-  #controls-progress {
-    grid-column: 1 / span 3;
-    grid-row: 3;
-  }
-  #controls-select-file-container {
-    grid-column: 1 / span 3;
-    grid-row: 4;
-  }
-  #controls-play-pause {
-    grid-column: 2;
-    grid-row: 5;
-  }
-  #controls-others {
-    grid-column: 1 / span 3;
-    grid-row: 6;
-    justify-content: center;
-  }
-  #controls-tracks {
-    grid-column: 1 / span 3;
-    grid-row: 7;
-  }
-}
 
 #footer {
   font-size: 10px;
   line-height: 14px;
   margin-bottom: 10px;
-}
-
-/* Modified from "file" from https://github.com/mdo/wtf-forms/blob/master/wtf-forms.css */
-#controls-select-file-container {
-  position: relative;
-  display: inline-block;
-  cursor: pointer;
-  width: 80px;
-}
-#controls-select-file-container > input {
-  margin: 0;
-  opacity: 0;
-  height: 24px;
-  width: 100%;
-}
-#controls-select-file-custom {
-  position: absolute;
-  top: 0;
-  right: 0;
-  left: 0;
-
-  z-index: 5;
-
-  border-radius: 5px;
-  color: var(--primary);
-  background-color: var(--primary-lightest-2);
-  user-select: none;
-  font-size: 12px;
-  line-height: 16px;
-  height: 24px;
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 4px;
-  text-align: center;
-}
-#controls-select-file-custom:after {
-  content: 'Select file...';
-}
-#controls-select-file-custom:hover {
-  background-color: var(--primary-lightest-1);
-}
-
-#controls-select-fileinput:focus ~ #controls-select-file-custom {
-  box-shadow: 0 0 0 0.075rem #fff, 0 0 0 0.2rem var(--primary-dark);
-}
-
-@media (prefers-color-scheme: dark) {
-  #controls-select-file-custom {
-    color: var(--main-text-color);
-  }
 }
