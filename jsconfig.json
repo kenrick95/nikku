@@ -1,9 +1,0 @@
-{
-  "compilerOptions": {
-    "strict": true,
-    "module": "esnext",
-    "lib": ["esnext", "dom"],
-    "checkJs": true,
-    "target": "es2020"
-  }
-}
