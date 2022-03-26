@@ -1,13 +1,11 @@
-name: Test
+name: Deploy
 
 on:
   push:
     branches: [ master ]
-  pull_request:
-    branches: [ master ]
 
 jobs:
-  test:
+  deploy:
     concurrency: ci-${{ github.ref }}
     runs-on: ubuntu-20.04
     strategy:
@@ -25,5 +23,10 @@ jobs:
         cache: 'pnpm'
     - name: Install dependencies
       run: pnpm install
-    - name: Test brstm
-      run: pnpm run --filter "brstm..." test
+    - name: Build
+      run: build-gh-pages
+    - name: Deploy
+      uses: JamesIves/github-pages-deploy-action@v4.2.5
+      with:
+        branch: gh-pages
+        folder: app/dist 

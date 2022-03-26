@@ -23,7 +23,8 @@
   "scripts": {
     "dev": "vite",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false",
-    "build": "tsc && vite build"
+    "build": "tsc && vite build",
+    "build-gh-pages": "vite build --base \"/nikku/\""
   },
   "dependencies": {
     "brstm": "^1.6.1",
