@@ -210,30 +210,62 @@ export class NikkuMain extends LitElement {
     }
 
     try {
-      console.time('brstm.getAllSamples');
-      const { metadata, allSamples } = await this.workerInstance.decode(
-        transfer(buffer, [buffer])
-      );
-      console.timeEnd('brstm.getAllSamples');
+      await this.workerInstance.init(buffer);
+      const metadata = await this.workerInstance.getMetadata();
 
       if (this.audioPlayer) {
         await this.audioPlayer.destroy();
+      } else {
+        this.audioPlayer = new AudioPlayer({
+          onPlay: () => {
+            this.playPauseIcon = 'pause';
+          },
+          onPause: () => {
+            this.playPauseIcon = 'play';
+          },
+        });
       }
-
-      this.audioPlayer = new AudioPlayer(metadata, {
-        onPlay: () => {
-          this.playPauseIcon = 'pause';
-        },
-        onPause: () => {
-          this.playPauseIcon = 'play';
-        },
-      });
+      if (!metadata) {
+        throw new Error('metadata is undefined');
+      }
+      await this.audioPlayer.init(metadata);
 
       const amountTimeInS = metadata.totalSamples / metadata.sampleRate;
       const numberTracks = metadata.numberTracks;
 
-      await this.audioPlayer.readyPromise;
-      this.audioPlayer.load(allSamples);
+      // Decode the first 3 seconds, then schedule decoding the whole thing
+      const initialSecondsRequest = Math.min(amountTimeInS, 3);
+
+      console.time('getSamples');
+      const initialSamplesSize = initialSecondsRequest * metadata.sampleRate;
+      const initialSamples = await this.workerInstance.getSamples(
+        0,
+        initialSamplesSize
+      );
+      console.timeEnd('getSamples');
+      if (!initialSamples) {
+        throw new Error('initialSamples is undefined');
+      }
+      if (initialSecondsRequest >= 3) {
+        setTimeout(async () => {
+          const restSamplesSize = metadata.totalSamples - initialSamplesSize;
+          console.time('getSamples');
+          const restSamples = await this.workerInstance.getSamples(
+            initialSamplesSize,
+            restSamplesSize
+          );
+
+          console.timeEnd('getSamples');
+          if (!restSamples) {
+            throw new Error('restSamples is undefined');
+          }
+          if (this.audioPlayer) {
+            this.audioPlayer.load(restSamples, initialSamplesSize);
+          }
+        }, 10);
+      }
+
+      this.audioPlayer.load(initialSamples, 0);
       if (this.muted) {
         this.audioPlayer.setVolume(0);
       } else {

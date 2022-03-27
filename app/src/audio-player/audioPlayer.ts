@@ -1,6 +1,6 @@
 import type { Metadata } from 'brstm';
 // @ts-ignore
-import AudioMixer from './audioMixer?url'
+import AudioMixer from './audioMixer?url';
 
 export type AudioPlayerHooks = {
   onPlay: () => void;
@@ -13,13 +13,9 @@ export type AudioPlayerHooks = {
  */
 export type AudioPlayerTrackStates = Array<boolean>;
 
-
 export class AudioPlayer {
   hooks: AudioPlayerHooks;
   metadata: Metadata | null = null;
-  readyPromise: Promise<void>;
-  
-  #readyPromiseCallback:null | ((value?: any) => void) = null;
   #audioContext: AudioContext | null = null;
   #trackStates: AudioPlayerTrackStates = [];
   #audioBuffer: null | AudioBuffer = null;
@@ -28,24 +24,19 @@ export class AudioPlayer {
   #loopStartInS: null | number = null;
   #loopEndInS: null | number = null;
   #loopDurationInS: null | number = null;
-  #startTimestamp: number  = 0;
-  #pauseTimestamp: number  = 0; 
+  #startTimestamp: number = 0;
+  #pauseTimestamp: number = 0;
   #shouldLoop: boolean = false;
   #initNeeded: boolean = true;
   #isSeeking: boolean = false;
   #isPlaying: boolean = false;
   #volume: number = 0;
 
-
-  constructor(metadata: Metadata, hooks: AudioPlayerHooks) {
-    this.hooks = hooks; 
-    this.#readyPromiseCallback = null;
-    this.readyPromise = new Promise((resolve) => {
-      this.#readyPromiseCallback = resolve;
-    });
-    this.init(metadata);
+  constructor(hooks: AudioPlayerHooks) {
+    this.hooks = hooks;
+    this.init();
   }
- 
+
   async init(metadata?: Metadata) {
     if (metadata) {
       this.metadata = metadata;
@@ -55,19 +46,23 @@ export class AudioPlayer {
       if (this.#audioContext.audioWorklet) {
         await this.#audioContext.audioWorklet.addModule(AudioMixer);
       }
-      if (this.#readyPromiseCallback) {
-        this.#readyPromiseCallback();
-      }
     } else {
       // For destroy
       this.metadata = null;
       this.#audioContext = null;
-      this.readyPromise = new Promise((resolve) => {
-        this.#readyPromiseCallback = resolve;
-      });
     }
- 
+
     this.#trackStates = [true];
+    if (this.metadata && this.metadata.numberTracks > 1) {
+      this.#trackStates = [];
+      for (let i = 0; i < this.metadata.numberTracks; i++) {
+        if (i === 0) {
+          this.#trackStates.push(true);
+        } else {
+          this.#trackStates.push(false);
+        }
+      }
+    }
 
     this.#audioBuffer = null;
     this.#bufferSource = null;
@@ -113,8 +108,9 @@ export class AudioPlayer {
   /**
    *
    * @param {Array<Int16Array>} samples per-channel PCM samples
+   * @param {number} offset
    */
-  load(samples: Int16Array[]): void {
+  load(samples: Int16Array[], offset: number | undefined = 0): void {
     if (!this.metadata || !this.#audioContext) {
       return;
     }
@@ -122,27 +118,27 @@ export class AudioPlayer {
       return this.convertToAudioBufferData(sample);
     });
 
-    const { numberChannels, numberTracks } = this.metadata;
-    this.#audioBuffer = this.#audioContext.createBuffer(
-      numberChannels,
-      floatSamples[0].length,
-      this.#audioContext.sampleRate
-    );
-    for (let c = 0; c < numberChannels; c++) {
-      this.#audioBuffer.getChannelData(c).set(floatSamples[c]);
+    const { numberChannels, totalSamples } = this.metadata;
+    if (!this.#audioBuffer) {
+      this.#audioBuffer = this.#audioContext.createBuffer(
+        numberChannels,
+        totalSamples,
+        this.#audioContext.sampleRate
+      );
     }
-    this.#trackStates = [];
-    for (let i = 0; i < numberTracks; i++) {
-      if (i === 0) {
-        this.#trackStates.push(true);
-      } else {
-        this.#trackStates.push(false);
-      }
+    for (let c = 0; c < numberChannels; c++) {
+      this.#audioBuffer.getChannelData(c).set(floatSamples[c], offset);
     }
 
-    this.initPlayback();
-    this.#isPlaying = true;
-    this.hooks.onPlay();
+    if (offset === 0) {
+      this.initPlayback(offset);
+      this.#isPlaying = true;
+      this.hooks.onPlay();
+    } else {
+      // "Seek" to current playback time to reinitialize AudioBufferSourceNode (this.#bufferSource) with latest AudioBuffer data
+      // Assumption: user is still playing the audio player. Time between first & second load() should be quite small
+      this.seek(this.#audioContext.currentTime); 
+    }
   }
 
   /**
