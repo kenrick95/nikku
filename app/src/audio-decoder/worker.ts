@@ -1,14 +1,11 @@
 import { Brstm, Metadata } from 'brstm';
 import { transfer } from 'comlink';
 
-let buffer: ArrayBuffer | null = null;
 let brstm: Brstm | null = null;
 export function init(receivedBuffer: ArrayBuffer) {
-  buffer = receivedBuffer;
   brstm = new Brstm(receivedBuffer);
 }
 export function destroy() {
-  buffer = null;
   brstm = null;
 }
 export function getMetadata(): Metadata | undefined {
