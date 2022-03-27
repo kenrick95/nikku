@@ -19,6 +19,10 @@
     "useDefineForClassFields": false,
     "target": "ESNext"
   },
-  "include": ["src/**/*.ts", "src/audio-player/audioMixer.js"],
+  "include": [
+    "src/**/*.ts",
+    "./comlink-workers.d.ts",
+    "src/audio-player/audioMixer.js"
+  ],
   "exclude": []
 }

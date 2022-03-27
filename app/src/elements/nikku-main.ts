@@ -2,8 +2,9 @@ import { html, css, LitElement } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { AudioPlayer } from '../audio-player/audioPlayer';
-import { Brstm } from 'brstm';
 import { Timer } from '../timer';
+import AudioDecoder from 'comlink:../audio-decoder/worker';
+import { transfer } from 'comlink';
 
 @customElement('nikku-main')
 export class NikkuMain extends LitElement {
@@ -41,6 +42,8 @@ export class NikkuMain extends LitElement {
   private errorMessage: string = '';
 
   private audioPlayer: AudioPlayer | null = null;
+
+  private workerInstance = AudioDecoder();
 
   private timer = new Timer({
     renderCallback: () => {
@@ -173,7 +176,7 @@ export class NikkuMain extends LitElement {
   }
 
   #showError(error: Error) {
-    this.errorMessage = error.message;
+    this.errorMessage = error.message + error.stack;
   }
   #clearError() {
     this.errorMessage = '';
@@ -207,12 +210,17 @@ export class NikkuMain extends LitElement {
     }
 
     try {
-      const brstm = new Brstm(buffer);
+      console.time('brstm.getAllSamples');
+      const { metadata, allSamples } = await this.workerInstance.decode(
+        transfer(buffer, [buffer])
+      );
+      console.timeEnd('brstm.getAllSamples');
+
       if (this.audioPlayer) {
         await this.audioPlayer.destroy();
       }
 
-      this.audioPlayer = new AudioPlayer(brstm.metadata, {
+      this.audioPlayer = new AudioPlayer(metadata, {
         onPlay: () => {
           this.playPauseIcon = 'pause';
         },
@@ -221,12 +229,8 @@ export class NikkuMain extends LitElement {
         },
       });
 
-      console.time('brstm.getAllSamples');
-      const allSamples = brstm.getAllSamples();
-      console.timeEnd('brstm.getAllSamples');
-      const amountTimeInS =
-        brstm.metadata.totalSamples / brstm.metadata.sampleRate;
-      const numberTracks = brstm.metadata.numberTracks;
+      const amountTimeInS = metadata.totalSamples / metadata.sampleRate;
+      const numberTracks = metadata.numberTracks;
 
       await this.audioPlayer.readyPromise;
       this.audioPlayer.load(allSamples);
