@@ -210,7 +210,7 @@ export class NikkuMain extends LitElement {
     }
 
     try {
-      await this.workerInstance.init(buffer);
+      await this.workerInstance.init(transfer(buffer, [buffer]));
       const metadata = await this.workerInstance.getMetadata();
 
       if (this.audioPlayer) {
