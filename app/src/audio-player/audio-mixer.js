@@ -2,7 +2,7 @@
 // Cannot be in TypeScript yet
 // See: https://github.com/vitejs/vite/discussions/3804
 /** @typedef {import('brstm').TrackDescription} TrackDescription */
-/** @typedef {import('./audioPlayer').AudioPlayerTrackStates} AudioPlayerTrackStates */
+/** @typedef {import('./audio-player').AudioPlayerTrackStates} AudioPlayerTrackStates */
 
 class AudioMixerProcessor extends AudioWorkletProcessor {
   /**
@@ -11,7 +11,9 @@ class AudioMixerProcessor extends AudioWorkletProcessor {
    */
   constructor(options) {
     super();
+    /** @type {AudioPlayerTrackStates} */
     this.trackStates = options?.processorOptions?.trackStates || {};
+    /** @type {TrackDescription[]} */
     this.trackDescriptions = options?.processorOptions?.trackDescriptions || [];
     this.port.onmessage = (event) => {
       if (event.data.trackStates) this.trackStates = event.data.trackStates;

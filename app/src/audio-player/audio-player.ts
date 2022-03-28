@@ -1,6 +1,5 @@
 import type { Metadata } from 'brstm';
-// @ts-ignore
-import AudioMixer from './audioMixer?url';
+import AudioMixer from './audio-mixer?url';
 
 export type AudioPlayerHooks = {
   onPlay: () => void;
