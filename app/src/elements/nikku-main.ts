@@ -7,8 +7,12 @@ import { Timer } from '../timer';
 
 @customElement('nikku-main')
 export class NikkuMain extends LitElement {
+  /**
+   * icon state "play" means audio is paused;
+   * icon state "pause" means audio is playing;
+   */
   @state()
-  private playPause: 'play' | 'pause' = 'play';
+  private playPauseIcon: 'play' | 'pause' = 'play';
   @state()
   private loop: 'on' | 'off' = 'on';
   @state()
@@ -99,7 +103,7 @@ export class NikkuMain extends LitElement {
         <div id="controls-play-pause">
           <controls-play-pause
             ?disabled=${this.disabled}
-            mode=${this.playPause}
+            mode=${this.playPauseIcon}
             @playPauseClick=${this.#handlePlayPauseClick}
           ></controls-play-pause>
         </div>
@@ -209,8 +213,12 @@ export class NikkuMain extends LitElement {
       }
 
       this.audioPlayer = new AudioPlayer(brstm.metadata, {
-        onPlay: () => {},
-        onPause: () => {},
+        onPlay: () => {
+          this.playPauseIcon = 'pause';
+        },
+        onPause: () => {
+          this.playPauseIcon = 'play';
+        },
       });
 
       console.time('brstm.getAllSamples');
@@ -228,7 +236,7 @@ export class NikkuMain extends LitElement {
         this.audioPlayer.setVolume(this.volume);
       }
 
-      this.playPause = 'pause';
+      this.playPauseIcon = 'pause';
       this.progressMax = amountTimeInS;
       this.timeDisplayMax = amountTimeInS;
 
@@ -253,7 +261,7 @@ export class NikkuMain extends LitElement {
 
   #handlePlayPauseClick(e: CustomEvent) {
     const newMode = e.detail.mode as 'play' | 'pause';
-    this.playPause = newMode;
+    this.playPauseIcon = newMode;
     if (newMode === 'play') {
       this.audioPlayer?.pause();
       this.timer.stop();
