@@ -22,7 +22,7 @@
   "include": [
     "src/**/*.ts",
     "./comlink-workers.d.ts",
-    "src/audio-player/audioMixer.js"
+    "src/audio-player/*.js"
   ],
   "exclude": []
 }
