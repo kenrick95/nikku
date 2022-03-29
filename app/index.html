@@ -45,11 +45,16 @@
             return true;
           }
 
-          if (
-            !window.customElements ||
-            !('AudioContext' in window)
-          ) {
-            return false;
+          if (!window.customElements) {
+            return true;
+          }
+          if (!('AudioContext' in window)) {
+            return true;
+          }
+
+          let ac = new AudioContext();
+          if (!('audioWorklet' in ac)) {
+            return true;
           }
 
           return false;
