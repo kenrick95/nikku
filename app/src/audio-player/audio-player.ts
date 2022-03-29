@@ -1,5 +1,6 @@
 import type { Metadata } from 'brstm';
-import AudioMixer from './audio-mixer?url';
+// import AudioMixer from './audio-mixer?url';
+import AudioSource from './audio-source?url';
 
 export type AudioPlayerHooks = {
   onPlay: () => void;
@@ -19,6 +20,8 @@ export class AudioPlayer {
   #trackStates: AudioPlayerTrackStates = [];
   #audioBuffer: null | AudioBuffer = null;
   #bufferSource: null | AudioBufferSourceNode = null;
+  #audioSourceNode: null | AudioWorkletNode = null;
+  #audioSamples: null | Float32Array[] = null;
   #gainNode: null | GainNode = null;
   #loopStartInS: null | number = null;
   #loopEndInS: null | number = null;
@@ -43,7 +46,8 @@ export class AudioPlayer {
         sampleRate: metadata.sampleRate,
       });
       if (this.#audioContext.audioWorklet) {
-        await this.#audioContext.audioWorklet.addModule(AudioMixer);
+        await this.#audioContext.audioWorklet.addModule(AudioSource);
+        // await this.#audioContext.audioWorklet.addModule(AudioMixer);
       }
     } else {
       // For destroy
@@ -63,8 +67,9 @@ export class AudioPlayer {
       }
     }
 
-    this.#audioBuffer = null;
-    this.#bufferSource = null;
+    this.#audioSourceNode = null;
+    this.#audioSamples = null;
+
     this.#loopStartInS = null;
     this.#loopEndInS = null;
     this.#loopDurationInS = null;
@@ -90,64 +95,55 @@ export class AudioPlayer {
   }
 
   /**
-   * Interpotale [-32768..32767] (Int16) to [-1..1] (Float32)
-   * @returns {Float32Array} audio buffer's channel data
-   * @param {Int16Array} pcmSamples
-   */
-  convertToAudioBufferData(pcmSamples: Int16Array): Float32Array {
-    // https://stackoverflow.com/a/17888298/917957
-    const floats = new Float32Array(pcmSamples.length);
-    for (let i = 0; i < pcmSamples.length; i++) {
-      const sample = pcmSamples[i];
-      floats[i] = sample < 0 ? sample / 0x8000 : sample / 0x7fff;
-    }
-    return floats;
-  }
-
-  /**
    *
-   * @param {Array<Int16Array>} samples per-channel PCM samples
+   * @param {Array<Float32Array>} samples per-channel PCM samples
    * @param {number} offset
    */
-  load(samples: Int16Array[], offset: number | undefined = 0): void {
+  load(newSamples: Float32Array[], offset: number | undefined = 0): void {
     if (!this.metadata || !this.#audioContext) {
       return;
     }
-    const floatSamples = samples.map((sample) => {
-      return this.convertToAudioBufferData(sample);
-    });
-
-    const { numberChannels, totalSamples } = this.metadata;
-    if (!this.#audioBuffer) {
-      this.#audioBuffer = this.#audioContext.createBuffer(
-        numberChannels,
-        totalSamples,
-        this.#audioContext.sampleRate
-      );
-    }
-    for (let c = 0; c < numberChannels; c++) {
-      this.#audioBuffer.getChannelData(c).set(floatSamples[c], offset);
-    }
+    const { numberChannels, totalSamples } = this.metadata; 
 
     if (offset === 0) {
-      this.initPlayback(offset);
+      const fullSamples: Float32Array[] = [];
+      for (let c = 0; c < numberChannels; c++) {
+        const channelFullSamples = new Float32Array(newSamples[c].length).fill(0);
+        for (let s = 0; s < newSamples[c].length; s++) {
+          channelFullSamples[s] = newSamples[c][s];
+        }
+        fullSamples.push(channelFullSamples);
+      }
+
+      this.initPlayback(offset, fullSamples);
       this.#isPlaying = true;
       this.hooks.onPlay();
     } else {
+      if (this.#audioSourceNode) {
+        console.log('newSamples', newSamples[0].length)
+        // TODO: this is slow... maybe need to chunk out into several more postMessage. having a slow postMessage could affect audio, apparently...
+        this.#audioSourceNode.port.postMessage({
+          type: 'update-samples',
+          payload: {
+            samples: newSamples,
+            offset,
+          },
+        }, newSamples.map(c => c.buffer));
+        console.log('newSamples2', newSamples[0].length)
+      }
       // "Seek" to current playback time to reinitialize AudioBufferSourceNode (this.#bufferSource) with latest AudioBuffer data
       // Assumption: user is still playing the audio player. Time between first & second load() should be quite small
-      this.seek(this.#audioContext.currentTime); 
+      // this.seek(this.#audioContext.currentTime);
     }
   }
 
-  /**
-   * @param {number=} bufferStart
-   */
-  initPlayback(bufferStart: number | undefined = 0) {
+  initPlayback(
+    bufferStart: number | undefined = 0,
+    initialSamples: Float32Array[]
+  ) {
     if (
       !this.metadata ||
-      !this.#audioContext ||
-      !this.#audioBuffer ||
+      !this.#audioContext || 
       this.#volume == null
     ) {
       return;
@@ -160,81 +156,30 @@ export class AudioPlayer {
       trackDescriptions,
     } = this.metadata;
 
-    if (this.#bufferSource) {
-      this.#bufferSource.stop(0);
-      this.#bufferSource = null;
-    }
-
-    this.#bufferSource = this.#audioContext.createBufferSource();
-    this.#bufferSource.buffer = this.#audioBuffer;
+    this.#audioSourceNode = new AudioWorkletNode(
+      this.#audioContext,
+      'audio-source-processor',
+      {
+        numberOfInputs: 0,
+        numberOfOutputs: 1,
+        outputChannelCount: [2],
+        processorOptions: {
+          initialSamples: initialSamples,
+        },
+      }
+    );
+    console.log('initPlayback')
 
     this.#gainNode = this.#audioContext.createGain();
     this.#gainNode.gain.value = this.#volume;
 
-    if (numberTracks === 1) {
-      // if mono or stereo, no need to be complicated, just connect [source] -> [gain] -> [destination]
-      this.#bufferSource.connect(this.#gainNode);
-      this.#gainNode.connect(this.#audioContext.destination);
-    } else {
-      if (!this.#audioContext.audioWorklet) {
-        throw new Error(
-          'Sorry, playback of multi-track BRSTM is not supported in this browser'
-        );
-      }
-      /**
-       *
-       * Why we cannot use the set up below?
-       *
-       * [source] --> [splitter] ===> [merger] --> [gain] --> [destination]
-       *
-       * This is because when split into >4 channels, when these channels are going back to be merged,
-       * we can only choose to either merge them using these channel intepretation:
-       * - "speaker": downmix using "speaker" intepretation algorithm, didn't work as expected if channel = 6 since it is special (treated as if it is downmix 5.1 to mono)
-       * - "discrete": downmix
-       *
-       * P.S. using "merger" node downmixed the audio into mono
-       *
-       */
-      const audioMixerNode = new AudioWorkletNode(
-        this.#audioContext,
-        'audio-mixer-processor',
-        {
-          numberOfInputs: 1,
-          numberOfOutputs: 1,
-          outputChannelCount: [2],
-          processorOptions: {
-            trackStates: this.#trackStates,
-            trackDescriptions,
-          },
-        }
-      );
-
-      this.#bufferSource.connect(audioMixerNode);
-      audioMixerNode.connect(this.#gainNode);
-      this.#gainNode.connect(this.#audioContext.destination);
-    }
+    this.#audioSourceNode.connect(this.#gainNode);
+    this.#gainNode.connect(this.#audioContext.destination);
 
     this.#loopStartInS = loopStartSample / sampleRate;
     this.#loopEndInS = totalSamples / sampleRate;
     this.#loopDurationInS = this.#loopEndInS - this.#loopStartInS;
 
-    this.#bufferSource.loopStart = this.#loopStartInS;
-    this.#bufferSource.loopEnd = this.#loopEndInS;
-    this.#bufferSource.loop = !!this.#shouldLoop;
-    this.#bufferSource.onended = () => {
-      if (!this.#isSeeking) {
-        this.pause();
-        this.#initNeeded = true;
-      } else {
-        /**
-         * Naturally, this piece of code shouldn't be here, but since I called
-         * `this.#bufferSource.stop(0);` earlier on, this `onended` event will be triggered
-         * much much later than any other codes.
-         */
-        this.#isSeeking = false;
-      }
-    };
-    this.#bufferSource.start(this.#audioContext.currentTime, bufferStart);
     this.#startTimestamp = Date.now() - bufferStart * 1000;
 
     this.#initNeeded = false;
@@ -248,7 +193,7 @@ export class AudioPlayer {
       return;
     }
     this.#isSeeking = true;
-    this.initPlayback(playbackTimeInS);
+    // this.initPlayback(playbackTimeInS);
     if (!this.#isPlaying) {
       this.#isPlaying = true;
       this.hooks.onPlay();
@@ -266,7 +211,7 @@ export class AudioPlayer {
     await this.#audioContext.resume();
 
     if (this.#initNeeded) {
-      this.initPlayback();
+      // this.initPlayback();
     } else {
       this.#startTimestamp =
         this.#startTimestamp + Date.now() - (this.#pauseTimestamp ?? 0);
