@@ -2,9 +2,10 @@ import type { Metadata } from 'brstm';
 // import AudioMixer from './audio-mixer?url';
 import AudioSource from './audio-source?url';
 
-export type AudioPlayerHooks = {
+export type AudioPlayerOptions = {
   onPlay: () => void;
   onPause: () => void;
+  decodeSamples: (offset: number, size: number) => Promise<Float32Array[]>;
 };
 
 /**
@@ -14,14 +15,12 @@ export type AudioPlayerHooks = {
 export type AudioPlayerTrackStates = Array<boolean>;
 
 export class AudioPlayer {
-  hooks: AudioPlayerHooks;
+  options: AudioPlayerOptions;
+
   metadata: Metadata | null = null;
   #audioContext: AudioContext | null = null;
   #trackStates: AudioPlayerTrackStates = [];
-  #audioBuffer: null | AudioBuffer = null;
-  #bufferSource: null | AudioBufferSourceNode = null;
   #audioSourceNode: null | AudioWorkletNode = null;
-  #audioSamples: null | Float32Array[] = null;
   #gainNode: null | GainNode = null;
   #loopStartInS: null | number = null;
   #loopEndInS: null | number = null;
@@ -30,12 +29,11 @@ export class AudioPlayer {
   #pauseTimestamp: number = 0;
   #shouldLoop: boolean = false;
   #initNeeded: boolean = true;
-  #isSeeking: boolean = false;
   #isPlaying: boolean = false;
   #volume: number = 0;
 
-  constructor(hooks: AudioPlayerHooks) {
-    this.hooks = hooks;
+  constructor(options: AudioPlayerOptions) {
+    this.options = options;
     this.init();
   }
 
@@ -47,7 +45,6 @@ export class AudioPlayer {
       });
       if (this.#audioContext.audioWorklet) {
         await this.#audioContext.audioWorklet.addModule(AudioSource);
-        // await this.#audioContext.audioWorklet.addModule(AudioMixer);
       }
     } else {
       // For destroy
@@ -68,7 +65,6 @@ export class AudioPlayer {
     }
 
     this.#audioSourceNode = null;
-    this.#audioSamples = null;
 
     this.#loopStartInS = null;
     this.#loopEndInS = null;
@@ -79,7 +75,6 @@ export class AudioPlayer {
 
     this.#shouldLoop = true;
     this.#initNeeded = true;
-    this.#isSeeking = false;
     this.#isPlaying = false;
 
     /**
@@ -94,46 +89,75 @@ export class AudioPlayer {
     this.init();
   }
 
-  /**
-   *
-   * @param {Array<Float32Array>} samples per-channel PCM samples
-   * @param {number} offset
-   */
-  load(newSamples: Float32Array[], offset: number | undefined = 0): void {
+  async start() {
     if (!this.metadata || !this.#audioContext) {
       return;
     }
-    const { numberChannels, totalSamples } = this.metadata; 
+    const { totalSamples, sampleRate } = this.metadata;
+    const amountTimeInS = totalSamples / sampleRate;
+
+    const initialSamplesSizeInSeconds = Math.min(amountTimeInS, 3);
+    const initialSamplesSize = initialSamplesSizeInSeconds * sampleRate;
+    console.time('getSamples');
+    const initialSamples = await this.options.decodeSamples(
+      0,
+      initialSamplesSize
+    );
+    console.timeEnd('getSamples');
+    this.#load(initialSamples, 0);
+
+    // Decode in small segments, because postMessage-ing with a big data may cause jank
+    // (which can be noticeable in the audio playback)
+    const segmentsInSeconds: Array<{ offset: number; size: number }> = [];
+    for (let ch = initialSamplesSizeInSeconds; ch < amountTimeInS; ch += 10) {
+      if (ch + 10 < amountTimeInS) {
+        segmentsInSeconds.push({ offset: ch, size: 10 });
+      } else {
+        // Final segment
+        segmentsInSeconds.push({ offset: ch, size: amountTimeInS - ch });
+      }
+    }
+
+    (async () => {
+      for (const segment of segmentsInSeconds) {
+        console.time('getSamples');
+        const samples = await this.options.decodeSamples(
+          segment.offset * sampleRate,
+          segment.size * sampleRate
+        );
+        console.timeEnd('getSamples');
+        this.#load(samples, segment.offset * sampleRate);
+      }
+    })();
+  }
+
+  /**
+   *
+   * @param {Array<Float32Array>} newSamples per-channel PCM samples
+   * @param {number} offset
+   */
+  #load(newSamples: Float32Array[], offset: number | undefined = 0): void {
+    if (!this.metadata || !this.#audioContext) {
+      return;
+    }
 
     if (offset === 0) {
-      const fullSamples: Float32Array[] = [];
-      for (let c = 0; c < numberChannels; c++) {
-        const channelFullSamples = new Float32Array(newSamples[c].length).fill(0);
-        for (let s = 0; s < newSamples[c].length; s++) {
-          channelFullSamples[s] = newSamples[c][s];
-        }
-        fullSamples.push(channelFullSamples);
-      }
-
-      this.initPlayback(offset, fullSamples);
+      this.initPlayback(offset, newSamples);
       this.#isPlaying = true;
-      this.hooks.onPlay();
+      this.options.onPlay();
     } else {
       if (this.#audioSourceNode) {
-        console.log('newSamples', newSamples[0].length)
-        // TODO: this is slow... maybe need to chunk out into several more postMessage. having a slow postMessage could affect audio, apparently...
-        this.#audioSourceNode.port.postMessage({
-          type: 'update-samples',
-          payload: {
-            samples: newSamples,
-            offset,
+        this.#audioSourceNode.port.postMessage(
+          {
+            type: 'ADD_SAMPLES',
+            payload: {
+              samples: newSamples,
+              offset,
+            },
           },
-        }, newSamples.map(c => c.buffer));
-        console.log('newSamples2', newSamples[0].length)
+          newSamples.map((c) => c.buffer)
+        );
       }
-      // "Seek" to current playback time to reinitialize AudioBufferSourceNode (this.#bufferSource) with latest AudioBuffer data
-      // Assumption: user is still playing the audio player. Time between first & second load() should be quite small
-      // this.seek(this.#audioContext.currentTime);
     }
   }
 
@@ -141,20 +165,11 @@ export class AudioPlayer {
     bufferStart: number | undefined = 0,
     initialSamples: Float32Array[]
   ) {
-    if (
-      !this.metadata ||
-      !this.#audioContext || 
-      this.#volume == null
-    ) {
+    if (!this.metadata || !this.#audioContext || this.#volume == null) {
       return;
     }
-    const {
-      loopStartSample,
-      totalSamples,
-      sampleRate,
-      numberTracks,
-      trackDescriptions,
-    } = this.metadata;
+    const { loopStartSample, totalSamples, sampleRate, trackDescriptions } =
+      this.metadata;
 
     this.#audioSourceNode = new AudioWorkletNode(
       this.#audioContext,
@@ -164,12 +179,16 @@ export class AudioPlayer {
         numberOfOutputs: 1,
         outputChannelCount: [2],
         processorOptions: {
-          initialSamples: initialSamples,
+          initialSamples,
+          loopStartSample,
+          totalSamples,
+          sampleRate,
+          shouldLoop: this.#shouldLoop,
+          trackDescriptions,
+          trackStates: this.#trackStates,
         },
       }
     );
-    console.log('initPlayback')
-
     this.#gainNode = this.#audioContext.createGain();
     this.#gainNode.gain.value = this.#volume;
 
@@ -192,11 +211,18 @@ export class AudioPlayer {
     if (!this.#audioContext) {
       return;
     }
-    this.#isSeeking = true;
-    // this.initPlayback(playbackTimeInS);
+    if (this.#audioSourceNode) {
+      this.#audioSourceNode.port.postMessage({
+        type: 'SEEK',
+        payload: {
+          playbackTimeInS,
+        },
+      });
+    }
+    this.#startTimestamp = Date.now() - playbackTimeInS * 1000;
     if (!this.#isPlaying) {
       this.#isPlaying = true;
-      this.hooks.onPlay();
+      this.options.onPlay();
       // Cannot use this.play() as it will adjust _startTimestamp based on previous _pauseTimestamp
       await this.#audioContext.resume();
     }
@@ -207,12 +233,10 @@ export class AudioPlayer {
       return;
     }
     this.#isPlaying = true;
-    this.hooks.onPlay();
+    this.options.onPlay();
     await this.#audioContext.resume();
 
-    if (this.#initNeeded) {
-      // this.initPlayback();
-    } else {
+    if (!this.#initNeeded) {
       this.#startTimestamp =
         this.#startTimestamp + Date.now() - (this.#pauseTimestamp ?? 0);
     }
@@ -222,7 +246,7 @@ export class AudioPlayer {
       return;
     }
     this.#isPlaying = false;
-    this.hooks.onPause();
+    this.options.onPause();
     this.#pauseTimestamp = Date.now();
     await this.#audioContext.suspend();
   }
@@ -233,8 +257,14 @@ export class AudioPlayer {
    */
   async setTrackStates(newStates: Array<boolean>) {
     this.#trackStates = newStates;
-    // NOTE: Only works well when this.#isPlaying is true!
-    this.seek(this.getCurrrentPlaybackTime());
+    if (this.#audioSourceNode) {
+      this.#audioSourceNode.port.postMessage({
+        type: 'UPDATE_TRACK_STATES',
+        payload: {
+          trackStates: this.#trackStates,
+        },
+      });
+    }
   }
 
   /**
@@ -253,8 +283,13 @@ export class AudioPlayer {
    */
   setLoop(value: boolean) {
     this.#shouldLoop = value;
-    if (this.#bufferSource) {
-      this.#bufferSource.loop = this.#shouldLoop;
+    if (this.#audioSourceNode) {
+      this.#audioSourceNode.port.postMessage({
+        type: 'UPDATE_SHOULD_LOOP',
+        payload: {
+          shouldLoop: this.#shouldLoop,
+        },
+      });
     }
   }
 
