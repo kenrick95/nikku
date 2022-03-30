@@ -23,6 +23,7 @@
   "scripts": {
     "dev": "vite",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false",
+    "typecheck-worklet": "tsc --noEmit --emitDeclarationOnly false --project src/audio-player/worklet",
     "build": "tsc && vite build",
     "build-gh-pages": "vite build --base \"/nikku/\""
   },
