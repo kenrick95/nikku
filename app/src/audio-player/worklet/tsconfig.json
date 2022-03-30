@@ -1,12 +1,11 @@
 {
   "compilerOptions": {
-    "types": ["vite/client"],
+    "types": ["audioworklet"],
     "module": "esnext",
-    "lib": ["ESNext", "DOM"],
+    "lib": ["ESNext"],
+    "allowJs": true,
+    "noEmit": true,
     "declaration": true,
-    "emitDeclarationOnly": true,
-    "outDir": "./types",
-    "rootDir": "./src",
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
@@ -19,6 +18,6 @@
     "useDefineForClassFields": false,
     "target": "ESNext"
   },
-  "include": ["src/**/*.ts", "./comlink-workers.d.ts"],
+  "include": ["audio-source.js"],
   "exclude": []
 }

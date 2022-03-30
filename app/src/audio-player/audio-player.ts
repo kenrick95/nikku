@@ -1,6 +1,5 @@
 import type { Metadata } from 'brstm';
-// import AudioMixer from './audio-mixer?url';
-import AudioSource from './audio-source?url';
+import AudioSource from './worklet/audio-source?url';
 
 export type AudioPlayerOptions = {
   onPlay: () => void;
@@ -142,7 +141,7 @@ export class AudioPlayer {
     }
 
     if (offset === 0) {
-      this.initPlayback(offset, newSamples);
+      this.initPlayback(newSamples);
       this.#isPlaying = true;
       this.options.onPlay();
     } else {
@@ -161,10 +160,7 @@ export class AudioPlayer {
     }
   }
 
-  initPlayback(
-    bufferStart: number | undefined = 0,
-    initialSamples: Float32Array[]
-  ) {
+  initPlayback(initialSamples: Float32Array[]) {
     if (!this.metadata || !this.#audioContext || this.#volume == null) {
       return;
     }
@@ -189,6 +185,25 @@ export class AudioPlayer {
         },
       }
     );
+    if (this.#audioSourceNode.port) {
+      this.#audioSourceNode.port.addEventListener(
+        'message',
+        (ev: MessageEvent) => {
+          console.log('[AudioPlayer]', ev.data.type);
+
+          switch (ev.data.type) {
+            case 'BUFFER_LOOPED': {
+              // TODO: Update timer?
+              break;
+            }
+            case 'BUFFER_ENDED': {
+              // TODO: Notify end
+              break;
+            }
+          }
+        }
+      );
+    }
     this.#gainNode = this.#audioContext.createGain();
     this.#gainNode.gain.value = this.#volume;
 
@@ -199,7 +214,7 @@ export class AudioPlayer {
     this.#loopEndInS = totalSamples / sampleRate;
     this.#loopDurationInS = this.#loopEndInS - this.#loopStartInS;
 
-    this.#startTimestamp = Date.now() - bufferStart * 1000;
+    this.#startTimestamp = Date.now();
 
     this.#initNeeded = false;
   }

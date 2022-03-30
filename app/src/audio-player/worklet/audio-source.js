@@ -2,8 +2,16 @@
 // Cannot be in TypeScript yet
 // See: https://github.com/vitejs/vite/discussions/3804
 /** @typedef {import('brstm').TrackDescription} TrackDescription */
-/** @typedef {import('./audio-player').AudioPlayerTrackStates} AudioPlayerTrackStates */
-
+/** @typedef {Array<boolean>} AudioPlayerTrackStates */
+/**
+ * @typedef {Object} AudioSourceNodeOptions 
+ * @property {number=} numberOfInputs
+ * @property {number=} numberOfOutputs
+ * @property {number=} outputChannelCount
+ * @property {Record<string, number>=} parameterData
+ * @property {any=} processorOptions
+*/
+ 
 /**
  * Purpose:
  * - All-in-one source node
@@ -17,7 +25,7 @@
 class AudioSourceNode extends AudioWorkletProcessor {
   /**
    *
-   * @param {AudioWorkletNodeOptions=} options
+   * @param {AudioSourceNodeOptions=} options
    */
   constructor(options) {
     super();
@@ -60,7 +68,10 @@ class AudioSourceNode extends AudioWorkletProcessor {
           this.trackStates = /** @type {AudioPlayerTrackStates} */ (
             event.data.payload.trackStates
           );
-          console.log('[AudioSourceNode] UPDATE_TRACK_STATES', this.trackStates);
+          console.log(
+            '[AudioSourceNode] UPDATE_TRACK_STATES',
+            this.trackStates
+          );
           break;
         }
         case 'SEEK': {
@@ -116,8 +127,6 @@ class AudioSourceNode extends AudioWorkletProcessor {
     }
     const bufferOffset = this._bufferHead;
 
-    // TODO: Implement looping
-
     for (let s = 0; s < output[0].length; s++) {
       // Our samples are distributed in segments
       const absoluteSampleIndex = s + bufferOffset;
@@ -125,7 +134,27 @@ class AudioSourceNode extends AudioWorkletProcessor {
       const segmentOffset = this.samplesOffsets[i];
       const segment = this.samples[i];
       const segmentSampleIndex = absoluteSampleIndex - segmentOffset;
-
+      if (absoluteSampleIndex >= this.totalSamples) {
+        console.log(
+          'Buffer ended',
+          this.totalSamples,
+          absoluteSampleIndex,
+          segmentSampleIndex,
+          segment[0][segmentSampleIndex]
+        );
+        if (this.shouldLoop) {
+          // TODO: implement looping
+          this.port.postMessage({
+            type: 'BUFFER_LOOPED',
+          });
+          return false;
+        } else {
+          this.port.postMessage({
+            type: 'BUFFER_ENDED',
+          });
+          return false;
+        }
+      }
 
       // Mixing tracks, basically summing all active tracks together
       let sums = [0, 0];
