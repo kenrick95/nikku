@@ -223,49 +223,22 @@ export class NikkuMain extends LitElement {
           onPause: () => {
             this.playPauseIcon = 'play';
           },
+          decodeSamples: async (offset: number, size: number) => {
+            const samples =
+              (await this.workerInstance.getSamples(offset, size)) || [];
+            return samples;
+          },
         });
       }
       if (!metadata) {
         throw new Error('metadata is undefined');
       }
       await this.audioPlayer.init(metadata);
+      await this.audioPlayer.start();
 
       const amountTimeInS = metadata.totalSamples / metadata.sampleRate;
       const numberTracks = metadata.numberTracks;
 
-      // Decode the first 3 seconds, then schedule decoding the whole thing
-      const initialSecondsRequest = Math.min(amountTimeInS, 3);
-
-      console.time('getSamples');
-      const initialSamplesSize = initialSecondsRequest * metadata.sampleRate;
-      const initialSamples = await this.workerInstance.getSamples(
-        0,
-        initialSamplesSize
-      );
-      console.timeEnd('getSamples');
-      if (!initialSamples) {
-        throw new Error('initialSamples is undefined');
-      }
-      if (initialSecondsRequest >= 3) {
-        setTimeout(async () => {
-          const restSamplesSize = metadata.totalSamples - initialSamplesSize;
-          console.time('getSamples');
-          const restSamples = await this.workerInstance.getSamples(
-            initialSamplesSize,
-            restSamplesSize
-          );
-
-          console.timeEnd('getSamples');
-          if (!restSamples) {
-            throw new Error('restSamples is undefined');
-          }
-          if (this.audioPlayer) {
-            this.audioPlayer.load(restSamples, initialSamplesSize);
-          }
-        }, 10);
-      }
-
-      this.audioPlayer.load(initialSamples, 0);
       if (this.muted) {
         this.audioPlayer.setVolume(0);
       } else {
