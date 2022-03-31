@@ -2,11 +2,11 @@
 
 Web-based BRSTM player
 
-Just open [the demo](https://kenrick95.github.io/nikku/) in modern browser, select .brstm file, and enjoy!
+Just open [the web application](https://kenrick95.github.io/nikku/), select .brstm file, and enjoy!
 
 ## What Is BRSTM?
 
-BRSTM is a file format that contains [lossless](https://sound.stackexchange.com/a/40879) audio data that's being used for some Nintendo consoles. One of the differences with the usual audio format (MP3, etc) is that this format can contain a loop point, making it suitable for usage in games.
+BRSTM is a file format that contains [lossless](https://sound.stackexchange.com/a/40879) [DSPADPCM](https://gbatemp.net/threads/dspadpcm-dsp-audio-encoding-made-easy.390305/) audio data that's being used for some Nintendo consoles. One of the differences with the usual audio format (MP3, etc) is that this format can contain a loop point, making it suitable for usage in games.
 
 `.brstm` file is not included in the repository.
 
@@ -23,12 +23,11 @@ There are no polyfill included in [the demo](https://kenrick95.github.io/nikku/)
 Browser needs to support the following features without any vendor prefix:
 
 - [Web Audio API](https://caniuse.com/audio-api)
-- [Audio Worklet API](https://caniuse.com/mdn-api_audioworklet) (for multi-track BRSTM files)
-- [`<script type="module"> `](https://caniuse.com/es6-module)
-- [`Custom Elements](https://caniuse.com/custom-elementsv1)
+- [Audio Worklet API](https://caniuse.com/mdn-api_audioworklet)
+- [`<script type="module">`](https://caniuse.com/es6-module)
+- [Custom Elements](https://caniuse.com/custom-elementsv1)
 - [ES2015 in general](https://caniuse.com/es6)
 - [ES2015 class](https://caniuse.com/es6-class)
-Developed and tested in Firefox 88
 
 ## References
 
