@@ -45,11 +45,16 @@
             return true;
           }
 
-          if (
-            !window.customElements ||
-            !('AudioContext' in window)
-          ) {
-            return false;
+          if (!window.customElements) {
+            return true;
+          }
+          if (!('AudioContext' in window)) {
+            return true;
+          }
+
+          let ac = new AudioContext();
+          if (!('audioWorklet' in ac)) {
+            return true;
           }
 
           return false;
@@ -61,8 +66,8 @@
         });
       }
     </script>
-    <script type="module" crossorigin src="/nikku/assets/index.c90b7e67.js"></script>
-    <link rel="modulepreload" href="/nikku/assets/vendor.62c2304e.js">
+    <script type="module" crossorigin src="/nikku/assets/index.417544bb.js"></script>
+    <link rel="modulepreload" href="/nikku/assets/vendor.7ab8c0b4.js">
     <link rel="stylesheet" href="/nikku/assets/index.8f7b8d68.css">
   </head>
   <body>
