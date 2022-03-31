@@ -4,14 +4,14 @@
 /** @typedef {import('brstm').TrackDescription} TrackDescription */
 /** @typedef {Array<boolean>} AudioPlayerTrackStates */
 /**
- * @typedef {Object} AudioSourceNodeOptions 
+ * @typedef {Object} AudioSourceNodeOptions
  * @property {number=} numberOfInputs
  * @property {number=} numberOfOutputs
  * @property {number=} outputChannelCount
  * @property {Record<string, number>=} parameterData
  * @property {any=} processorOptions
-*/
- 
+ */
+
 /**
  * Purpose:
  * - All-in-one source node
@@ -125,36 +125,21 @@ class AudioSourceNode extends AudioWorkletProcessor {
     if (!output || !output.length || !output[0].length) {
       return false;
     }
-    const bufferOffset = this._bufferHead;
+    let absoluteSampleIndex = this._bufferHead;
 
     for (let s = 0; s < output[0].length; s++) {
+      if (absoluteSampleIndex >= this.totalSamples) {
+        // We've reached the end, just output 0
+        output[0][s] = 0;
+        output[1][s] = 0;
+        continue;
+      }
       // Our samples are distributed in segments
-      const absoluteSampleIndex = s + bufferOffset;
       const i = this.getSegmentIndex(absoluteSampleIndex);
+
       const segmentOffset = this.samplesOffsets[i];
       const segment = this.samples[i];
       const segmentSampleIndex = absoluteSampleIndex - segmentOffset;
-      if (absoluteSampleIndex >= this.totalSamples) {
-        console.log(
-          'Buffer ended',
-          this.totalSamples,
-          absoluteSampleIndex,
-          segmentSampleIndex,
-          segment[0][segmentSampleIndex]
-        );
-        if (this.shouldLoop) {
-          // TODO: implement looping
-          this.port.postMessage({
-            type: 'BUFFER_LOOPED',
-          });
-          return false;
-        } else {
-          this.port.postMessage({
-            type: 'BUFFER_ENDED',
-          });
-          return false;
-        }
-      }
 
       // Mixing tracks, basically summing all active tracks together
       let sums = [0, 0];
@@ -193,9 +178,23 @@ class AudioSourceNode extends AudioWorkletProcessor {
 
       output[0][s] = clamp(sums[0], -1, 1);
       output[1][s] = clamp(sums[1], -1, 1);
+
+      absoluteSampleIndex += 1;
+      if (absoluteSampleIndex >= this.totalSamples) {
+        if (this.shouldLoop) {
+          absoluteSampleIndex = this.loopStartSample;
+          this.port.postMessage({
+            type: 'BUFFER_LOOPED',
+          });
+        } else {
+          this.port.postMessage({
+            type: 'BUFFER_ENDED',
+          });
+        }
+      }
     }
 
-    this._bufferHead += output[0].length;
+    this._bufferHead = absoluteSampleIndex;
     return true;
   }
 }

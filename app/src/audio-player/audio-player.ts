@@ -27,7 +27,7 @@ export class AudioPlayer {
   #startTimestamp: number = 0;
   #pauseTimestamp: number = 0;
   #shouldLoop: boolean = false;
-  #initNeeded: boolean = true;
+  #hasBufferReachedEnd: boolean = true;
   #isPlaying: boolean = false;
   #volume: number = 0;
 
@@ -73,7 +73,7 @@ export class AudioPlayer {
     this.#pauseTimestamp = 0;
 
     this.#shouldLoop = true;
-    this.#initNeeded = true;
+    this.#hasBufferReachedEnd = false;
     this.#isPlaying = false;
 
     /**
@@ -193,16 +193,17 @@ export class AudioPlayer {
 
           switch (ev.data.type) {
             case 'BUFFER_LOOPED': {
-              // TODO: Update timer?
               break;
             }
             case 'BUFFER_ENDED': {
-              // TODO: Notify end
+              this.pause();
+              this.#hasBufferReachedEnd = true;
               break;
             }
           }
         }
       );
+      this.#audioSourceNode.port.start();
     }
     this.#gainNode = this.#audioContext.createGain();
     this.#gainNode.gain.value = this.#volume;
@@ -216,7 +217,7 @@ export class AudioPlayer {
 
     this.#startTimestamp = Date.now();
 
-    this.#initNeeded = false;
+    this.#hasBufferReachedEnd = false;
   }
 
   /**
@@ -251,7 +252,9 @@ export class AudioPlayer {
     this.options.onPlay();
     await this.#audioContext.resume();
 
-    if (!this.#initNeeded) {
+    if (this.#hasBufferReachedEnd) {
+      this.seek(0);
+    } else {
       this.#startTimestamp =
         this.#startTimestamp + Date.now() - (this.#pauseTimestamp ?? 0);
     }
