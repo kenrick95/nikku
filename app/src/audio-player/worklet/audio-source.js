@@ -16,11 +16,17 @@
  * Purpose:
  * - All-in-one source node
  *
- * Requirements:
+ * Features:
  * - Buffer can be dynamically updated
- *   - Use case: Decode first block, then write here, and can be used for playing already! Afterwards, next blocks can be written and no need to disconnect/reconnect the node
- * - Support looping
+ *   - Use case: Decode first block, then write here, 
+ *     and can be used for playing already!
+ *     Afterwards, next blocks can be written and
+ *     no need to disconnect/reconnect nodes
+ * - Support buffer looping.
+ *   - NOTE: currently loop end = buffer end,
+ *     but support can be added for custom loop end in the future
  * - Support seeking to certain time
+ * - Query accurate playback timestamp
  */
 class AudioSourceNode extends AudioWorkletProcessor {
   /**
@@ -87,6 +93,15 @@ class AudioSourceNode extends AudioWorkletProcessor {
             event.data.payload.shouldLoop
           );
           console.log('[AudioSourceNode] UPDATE_SHOULD_LOOP', this.shouldLoop);
+          break;
+        }
+        case 'TIMESTAMP_QUERY': {
+          this.port.postMessage({
+            type: 'TIMESTAMP_REPLY',
+            payload: {
+              timestamp: this._bufferHead / this.sampleRate,
+            },
+          });
           break;
         }
       }
