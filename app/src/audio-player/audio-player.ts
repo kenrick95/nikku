@@ -1,4 +1,5 @@
 import type { Metadata } from 'brstm';
+import { Timer } from '../timer';
 import AudioSource from './worklet/audio-source?url';
 
 export type AudioPlayerOptions = {
@@ -17,19 +18,23 @@ export class AudioPlayer {
   options: AudioPlayerOptions;
 
   metadata: Metadata | null = null;
+
   #audioContext: AudioContext | null = null;
   #trackStates: AudioPlayerTrackStates = [];
+
   #audioSourceNode: null | AudioWorkletNode = null;
   #gainNode: null | GainNode = null;
-  #loopStartInS: null | number = null;
-  #loopEndInS: null | number = null;
-  #loopDurationInS: null | number = null;
-  #startTimestamp: number = 0;
-  #pauseTimestamp: number = 0;
+
+  #currentTimestamp: number = 0;
+
   #shouldLoop: boolean = false;
   #hasBufferReachedEnd: boolean = true;
   #isPlaying: boolean = false;
+
+  /** 0..1 */
   #volume: number = 0;
+
+  #timer: Timer | null = null;
 
   constructor(options: AudioPlayerOptions) {
     this.options = options;
@@ -45,10 +50,14 @@ export class AudioPlayer {
       if (this.#audioContext.audioWorklet) {
         await this.#audioContext.audioWorklet.addModule(AudioSource);
       }
+      this.#timer = new Timer({
+        renderCallback: this.#updateTimestamp.bind(this),
+      });
     } else {
       // For destroy
       this.metadata = null;
       this.#audioContext = null;
+      this.#timer = null;
     }
 
     this.#trackStates = [true];
@@ -64,23 +73,15 @@ export class AudioPlayer {
     }
 
     this.#audioSourceNode = null;
+    this.#gainNode = null;
 
-    this.#loopStartInS = null;
-    this.#loopEndInS = null;
-    this.#loopDurationInS = null;
-
-    this.#startTimestamp = 0;
-    this.#pauseTimestamp = 0;
+    this.#currentTimestamp = 0;
 
     this.#shouldLoop = true;
     this.#hasBufferReachedEnd = false;
     this.#isPlaying = false;
 
-    /**
-     * 0..1
-     */
     this.#volume = 1;
-    this.#gainNode = null;
   }
 
   async destroy() {
@@ -142,6 +143,7 @@ export class AudioPlayer {
 
     if (offset === 0) {
       this.initPlayback(newSamples);
+      this.#timer?.start();
       this.#isPlaying = true;
       this.options.onPlay();
     } else {
@@ -189,15 +191,21 @@ export class AudioPlayer {
       this.#audioSourceNode.port.addEventListener(
         'message',
         (ev: MessageEvent) => {
-          console.log('[AudioPlayer]', ev.data.type);
-
           switch (ev.data.type) {
             case 'BUFFER_LOOPED': {
+              console.log('[AudioPlayer]', ev.data.type);
               break;
             }
             case 'BUFFER_ENDED': {
+              console.log('[AudioPlayer]', ev.data.type);
               this.pause();
               this.#hasBufferReachedEnd = true;
+              break;
+            }
+
+            case 'TIMESTAMP_REPLY': {
+              // console.log('[AudioPlayer]', ev.data.type);
+              this.#currentTimestamp = ev.data.payload.timestamp as number;
               break;
             }
           }
@@ -211,13 +219,15 @@ export class AudioPlayer {
     this.#audioSourceNode.connect(this.#gainNode);
     this.#gainNode.connect(this.#audioContext.destination);
 
-    this.#loopStartInS = loopStartSample / sampleRate;
-    this.#loopEndInS = totalSamples / sampleRate;
-    this.#loopDurationInS = this.#loopEndInS - this.#loopStartInS;
-
-    this.#startTimestamp = Date.now();
-
     this.#hasBufferReachedEnd = false;
+  }
+
+  #updateTimestamp() {
+    if (this.#audioSourceNode) {
+      this.#audioSourceNode.port.postMessage({
+        type: 'TIMESTAMP_QUERY',
+      });
+    }
   }
 
   /**
@@ -235,12 +245,8 @@ export class AudioPlayer {
         },
       });
     }
-    this.#startTimestamp = Date.now() - playbackTimeInS * 1000;
     if (!this.#isPlaying) {
-      this.#isPlaying = true;
-      this.options.onPlay();
-      // Cannot use this.play() as it will adjust _startTimestamp based on previous _pauseTimestamp
-      await this.#audioContext.resume();
+      await this.play();
     }
   }
 
@@ -249,14 +255,12 @@ export class AudioPlayer {
       return;
     }
     this.#isPlaying = true;
+    this.#timer?.start();
     this.options.onPlay();
     await this.#audioContext.resume();
 
     if (this.#hasBufferReachedEnd) {
       this.seek(0);
-    } else {
-      this.#startTimestamp =
-        this.#startTimestamp + Date.now() - (this.#pauseTimestamp ?? 0);
     }
   }
   async pause() {
@@ -264,8 +268,8 @@ export class AudioPlayer {
       return;
     }
     this.#isPlaying = false;
+    this.#timer?.stop();
     this.options.onPause();
-    this.#pauseTimestamp = Date.now();
     await this.#audioContext.suspend();
   }
 
@@ -316,43 +320,9 @@ export class AudioPlayer {
    * @returns {number} current time in seconds, accounted for looping
    */
   getCurrrentPlaybackTime(): number {
-    if (this.#loopDurationInS == null || this.#loopEndInS == null) {
+    if (!this.#audioSourceNode) {
       return 0;
     }
-
-    const currentTimestamp = Date.now();
-    const playbackTime = currentTimestamp - this.#startTimestamp;
-    let playbackTimeInS = playbackTime / 1000;
-
-    /**
-     * This is to account for this.#startTimestamp > currentTimestamp
-     *
-     * https://github.com/kenrick95/nikku/issues/15
-     *
-     * Bug description:
-     * - Load a file, tick Loop, pause it for N seconds, where N > file's duration
-     * - When played again, it will show a wrong playback time
-     *
-     * This is because during the resume of the file, `this.#startTimestamp` is changed at multiple places
-     * 1. getCurrrentPlaybackTime() will change `this.#startTimestamp`
-     * 2. then play() will also change `this.#startTimestamp`
-     * 3. then the next getCurrrentPlaybackTime() will result in a negative value
-     *
-     */
-    while (playbackTimeInS < 0) {
-      this.#startTimestamp =
-        this.#startTimestamp - this.#loopDurationInS * 1000;
-      playbackTimeInS = (currentTimestamp - this.#startTimestamp) / 1000;
-    }
-    while (playbackTimeInS > this.#loopEndInS) {
-      if (this.#shouldLoop && this.#isPlaying) {
-        this.#startTimestamp =
-          this.#startTimestamp + this.#loopDurationInS * 1000;
-        playbackTimeInS = (currentTimestamp - this.#startTimestamp) / 1000;
-      } else {
-        playbackTimeInS = Math.min(playbackTimeInS, this.#loopEndInS);
-      }
-    }
-    return playbackTimeInS;
+    return this.#currentTimestamp;
   }
 }

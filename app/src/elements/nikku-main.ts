@@ -52,7 +52,6 @@ export class NikkuMain extends LitElement {
       }
 
       const currentTime = this.audioPlayer.getCurrrentPlaybackTime();
-      // console.log('currentTime', currentTime) TODO: BUG: 1. play, 2. pause, 3. play --> for 2 frames, the "currentTime" is wrong (showing few seconds ahead)
       this.progressValue = currentTime;
       this.timeDisplayValue = currentTime;
     },
