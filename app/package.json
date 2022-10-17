@@ -30,14 +30,14 @@
   "dependencies": {
     "brstm": "^1.6.1",
     "comlink": "^4.3.1",
-    "lit": "^2.2.1"
+    "lit": "^2.4.0"
   },
   "devDependencies": {
     "@types/audioworklet": "^0.0.26",
     "rollup-plugin-minify-html-literals": "^1.2.6",
-    "typescript": "^4.6.2",
-    "vite": "^2.8.6",
-    "vite-plugin-comlink": "^2.1.0",
+    "typescript": "^4.8.4",
+    "vite": "^2.9.15",
+    "vite-plugin-comlink": "^2.1.1",
     "vite-plugin-worker": "^1.0.5"
   }
 }
