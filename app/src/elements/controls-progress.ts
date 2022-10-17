@@ -114,71 +114,105 @@ export class ControlsProgress extends LitElement {
     this.updateStyles();
   }
 
+  updateProgressFromEvent = (e: MouseEvent | TouchEvent) => {
+    this.refreshCachedValues();
+
+    let x = 0;
+    if (e instanceof MouseEvent) {
+      x = e.clientX;
+    } else if (e instanceof TouchEvent) {
+      x = e.touches[0].clientX;
+    }
+
+    const newValue =
+      Math.min(
+        1,
+        Math.max(
+          0,
+          (x - (this._cachedProgressBarOffsetLeft ?? 0)) /
+            (this._cachedProgressBarClientWidth ?? 1)
+        )
+      ) * this.max;
+
+    this.dispatchEvent(
+      new CustomEvent('progressValueChange', {
+        detail: {
+          value: newValue,
+        },
+      })
+    );
+    this.value = newValue;
+  };
+
+  handleDraggingStart = (e: MouseEvent | TouchEvent) => {
+    if (this.disabled || this.#isDragging) {
+      return;
+    }
+    this.#isDragging = true;
+    this.updateProgressFromEvent(e);
+  };
+  handleDraggingMove = (e: MouseEvent | TouchEvent) => {
+    if (this.disabled || !this.#isDragging) {
+      return;
+    }
+    this.updateProgressFromEvent(e);
+  };
+  handleDraggingEnd = (_e: MouseEvent | TouchEvent) => {
+    if (this.disabled) {
+      return;
+    }
+    this.#isDragging = false;
+  };
+  handleWindowResize = () => {
+    // Invalidate cached values because they have changed
+    this._cachedProgressBarOffsetLeft = null;
+    this._cachedProgressBarClientWidth = null;
+    this.refreshCachedValues();
+  };
+
   firstUpdated() {
-    const updateProgressFromEvent = (e: MouseEvent) => {
-      this.refreshCachedValues();
-
-      const newValue =
-        Math.min(
-          1,
-          Math.max(
-            0,
-            (e.clientX - (this._cachedProgressBarOffsetLeft ?? 0)) /
-              (this._cachedProgressBarClientWidth ?? 1)
-          )
-        ) * this.max;
-
-      this.dispatchEvent(
-        new CustomEvent('progressValueChange', {
-          detail: {
-            value: newValue,
-          },
-        })
-      );
-      this.value = newValue;
-    };
     this.progressBar.value?.addEventListener(
       'mousedown',
-      (e) => {
-        if (this.disabled) {
-          return;
-        }
-        this.#isDragging = true;
-        updateProgressFromEvent(/** @type {MouseEvent} */ e);
-      },
+      this.handleDraggingStart,
       { passive: true }
     );
-    document?.addEventListener(
-      'mousemove',
-      (e) => {
-        if (this.disabled) {
-          return;
-        }
-        if (this.#isDragging) {
-          updateProgressFromEvent(/** @type {MouseEvent} */ e);
-        }
-      },
+    document?.addEventListener('mousemove', this.handleDraggingMove, {
+      passive: true,
+    });
+    document?.addEventListener('mouseup', this.handleDraggingEnd, {
+      passive: true,
+    });
+    this.progressBar.value?.addEventListener(
+      'touchstart',
+      this.handleDraggingStart,
       { passive: true }
     );
-    document?.addEventListener(
-      'mouseup',
-      (_e) => {
-        if (this.disabled) {
-          return;
-        }
-        this.#isDragging = false;
-      },
-      { passive: true }
-    );
-
-    // Invalidate cached values because they have changed
-    window.addEventListener('resize', () => {
-      this._cachedProgressBarOffsetLeft = null;
-      this._cachedProgressBarClientWidth = null;
-      this.refreshCachedValues();
+    document?.addEventListener('touchmove', this.handleDraggingMove, {
+      passive: true,
+    });
+    document?.addEventListener('touchend', this.handleDraggingEnd, {
+      passive: true,
     });
 
+    window.addEventListener('resize', this.handleWindowResize);
+
     this.refreshCachedValues();
+  }
+
+  disconnectedCallback(): void {
+    this.progressBar.value?.removeEventListener(
+      'mousedown',
+      this.handleDraggingStart
+    );
+    document?.removeEventListener('mousemove', this.handleDraggingMove);
+    document?.removeEventListener('mouseup', this.handleDraggingEnd);
+    this.progressBar.value?.removeEventListener(
+      'touchstart',
+      this.handleDraggingStart
+    );
+    document?.removeEventListener('touchmove', this.handleDraggingMove);
+    document?.removeEventListener('touchend', this.handleDraggingEnd);
+    window.removeEventListener('resize', this.handleWindowResize);
   }
 }
 
