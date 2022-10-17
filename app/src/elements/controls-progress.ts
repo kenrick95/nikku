@@ -115,7 +115,7 @@ export class ControlsProgress extends LitElement {
   }
 
   firstUpdated() {
-    const updateVolumeFromEvent = (e: MouseEvent) => {
+    const updateProgressFromEvent = (e: MouseEvent) => {
       this.refreshCachedValues();
 
       const newValue =
@@ -144,7 +144,7 @@ export class ControlsProgress extends LitElement {
           return;
         }
         this.#isDragging = true;
-        updateVolumeFromEvent(/** @type {MouseEvent} */ e);
+        updateProgressFromEvent(/** @type {MouseEvent} */ e);
       },
       { passive: true }
     );
@@ -155,7 +155,7 @@ export class ControlsProgress extends LitElement {
           return;
         }
         if (this.#isDragging) {
-          updateVolumeFromEvent(/** @type {MouseEvent} */ e);
+          updateProgressFromEvent(/** @type {MouseEvent} */ e);
         }
       },
       { passive: true }

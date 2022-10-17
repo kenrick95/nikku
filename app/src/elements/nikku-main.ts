@@ -218,9 +218,11 @@ export class NikkuMain extends LitElement {
         this.audioPlayer = new AudioPlayer({
           onPlay: () => {
             this.playPauseIcon = 'pause';
+            this.timer.start();
           },
           onPause: () => {
             this.playPauseIcon = 'play';
+            this.timer.stop();
           },
           decodeSamples: async (offset: number, size: number) => {
             const samples =
@@ -255,7 +257,6 @@ export class NikkuMain extends LitElement {
       this.disabled = false;
 
       this.audioPlayer?.play();
-      this.timer.start();
     } catch (e) {
       this.#showError(e as Error);
     }
@@ -272,10 +273,8 @@ export class NikkuMain extends LitElement {
     this.playPauseIcon = newMode;
     if (newMode === 'play') {
       this.audioPlayer?.pause();
-      this.timer.stop();
     } else if (newMode === 'pause') {
       this.audioPlayer?.play();
-      this.timer.start();
     }
   }
 
