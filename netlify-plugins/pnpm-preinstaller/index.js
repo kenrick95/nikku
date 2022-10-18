@@ -3,7 +3,7 @@ module.exports = {
     try {
       if (process.env.CI) {
         await run.command(
-          "npx pnpm install -r --shamefully-hoist --store=node_modules/.pnpm-store"
+          "npx pnpm i --shamefully-hoist"
         );
       } else {
         status.show({ summary: "CI is false, skipping pnpm install." });

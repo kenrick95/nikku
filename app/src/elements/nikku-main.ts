@@ -3,7 +3,6 @@ import { customElement, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { AudioPlayer } from '../audio-player/audio-player';
 import { Timer } from '../timer';
-import AudioDecoder from 'comlink:../audio-decoder/worker';
 import { transfer } from 'comlink';
 
 @customElement('nikku-main')

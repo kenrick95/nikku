@@ -1,9 +1,6 @@
 [build]
-  command = "npm run netlify-build"
+  command = "npx pnpm run netlify-build"
   publish = "app/dist"
-
-[build.environment]
-  NPM_FLAGS="--prefix=/dev/null --force"
 
 [[plugins]]
   package = "/netlify-plugins/pnpm-preinstaller"
