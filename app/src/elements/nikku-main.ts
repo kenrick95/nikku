@@ -43,7 +43,7 @@ export class NikkuMain extends LitElement {
 
   private audioPlayer: AudioPlayer | null = null;
 
-  private workerInstance = AudioDecoder();
+  private workerInstance = new ComlinkWorker(new URL('../audio-decoder/worker', import.meta.url))
 
   private timer = new Timer({
     renderCallback: () => {
