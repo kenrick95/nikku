@@ -10,11 +10,8 @@
 
     
     <link rel="icon" type="image/svg+xml" href="/nikku/assets/logo.99fd8201.svg" />
-    <link
-      rel="mask-icon"
-      href="https://kenrick95.github.io/nikku/assets/logo.svg"
-      color="#198813"
-    />
+    <link rel="mask-icon" href="/nikku/assets/logo.99fd8201.svg" color="#198813" />
+    <link rel="apple-touch-icon" href="./assets/ios-180.png" sizes="180x180" />
     <meta name="theme-color" content="#198813" />
     <meta name="color-scheme" content="light dark" />
 
@@ -52,8 +49,7 @@
             return true;
           }
 
-          let ac = new AudioContext();
-          if (!('audioWorklet' in ac)) {
+          if (!('AudioWorkletNode' in window)) {
             return true;
           }
 
@@ -66,9 +62,9 @@
         });
       }
     </script>
-    <script type="module" crossorigin src="/nikku/assets/index.04b71ee3.js"></script>
-    <link rel="stylesheet" href="/nikku/assets/index.8f7b8d68.css">
-  </head>
+    <script type="module" crossorigin src="/nikku/assets/index.e3f36999.js"></script>
+    <link rel="stylesheet" href="/nikku/assets/index.fd823869.css">
+  <link rel="manifest" href="/nikku/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/nikku/registerSW.js"></script></head>
   <body>
     <header id="header">
       <img
@@ -95,6 +91,5 @@
     </footer>
 
     
-    <script nomodule src="./src/nomodule.ts"></script>
   </body>
 </html>
