@@ -17,12 +17,12 @@ export default defineConfig({
         theme_color: '#198813',
         icons: [
           {
-            src: './assets/logo-192x192.png',
+            src: './assets/android-launchericon-192-192.png',
             sizes: '192x192',
             type: 'image/png'
           },
           {
-            src: './assets/logo-512x512.png',
+            src: './assets/android-launchericon-512-512.png',
             sizes: '512x512',
             type: 'image/png'
           }
