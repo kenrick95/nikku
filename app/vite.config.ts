@@ -1,11 +1,41 @@
 import { defineConfig } from 'vite';
 import comlink from 'vite-plugin-comlink';
+import { VitePWA } from 'vite-plugin-pwa';
 
 import minifyHTML from 'rollup-plugin-minify-html-literals';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [comlink()],
+  plugins: [
+    comlink(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      manifest: {
+        name: 'Nikku - Web-based BRSTM player',
+        short_name: 'Nikku',
+        description: '👽 Web-based BRSTM player',
+        theme_color: '#198813',
+        icons: [
+          {
+            src: './assets/logo-192x192.png',
+            sizes: '192x192',
+            type: 'image/png'
+          },
+          {
+            src: './assets/logo-512x512.png',
+            sizes: '512x512',
+            type: 'image/png'
+          },
+          {
+            src: './assets/logo-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any maskable'
+          }
+        ]
+      },
+    }),
+  ],
   worker: {
     plugins: [comlink()],
   },
