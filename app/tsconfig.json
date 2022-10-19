@@ -19,6 +19,6 @@
     "useDefineForClassFields": false,
     "target": "ESNext"
   },
-  "include": ["src/**/*.ts", "./comlink-workers.d.ts"],
+  "include": ["src/**/*.ts", "./vite-env.d.ts"],
   "exclude": []
 }

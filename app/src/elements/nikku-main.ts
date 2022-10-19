@@ -3,7 +3,6 @@ import { customElement, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { AudioPlayer } from '../audio-player/audio-player';
 import { Timer } from '../timer';
-import AudioDecoder from 'comlink:../audio-decoder/worker';
 import { transfer } from 'comlink';
 
 @customElement('nikku-main')
@@ -43,7 +42,7 @@ export class NikkuMain extends LitElement {
 
   private audioPlayer: AudioPlayer | null = null;
 
-  private workerInstance = AudioDecoder();
+  private workerInstance = new ComlinkWorker(new URL('../audio-decoder/worker', import.meta.url))
 
   private timer = new Timer({
     renderCallback: () => {
