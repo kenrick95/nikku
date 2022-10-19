@@ -36,7 +36,7 @@
     "test": "microbundle --compress false && node tests/index.test.js"
   },
   "devDependencies": {
-    "microbundle": "^0.14.2",
+    "microbundle": "^0.15.1",
     "typescript": "^4.8.4"
   }
 }
