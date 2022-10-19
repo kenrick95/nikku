@@ -1,8 +1,8 @@
-# nikku
+# Nikku
 
 Web-based BRSTM player
 
-Just open [the demo](https://kenrick95.github.io/nikku/) in modern browser, select .brstm file, and enjoy!
+Just open [the demo](https://kenrick95.github.io/nikku/) in modern browser, select a `.brstm` file, and enjoy!
 
 ## What Is BRSTM?
 
@@ -13,7 +13,7 @@ BRSTM is a file format that contains [lossless](https://sound.stackexchange.com/
 Some places to look for BRSTM files:
 
 - ~~[Smash Custom Music](http://smashcustommusic.com/)~~<sup>[_dead link_]</sup>
-- [Smash Custom Music Archive](https://smashcustommusic.net/) (the audio player in this site is using the ["brstm" package](https://github.com/kenrick95/nikku/tree/master/src/brstm) from this repo!)
+- [Smash Custom Music Archive](https://smashcustommusic.net/) (the audio player in this site is using the ["brstm" package](https://github.com/kenrick95/nikku/tree/master/packages/brstm) from this repo!)
 - [Reddit](https://www.reddit.com/r/BRSTM/)
 
 ## Browser Requirements
@@ -23,12 +23,11 @@ There are no polyfill included in [the demo](https://kenrick95.github.io/nikku/)
 Browser needs to support the following features without any vendor prefix:
 
 - [Web Audio API](https://caniuse.com/audio-api)
-- [Audio Worklet API](https://caniuse.com/mdn-api_audioworklet) (for multi-track BRSTM files)
-- [`<script type="module"> `](https://caniuse.com/es6-module)
-- [`Custom Elements](https://caniuse.com/custom-elementsv1)
+- [Audio Worklet API](https://caniuse.com/mdn-api_audioworklet)
+- [`<script type="module">`](https://caniuse.com/es6-module)
+- [Custom Elements](https://caniuse.com/custom-elementsv1)
 - [ES2015 in general](https://caniuse.com/es6)
 - [ES2015 class](https://caniuse.com/es6-class)
-Developed and tested in Firefox 88
 
 ## References
 

@@ -23,7 +23,8 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/kenrick95/nikku.git"
+    "url": "https://github.com/kenrick95/nikku.git",
+    "directory": "packages/brstm"
   },
   "homepage": "https://github.com/kenrick95/nikku",
   "bugs": {
