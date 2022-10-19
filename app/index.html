@@ -52,8 +52,7 @@
             return true;
           }
 
-          let ac = new AudioContext();
-          if (!('audioWorklet' in ac)) {
+          if (!('AudioWorkletNode' in window)) {
             return true;
           }
 
@@ -93,6 +92,5 @@
     </footer>
 
     <script type="module" src="./src/main.ts"></script>
-    <script nomodule src="./src/nomodule.ts"></script>
   </body>
 </html>
