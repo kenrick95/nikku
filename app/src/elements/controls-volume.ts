@@ -1,7 +1,7 @@
 import { html, css, LitElement, PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
-import { createRef, ref, Ref } from 'lit/directives/ref.js'; 
+import { createRef, ref, Ref } from 'lit/directives/ref.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import IconVolumeNormal from '../../assets/volume-icon.svg?raw';
 import IconVolumeMuted from '../../assets/volume-icon-muted.svg?raw';
@@ -151,71 +151,106 @@ export class ControlsVolume extends LitElement {
     }
   }
 
+  updateVolumeFromEvent = (e: MouseEvent | TouchEvent) => {
+    this.refreshCachedValues();
+
+    let x = 0;
+    if (e instanceof MouseEvent) {
+      x = e.clientX;
+    } else if (e instanceof TouchEvent) {
+      x = e.touches[0].clientX;
+    }
+
+    const newVolume = Math.min(
+      1,
+      Math.max(
+        0,
+        (x - (this._cachedVolumeBarOffsetLeft ?? 0)) /
+          (this._cachedVolumeBarClientWidth ?? 1)
+      )
+    );
+    this.volume = newVolume;
+    this.dispatchEvent(
+      new CustomEvent('volumeChange', {
+        detail: {
+          volume: newVolume,
+        },
+      })
+    );
+  };
+
+  handleDraggingStart = (e: MouseEvent | TouchEvent) => {
+    if (this.disabled || this.#isDragging) {
+      return;
+    }
+    this.#isDragging = true;
+    this.updateVolumeFromEvent(e);
+  };
+
+  handleDraggingMove = (e: MouseEvent | TouchEvent) => {
+    if (this.disabled || !this.#isDragging) {
+      return;
+    }
+    this.updateVolumeFromEvent(e);
+  };
+  handleDraggingEnd = (_e: MouseEvent | TouchEvent) => {
+    if (this.disabled) {
+      return;
+    }
+    this.#isDragging = false;
+  };
+  handleWindowResize = () => {
+    // Invalidate cached values because they have changed
+    this._cachedVolumeBarOffsetLeft = null;
+    this._cachedVolumeBarClientWidth = null;
+    this.refreshCachedValues();
+  };
+
   firstUpdated() {
     this.#isDragging = false;
 
-    const updateVolumeFromEvent = (e: MouseEvent) => {
-      this.refreshCachedValues();
-      const newVolume = Math.min(
-        1,
-        Math.max(
-          0,
-          (e.clientX - (this._cachedVolumeBarOffsetLeft ?? 0)) /
-            (this._cachedVolumeBarClientWidth ?? 1)
-        )
-      );
-      this.volume = newVolume;
-      this.dispatchEvent(
-        new CustomEvent('volumeChange', {
-          detail: {
-            volume: newVolume,
-          },
-        })
-      );
-    };
-
     this.volumeBarContainer.value?.addEventListener(
       'mousedown',
-      (e) => {
-        if (this.disabled) {
-          return;
-        }
-        this.#isDragging = true;
-        updateVolumeFromEvent(/** @type {MouseEvent} */ e);
-      },
+      this.handleDraggingStart,
       { passive: true }
     );
-    document?.addEventListener(
-      'mousemove',
-      (e) => {
-        if (this.disabled) {
-          return;
-        }
-        if (this.#isDragging) {
-          updateVolumeFromEvent(/** @type {MouseEvent} */ e);
-        }
-      },
+    document?.addEventListener('mousemove', this.handleDraggingMove, {
+      passive: true,
+    });
+    document?.addEventListener('mouseup', this.handleDraggingEnd, {
+      passive: true,
+    });
+    this.volumeBarContainer.value?.addEventListener(
+      'touchstart',
+      this.handleDraggingStart,
       { passive: true }
     );
-    document?.addEventListener(
-      'mouseup',
-      (_e) => {
-        if (this.disabled) {
-          return;
-        }
-        this.#isDragging = false;
-      },
-      { passive: true }
-    );
-
-    // Invalidate cached values because they have changed
-    window.addEventListener('resize', () => {
-      this._cachedVolumeBarOffsetLeft = null;
-      this._cachedVolumeBarClientWidth = null;
-      this.refreshCachedValues();
+    document?.addEventListener('touchmove', this.handleDraggingMove, {
+      passive: true,
+    });
+    document?.addEventListener('touchend', this.handleDraggingEnd, {
+      passive: true,
     });
 
+    window.addEventListener('resize', this.handleWindowResize);
+
     this.refreshCachedValues();
+  }
+
+  disconnectedCallback(): void {
+    this.volumeBarContainer.value?.removeEventListener(
+      'mousedown',
+      this.handleDraggingStart
+    );
+    document?.removeEventListener('mousemove', this.handleDraggingMove);
+    document?.removeEventListener('mouseup', this.handleDraggingEnd);
+    this.volumeBarContainer.value?.removeEventListener(
+      'touchstart',
+      this.handleDraggingStart
+    );
+    document?.removeEventListener('touchmove', this.handleDraggingMove);
+    document?.removeEventListener('touchend', this.handleDraggingEnd);
+    window.removeEventListener('resize', this.handleWindowResize);
   }
 }
 
