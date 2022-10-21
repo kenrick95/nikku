@@ -1,4 +1,5 @@
 // Side-effect import to define custom elements
+import './elements/nikku-help';
 import './elements/nikku-main';
 import './elements/controls-play-pause';
 import './elements/controls-tracks';
