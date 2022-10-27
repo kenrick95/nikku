@@ -6,7 +6,7 @@ Just open [the demo](https://kenrick95.github.io/nikku/) in modern browser, sele
 
 ## What Is BRSTM?
 
-BRSTM is a file format that contains [lossless](https://sound.stackexchange.com/a/40879) audio data that's being used for some Nintendo consoles. One of the differences with the usual audio format (MP3, etc) is that this format can contain a loop point, making it suitable for usage in games.
+BRSTM is a file format that contains audio data that's being used for some Nintendo consoles. One of the differences with the usual audio format (MP3, etc) is that this format can contain a loop point, making it suitable for usage in games.
 
 `.brstm` file is not included in the repository.
 
