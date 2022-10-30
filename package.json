@@ -23,8 +23,8 @@
   "scripts": {
     "dev": "pnpm run --filter @kenrick95/nikku --stream dev",
     "build": "pnpm run --stream --filter brstm build && pnpm run --filter @kenrick95/nikku --stream build",
-    "build-gh-pages": "pnpm run --stream --filter brstm build && pnpm run --filter @kenrick95/nikku --stream build-gh-pages",
-    "netlify-build": "cd packages/brstm && npm run build && cd ../../app && npm run build"
+    "build-gh-pages": "pnpm run --stream --filter brstm build-lib && pnpm run --filter @kenrick95/nikku --stream build-gh-pages",
+    "netlify-build": "cd packages/brstm && npm run build-lib && cd ../../app && npm run build"
   },
   "packageManager": "pnpm@7.13.5"
 }

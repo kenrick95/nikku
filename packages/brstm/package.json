@@ -47,8 +47,10 @@
   "scripts": {
     "prepublishOnly": "pnpm run build",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false",
-    "build": "tsc && vite build",
-    "test": "vite build && node tests/index.test.js"
+    "build": "pnpm run build-declaration && pnpm build-lib",
+    "build-declaration": "tsc",
+    "build-lib": "vite build",
+    "test": "pnpm run build-lib && node tests/index.test.js"
   },
   "devDependencies": {
     "typescript": "^4.8.4",
