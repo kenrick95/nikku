@@ -5,6 +5,8 @@
     "outDir": "./types",
     "rootDir": "./src",
     "strict": true,
+    "declaration": true,
+    "emitDeclarationOnly": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,
