@@ -33,6 +33,14 @@ export default defineConfig({
   worker: {
     plugins: [comlink()],
   },
+  server: {
+    watch: {
+      ignored: ['!**/node_modules/brstm/**']
+    }
+  },
+  optimizeDeps: {
+    exclude: ['brstm']
+  },
   build: {
     rollupOptions: {
       plugins: [minifyHTML()],

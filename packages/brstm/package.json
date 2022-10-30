@@ -12,7 +12,11 @@
   "unpkg": "./dist/brstm.umd.js",
   "exports": {
     ".": {
-      "import": "./dist/brstm.mjs",
+      "import": {
+        "development": "./src/index.ts",
+        "production": "./dist/brstm.mjs",
+        "default": "./dist/brstm.mjs"
+      },
       "require": "./dist/brstm.js"
     }
   },
@@ -20,8 +24,11 @@
   "files": [
     "dist/",
     "types/",
+    "src/",
     "*.js",
-    "*.d.ts"
+    "*.mjs",
+    "*.d.ts",
+    "*.ts"
   ],
   "author": {
     "name": "Kenrick",

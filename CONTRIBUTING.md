@@ -21,6 +21,4 @@ After forking & cloning your repo locally:
    pnpm dev
    ```
 3. Open `http://localhost:5173` in browser
-4. Do code changes in `app/` folder and changes will reflects in browser as soon as you save the changes.
-
-If you change things in `packages/brstm` folder, for it to reflect in browser, you have to restart dev server
+4. Do code changes in `app/` (or `packages/brstm`) folder and changes will reflects in browser as soon as you save the changes.
