@@ -41,6 +41,9 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['brstm']
   },
+  resolve: {
+    conditions: ['nikku:source']
+  },
   build: {
     rollupOptions: {
       plugins: [minifyHTML()],

@@ -14,8 +14,7 @@
   "exports": {
     ".": {
       "import": {
-        "development": "./src/index.ts",
-        "production": "./dist/brstm.mjs",
+        "nikku:source": "./src/index.ts",
         "default": "./dist/brstm.mjs"
       },
       "require": "./dist/brstm.js"
