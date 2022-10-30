@@ -5,6 +5,7 @@
   "keywords": [
     "brstm"
   ],
+  "sideEffects": false,
   "source": "src/index.ts",
   "main": "./dist/brstm.js",
   "module": "./dist/brstm.mjs",
@@ -24,11 +25,7 @@
   "files": [
     "dist/",
     "types/",
-    "src/",
-    "*.js",
-    "*.mjs",
-    "*.d.ts",
-    "*.ts"
+    "src/"
   ],
   "author": {
     "name": "Kenrick",
