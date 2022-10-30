@@ -15,6 +15,8 @@ import type {
 
 export * from './types';
 
+declare var console: any;
+
 /**
  * @class
  */
