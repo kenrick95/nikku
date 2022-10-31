@@ -17,6 +17,7 @@
     "experimentalDecorators": true,
     "forceConsistentCasingInFileNames": true,
     "useDefineForClassFields": false,
+    "skipLibCheck": true,
     "target": "ESNext"
   },
   "include": ["src/**/*.ts", "./vite-env.d.ts"],

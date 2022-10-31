@@ -5,17 +5,26 @@
   "keywords": [
     "brstm"
   ],
+  "sideEffects": false,
   "source": "src/index.ts",
   "main": "./dist/brstm.js",
-  "exports": "./dist/brstm.modern.js",
-  "module": "./dist/brstm.module.js",
+  "module": "./dist/brstm.mjs",
   "umd:main": "./dist/brstm.umd.js",
   "unpkg": "./dist/brstm.umd.js",
-  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "nikku:source": "./src/index.ts",
+        "default": "./dist/brstm.mjs"
+      },
+      "require": "./dist/brstm.js"
+    }
+  },
+  "types": "./types/index.d.ts",
   "files": [
     "dist/",
-    "*.js",
-    "*.d.ts"
+    "types/",
+    "src/"
   ],
   "author": {
     "name": "Kenrick",
@@ -33,11 +42,14 @@
   "license": "MIT",
   "scripts": {
     "prepublishOnly": "pnpm run build",
-    "build": "microbundle",
-    "test": "microbundle --compress false && node tests/index.test.js"
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false",
+    "build": "pnpm run build-declaration && pnpm build-lib",
+    "build-declaration": "tsc",
+    "build-lib": "vite build",
+    "test": "pnpm run build-lib && node tests/index.test.js"
   },
   "devDependencies": {
-    "microbundle": "^0.15.1",
-    "typescript": "^4.8.4"
+    "typescript": "^4.8.4",
+    "vite": "^3.1.8"
   }
 }

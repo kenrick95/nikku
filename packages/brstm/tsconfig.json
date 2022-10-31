@@ -1,10 +1,12 @@
 {
   "compilerOptions": {
     "module": "esnext",
-    "lib": ["es2017", "dom", "dom.iterable"],
+    "lib": ["es2017"],
     "outDir": "./types",
     "rootDir": "./src",
     "strict": true,
+    "declaration": true,
+    "emitDeclarationOnly": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,
@@ -14,7 +16,9 @@
     "experimentalDecorators": true,
     "forceConsistentCasingInFileNames": true,
     "useDefineForClassFields": false,
-    "target": "ESNext"
+    "target": "ESNext",
+    "skipLibCheck": true,
+    "typeRoots": []
   },
   "include": ["src/"],
   "exclude": ["node_modules/", "tests/"]
