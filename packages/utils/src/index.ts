@@ -5,7 +5,6 @@ export function getSlice(
 ): number[] {
   const result = [];
   for (let i = start; i < start + length; i++) {
-    // Apparently unsigned
     result.push(uint8Array[i]);
   }
   return result;
@@ -77,7 +76,8 @@ export function getSliceAsNumber(
   if (endianness === ENDIAN.LITTLE) {
     resArr.reverse();
   }
-  return resArr.reduce((acc, curr) => acc * 256 + curr, 0);
+  const res = resArr.reduce((acc, curr) => acc * 256 + curr, 0);
+  return res;
 }
 
 /**

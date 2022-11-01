@@ -1,6 +1,7 @@
 node_modules/
 *.log
 *.brstm
+*.bfstm
 node_modules
 .DS_Store
 dist
