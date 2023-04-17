@@ -4,8 +4,8 @@ import {
   getInt16,
   clamp,
   getEndianness,
-} from './utils';
-import type { Endianness } from './utils';
+} from '@nikku/utils';
+import type { Endianness } from '@nikku/utils';
 import type {
   ChannelInfo,
   CodecType,

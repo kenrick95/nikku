@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "module": "esnext",
+    "lib": ["es2017"],
+    "outDir": "./types",
+    "rootDir": "./src",
+    "strict": true,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
+    "forceConsistentCasingInFileNames": true,
+    "useDefineForClassFields": false,
+    "target": "ESNext",
+    "skipLibCheck": true,
+    "typeRoots": []
+  },
+  "include": ["src/"],
+  "exclude": ["node_modules/", "tests/"]
+}

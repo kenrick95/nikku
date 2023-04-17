@@ -8,6 +8,7 @@ importers:
   app:
     specifiers:
       '@types/audioworklet': ^0.0.33
+      bfstm: ^1.0.0
       brstm: ^1.6.1
       comlink: ^4.3.1
       lit: ^2.4.0
@@ -17,6 +18,7 @@ importers:
       vite-plugin-comlink: ^3.0.4
       vite-plugin-pwa: ^0.13.1
     dependencies:
+      bfstm: link:../packages/bfstm
       brstm: link:../packages/brstm
       comlink: 4.3.1
       lit: 2.4.0
@@ -28,13 +30,34 @@ importers:
       vite-plugin-comlink: 3.0.4_comlink@4.3.1+vite@3.1.8
       vite-plugin-pwa: 0.13.1_vite@3.1.8
 
-  packages/brstm:
+  packages/bfstm:
     specifiers:
+      '@nikku/utils': workspace:*
       typescript: ^4.8.4
       vite: ^3.1.8
     devDependencies:
+      '@nikku/utils': link:../utils
       typescript: 4.8.4
       vite: 3.1.8
+
+  packages/brstm:
+    specifiers:
+      '@nikku/utils': workspace:*
+      typescript: ^4.8.4
+      vite: ^3.1.8
+    devDependencies:
+      '@nikku/utils': link:../utils
+      typescript: 4.8.4
+      vite: 3.1.8
+
+  packages/dsp-adpcm:
+    specifiers:
+      '@nikku/utils': workspace:^
+    dependencies:
+      '@nikku/utils': link:../utils
+
+  packages/utils:
+    specifiers: {}
 
 packages:
 
