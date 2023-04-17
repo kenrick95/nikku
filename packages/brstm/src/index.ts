@@ -20,7 +20,7 @@ declare var console: any;
 /**
  * @class
  */
-export class Bfstm {
+export class Brstm {
   rawData: Uint8Array;
   endianness: Endianness;
   /** Offset to HEAD chunk, relative to beginning of file */
