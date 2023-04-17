@@ -1,0 +1,9 @@
+{
+  "name": "@nikku/dsp-adpcm",
+  "private": true,
+  "main": "src/index.ts",
+  "sideEffects": false,
+  "dependencies": {
+    "@nikku/utils": "workspace:^"
+  }
+}

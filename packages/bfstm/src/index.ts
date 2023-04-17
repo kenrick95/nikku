@@ -102,6 +102,10 @@ export class Bfstm {
      * @type {Metadata}
      */
     const metadata: Metadata = {
+
+      offsetToTrackInfo,
+      offsetToChannelInfo,
+
       fileSize: getSliceAsNumber(this.rawData, 0x0c, 4, this.endianness),
       endianness: this.endianness,
       codec: getSliceAsNumber(
