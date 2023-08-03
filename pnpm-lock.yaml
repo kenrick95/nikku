@@ -13,7 +13,7 @@ importers:
       lit: ^2.4.0
       rollup-plugin-minify-html-literals: ^1.2.6
       typescript: ^4.8.4
-      vite: ^3.1.8
+      vite: ^3.2.7
       vite-plugin-comlink: ^3.0.4
       vite-plugin-pwa: ^0.13.1
     dependencies:
@@ -24,17 +24,17 @@ importers:
       '@types/audioworklet': 0.0.33
       rollup-plugin-minify-html-literals: 1.2.6
       typescript: 4.8.4
-      vite: 3.1.8
-      vite-plugin-comlink: 3.0.4_comlink@4.3.1+vite@3.1.8
-      vite-plugin-pwa: 0.13.1_vite@3.1.8
+      vite: 3.2.7
+      vite-plugin-comlink: 3.0.4_comlink@4.3.1+vite@3.2.7
+      vite-plugin-pwa: 0.13.1_vite@3.2.7
 
   packages/brstm:
     specifiers:
       typescript: ^4.8.4
-      vite: ^3.1.8
+      vite: ^3.2.7
     devDependencies:
       typescript: 4.8.4
-      vite: 3.1.8
+      vite: 3.2.7
 
 packages:
 
@@ -2618,14 +2618,6 @@ packages:
       estree-walker: 0.6.1
     dev: true
 
-  /rollup/2.78.1:
-    resolution: {integrity: sha512-VeeCgtGi4P+o9hIg+xz4qQpRl6R401LWEXBmxYKOV4zlF82lyhgh2hTZnheFUbANE8l2A41F458iwj2vEYaXJg==}
-    engines: {node: '>=10.0.0'}
-    hasBin: true
-    optionalDependencies:
-      fsevents: 2.3.2
-    dev: true
-
   /rollup/2.79.1:
     resolution: {integrity: sha512-uKxbd0IhMZOhjAiD5oAFp7BqvkA4Dv47qpOCtaNvng4HBwdbWtdOh8f5nZNuk2rp51PMGk3bzfWu5oayNEuYnw==}
     engines: {node: '>=10.0.0'}
@@ -2892,7 +2884,7 @@ packages:
       punycode: 2.1.1
     dev: true
 
-  /vite-plugin-comlink/3.0.4_comlink@4.3.1+vite@3.1.8:
+  /vite-plugin-comlink/3.0.4_comlink@4.3.1+vite@3.2.7:
     resolution: {integrity: sha512-/ovD9PyKHVRgulYeCIf7kxElMITUMPxPxuUrzuUIhgtPSU2fb0SudcFCzq5zl+BwqLW+PeSknqHtbsaNUwpGPg==}
     peerDependencies:
       comlink: ^4.3.1
@@ -2901,10 +2893,10 @@ packages:
       comlink: 4.3.1
       json5: 2.2.1
       magic-string: 0.26.2
-      vite: 3.1.8
+      vite: 3.2.7
     dev: true
 
-  /vite-plugin-pwa/0.13.1_vite@3.1.8:
+  /vite-plugin-pwa/0.13.1_vite@3.2.7:
     resolution: {integrity: sha512-NR3dIa+o2hzlzo4lF4Gu0cYvoMjSw2DdRc6Epw1yjmCqWaGuN86WK9JqZie4arNlE1ZuWT3CLiMdiX5wcmmUmg==}
     peerDependencies:
       vite: ^3.1.0
@@ -2913,7 +2905,7 @@ packages:
       fast-glob: 3.2.12
       pretty-bytes: 6.0.0
       rollup: 2.79.1
-      vite: 3.1.8
+      vite: 3.2.7
       workbox-build: 6.5.4
       workbox-window: 6.5.4
     transitivePeerDependencies:
@@ -2921,21 +2913,27 @@ packages:
       - supports-color
     dev: true
 
-  /vite/3.1.8:
-    resolution: {integrity: sha512-m7jJe3nufUbuOfotkntGFupinL/fmuTNuQmiVE7cH2IZMuf4UbfbGYMUT3jVWgGYuRVLY9j8NnrRqgw5rr5QTg==}
+  /vite/3.2.7:
+    resolution: {integrity: sha512-29pdXjk49xAP0QBr0xXqu2s5jiQIXNvE/xwd0vUizYT2Hzqe4BksNNoWllFVXJf4eLZ+UlVQmXfB4lWrc+t18g==}
     engines: {node: ^14.18.0 || >=16.0.0}
     hasBin: true
     peerDependencies:
+      '@types/node': '>= 14'
       less: '*'
       sass: '*'
       stylus: '*'
+      sugarss: '*'
       terser: ^5.4.0
     peerDependenciesMeta:
+      '@types/node':
+        optional: true
       less:
         optional: true
       sass:
         optional: true
       stylus:
+        optional: true
+      sugarss:
         optional: true
       terser:
         optional: true
@@ -2943,7 +2941,7 @@ packages:
       esbuild: 0.15.11
       postcss: 8.4.18
       resolve: 1.22.1
-      rollup: 2.78.1
+      rollup: 2.79.1
     optionalDependencies:
       fsevents: 2.3.2
     dev: true
