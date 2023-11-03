@@ -6,7 +6,9 @@ on:
 
 jobs:
   deploy:
-    concurrency: ci-${{ github.ref }}
+    concurrency:
+      group: ci-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     runs-on: ubuntu-20.04
     strategy:
       matrix:

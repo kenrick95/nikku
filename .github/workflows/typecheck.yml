@@ -7,8 +7,10 @@ on:
     branches: [ master ]
 
 jobs:
-  test:
-    concurrency: ci-${{ github.ref }}
+  typecheck:
+    concurrency:
+      group: ci-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     runs-on: ubuntu-20.04
     strategy:
       matrix:
