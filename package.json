@@ -26,5 +26,5 @@
     "build-gh-pages": "pnpm run --stream --filter brstm build-lib && pnpm run --filter @kenrick95/nikku --stream build-gh-pages",
     "netlify-build": "cd packages/brstm && npm run build-lib && cd ../../app && npm run build"
   },
-  "packageManager": "pnpm@7.13.5"
+  "packageManager": "pnpm@8.10.2"
 }
