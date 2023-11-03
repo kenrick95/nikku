@@ -29,16 +29,15 @@
     "build-gh-pages": "vite build --base \"/nikku/\""
   },
   "dependencies": {
-    "brstm": "^1.6.1",
-    "comlink": "^4.3.1",
-    "lit": "^2.4.0"
+    "brstm": "^1.7.0",
+    "comlink": "^4.4.1",
+    "lit": "^3.0.2"
   },
   "devDependencies": {
-    "@types/audioworklet": "^0.0.33",
-    "rollup-plugin-minify-html-literals": "^1.2.6",
-    "typescript": "^4.8.4",
-    "vite": "^3.2.7",
-    "vite-plugin-comlink": "^3.0.4",
-    "vite-plugin-pwa": "^0.13.1"
+    "@types/audioworklet": "^0.0.50",
+    "typescript": "^5.2.2",
+    "vite": "^4.5.0",
+    "vite-plugin-comlink": "^3.0.5",
+    "vite-plugin-pwa": "^0.16.6"
   }
 }

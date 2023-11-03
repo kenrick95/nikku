@@ -2,7 +2,8 @@ import { defineConfig } from 'vite';
 import comlink from 'vite-plugin-comlink';
 import { VitePWA } from 'vite-plugin-pwa';
 
-import minifyHTML from 'rollup-plugin-minify-html-literals';
+// not compatible with Rollup 4 (which Vite 4 is using). Follow https://github.com/lit/lit/issues/4273 for replacement
+// import minifyHTML from 'rollup-plugin-minify-html-literals';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -44,9 +45,9 @@ export default defineConfig({
   resolve: {
     conditions: ['nikku:source']
   },
-  build: {
-    rollupOptions: {
-      plugins: [minifyHTML()],
-    },
-  },
+  // build: {
+  //   rollupOptions: {
+  //     plugins: [minifyHTML()],
+  //   },
+  // },
 });
