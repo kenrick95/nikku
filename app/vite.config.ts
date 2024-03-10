@@ -29,6 +29,7 @@ export default defineConfig({
           }
         ]
       },
+      includeAssets: ['./.well-known/assetlinks.json'],
     }),
   ],
   worker: {
