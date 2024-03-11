@@ -1,8 +1,13 @@
-[{
-      "relation": ["delegate_permission/common.handle_all_urls"],
-      "target": {
-        "namespace": "android_app",
-        "package_name": "org.kenrick95.nikku",
-        "sha256_cert_fingerprints": ["65:C5:FB:DF:8D:62:4E:C1:E6:E7:41:6C:F6:7F:FB:F4:5F:A0:42:CA:78:16:AC:63:A6:5B:A9:10:09:CC:32:85"]
-      }
-    }]
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "org.kenrick95.nikku",
+      "sha256_cert_fingerprints": [
+        "65:C5:FB:DF:8D:62:4E:C1:E6:E7:41:6C:F6:7F:FB:F4:5F:A0:42:CA:78:16:AC:63:A6:5B:A9:10:09:CC:32:85",
+        "52:12:F2:3B:68:25:A8:3A:53:08:EC:4B:AD:E9:24:7F:E9:2F:8A:53:65:0F:AA:18:F0:CD:CE:DF:C0:36:E7:BF"
+      ]
+    }
+  }
+]
