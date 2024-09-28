@@ -353,28 +353,29 @@ export class NikkuMain extends LitElement {
     #main {
       margin-top: 100px;
       display: grid;
-      grid-template-columns: 1fr 80px 1fr;
+      grid-template-columns: 2fr 80px 1fr 1fr;
       grid-template-rows: 20px 15px 24px 80px auto;
       row-gap: 10px;
       column-gap: 2rem;
       margin-bottom: 10px;
     }
     #track-title {
-      grid-column: 1 / span 2;
+      grid-column: 1 / span 3;
       grid-row: 1;
+      white-space: nowrap;
       text-overflow: ellipsis;
       overflow: hidden;
     }
     #controls-time-display {
-      grid-column: 3;
+      grid-column: 4;
       grid-row: 1;
     }
     #controls-progress {
-      grid-column: 1 / span 3;
+      grid-column: 1 / span 4;
       grid-row: 2;
     }
     #controls-select-file-container {
-      grid-column: 1 / span 3;
+      grid-column: 1 / span 4;
       grid-row: 3;
     }
     #controls-tracks {
@@ -386,7 +387,7 @@ export class NikkuMain extends LitElement {
       grid-row: 4;
     }
     #controls-others {
-      grid-column: 3;
+      grid-column: 3 / span 2;
       grid-row: 4;
 
       display: flex;
