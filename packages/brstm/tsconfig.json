@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "module": "esnext",
-    "lib": ["es2017"],
+    "module": "ES2022",
+    "lib": ["ES2022"],
     "outDir": "./types",
     "rootDir": "./src",
     "strict": true,
@@ -11,12 +11,12 @@
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "moduleResolution": "node",
+    "moduleResolution": "Bundler",
     "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,
     "forceConsistentCasingInFileNames": true,
     "useDefineForClassFields": false,
-    "target": "ESNext",
+    "target": "ES2022",
     "skipLibCheck": true,
     "typeRoots": []
   },

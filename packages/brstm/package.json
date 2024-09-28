@@ -11,16 +11,32 @@
   "module": "./dist/brstm.mjs",
   "umd:main": "./dist/brstm.umd.js",
   "unpkg": "./dist/brstm.umd.js",
-  "exports": {
-    ".": {
-      "import": {
-        "nikku:source": "./src/index.ts",
-        "default": "./dist/brstm.mjs"
-      },
-      "require": "./dist/brstm.js"
+  "types": "./types/index.d.ts",
+  "publishConfig": {
+    "main": "./dist/brstm.js",
+    "module": "./dist/brstm.mjs",
+    "umd:main": "./dist/brstm.umd.js",
+    "unpkg": "./dist/brstm.umd.js",
+    "types": "./types/index.d.ts",
+    "exports": {
+      ".": {
+        "import": {
+          "types": "./types/index.d.ts",
+          "default": "./dist/brstm.mjs"
+        },
+        "require": {
+          "types": "./types/index.d.ts",
+          "default": "./dist/brstm.js"
+        }
+      }
     }
   },
-  "types": "./types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
   "files": [
     "dist/",
     "types/",
@@ -49,7 +65,7 @@
     "test": "pnpm run build-lib && node tests/index.test.js"
   },
   "devDependencies": {
-    "typescript": "^5.2.2",
-    "vite": "^4.5.5"
+    "typescript": "^5.6.2",
+    "vite": "^5.4.8"
   }
 }

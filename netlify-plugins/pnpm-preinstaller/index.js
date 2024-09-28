@@ -3,7 +3,7 @@ module.exports = {
     try {
       if (process.env.CI) {
         await run.command(
-          "npx pnpm i --shamefully-hoist"
+          "npx pnpm@9.11.0 i --shamefully-hoist"
         );
       } else {
         status.show({ summary: "CI is false, skipping pnpm install." });

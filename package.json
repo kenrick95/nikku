@@ -26,7 +26,7 @@
     "build-gh-pages": "pnpm run --stream --filter brstm build-lib && pnpm run --filter @kenrick95/nikku --stream build-gh-pages",
     "netlify-build": "cd packages/brstm && npm run build-lib && cd ../../app && npm run build"
   },
-  "packageManager": "pnpm@8.10.2",
+  "packageManager": "pnpm@9.11.0",
   "pnpm": {
     "overrides": {
       "json5@>=2.0.0 <2.2.3": ">=2.2.3"
