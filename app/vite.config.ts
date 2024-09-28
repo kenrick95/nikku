@@ -30,6 +30,11 @@ export default defineConfig({
         ],
       },
       includeAssets: ['./.well-known/assetlinks.json'],
+      strategies: 'generateSW',
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        navigateFallbackDenylist: [/^\/sw.js/],
+      },
     }),
   ],
   worker: {
