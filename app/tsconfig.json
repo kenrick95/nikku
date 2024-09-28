@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
     "types": ["vite/client"],
-    "module": "esnext",
-    "lib": ["ESNext", "DOM"],
+    "module": "ES2022",
+    "lib": ["ES2022", "DOM"],
     "declaration": true,
     "emitDeclarationOnly": true,
     "outDir": "./types",
@@ -12,13 +12,13 @@
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "moduleResolution": "node",
+    "moduleResolution": "Bundler",
     "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,
     "forceConsistentCasingInFileNames": true,
     "useDefineForClassFields": false,
     "skipLibCheck": true,
-    "target": "ESNext"
+    "target": "ES2022"
   },
   "include": ["src/**/*.ts", "./vite-env.d.ts"],
   "exclude": []

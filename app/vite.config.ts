@@ -20,31 +20,28 @@ export default defineConfig({
           {
             src: './assets/android-launchericon-192-192.png',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/png',
           },
           {
             src: './assets/android-launchericon-512-512.png',
             sizes: '512x512',
-            type: 'image/png'
-          }
-        ]
+            type: 'image/png',
+          },
+        ],
       },
       includeAssets: ['./.well-known/assetlinks.json'],
     }),
   ],
   worker: {
-    plugins: [comlink()],
+    plugins: () => [comlink()],
   },
   server: {
     watch: {
-      ignored: ['!**/node_modules/brstm/**']
-    }
+      ignored: ['!**/node_modules/brstm/**'],
+    },
   },
   optimizeDeps: {
-    exclude: ['brstm']
-  },
-  resolve: {
-    conditions: ['nikku:source']
+    exclude: ['brstm'],
   },
   // build: {
   //   rollupOptions: {
