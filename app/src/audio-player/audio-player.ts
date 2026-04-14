@@ -1,6 +1,6 @@
 import type { Metadata } from 'brstm';
 import { Timer } from '../timer';
-import AudioSource from './worklet/audio-source?url';
+import AudioSourceCode from './worklet/audio-source.js?raw';
 
 export type AudioPlayerOptions = {
   onPlay: () => void;
@@ -48,7 +48,13 @@ export class AudioPlayer {
         sampleRate: metadata.sampleRate,
       });
       if (this.#audioContext.audioWorklet) {
-        await this.#audioContext.audioWorklet.addModule(AudioSource);
+        const blob = new Blob([AudioSourceCode], { type: 'text/javascript' });
+        const blobUrl = URL.createObjectURL(blob);
+        try {
+          await this.#audioContext.audioWorklet.addModule(blobUrl);
+        } finally {
+          URL.revokeObjectURL(blobUrl);
+        }
       }
       this.#timer = new Timer({
         renderCallback: this.#updateTimestamp.bind(this),

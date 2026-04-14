@@ -174,7 +174,7 @@ export class NikkuMain extends LitElement {
   }
 
   #showError(error: Error) {
-    this.errorMessage = error.message + error.stack;
+    this.errorMessage = error.message + (error.stack ? '\n' + error.stack : '');
   }
   #clearError() {
     this.errorMessage = '';
