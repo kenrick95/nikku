@@ -50,8 +50,11 @@ export class AudioPlayer {
       if (this.#audioContext.audioWorklet) {
         const blob = new Blob([AudioSourceCode], { type: 'text/javascript' });
         const blobUrl = URL.createObjectURL(blob);
-        await this.#audioContext.audioWorklet.addModule(blobUrl);
-        URL.revokeObjectURL(blobUrl);
+        try {
+          await this.#audioContext.audioWorklet.addModule(blobUrl);
+        } finally {
+          URL.revokeObjectURL(blobUrl);
+        }
       }
       this.#timer = new Timer({
         renderCallback: this.#updateTimestamp.bind(this),
