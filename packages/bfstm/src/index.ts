@@ -108,15 +108,14 @@ export class Bfstm {
 
     for (let c = 0; c < numberChannels; c++) {
       // Reference table entry for channel c: each entry is 8 bytes (2 type + 2 pad + 4 offset)
-      // The offset is relative to the start of the reference table entry itself
+      // The offset is relative to the start of the reference table (offsetToChannelInfo)
       const refEntryOffset = getSliceAsNumber(
         this.rawData,
         offsetToChannelInfo + 0x04 + c * 8 + 0x04,
         4,
         this.endianness
       );
-      const channelInfoEntryAddr =
-        offsetToChannelInfo + 0x04 + c * 8 + refEntryOffset;
+      const channelInfoEntryAddr = offsetToChannelInfo + refEntryOffset;
 
       // Each channel info entry: 2-byte type + 2-byte pad + 4-byte offset to DSP ADPCM info
       // The ADPCM offset is relative to the start of the channel info entry
