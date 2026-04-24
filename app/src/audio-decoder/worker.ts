@@ -1,41 +1,41 @@
-import { Brstm, Metadata } from 'brstm';
-import { transfer } from 'comlink';
+import { Bfstm, Metadata } from 'bfstm';
+// import { transfer } from 'comlink';
 
-let brstm: Brstm | null = null;
+let instance: Bfstm | null = null;
 export function init(receivedBuffer: ArrayBuffer) {
-  brstm = new Brstm(receivedBuffer);
+  instance = new Bfstm(receivedBuffer);
 }
 export function destroy() {
-  brstm = null;
+  instance = null;
 }
 export function getMetadata(): Metadata | undefined {
-  if (!brstm) {
+  if (!instance) {
     return;
   }
-  return brstm.metadata;
+  return instance.metadata;
 }
 
-export function getAllSamples() {
-  if (!brstm) {
-    return;
-  }
-  const allSamples = brstm.getAllSamples();
-  return transfer(
-    allSamples,
-    allSamples.map((allSamplesPerChannel) => allSamplesPerChannel.buffer)
-  );
-}
+// export function getAllSamples() {
+//   if (!brstm) {
+//     return;
+//   }
+//   const allSamples = brstm.getAllSamples();
+//   return transfer(
+//     allSamples,
+//     allSamples.map((allSamplesPerChannel) => allSamplesPerChannel.buffer)
+//   );
+// }
 
-export function getSamples(offset: number, size: number) {
-  if (!brstm) {
-    return;
-  }
-  const allSamples = brstm.getSamples(offset, size).map(convertToFloat32);
-  return transfer(
-    allSamples,
-    allSamples.map((allSamplesPerChannel) => allSamplesPerChannel.buffer)
-  );
-}
+// export function getSamples(offset: number, size: number) {
+//   if (!brstm) {
+//     return;
+//   }
+//   const allSamples = brstm.getSamples(offset, size).map(convertToFloat32);
+//   return transfer(
+//     allSamples,
+//     allSamples.map((allSamplesPerChannel) => allSamplesPerChannel.buffer)
+//   );
+// }
 
 
 function convertToFloat32(pcmSamples: Int16Array): Float32Array {

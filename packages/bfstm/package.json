@@ -1,0 +1,55 @@
+{
+  "name": "bfstm",
+  "version": "1.0.0",
+  "description": "BFSTM Decoder",
+  "keywords": [
+    "bfstm"
+  ],
+  "sideEffects": false,
+  "source": "src/index.ts",
+  "main": "./dist/bfstm.js",
+  "module": "./dist/bfstm.mjs",
+  "umd:main": "./dist/bfstm.umd.js",
+  "unpkg": "./dist/bfstm.umd.js",
+  "exports": {
+    ".": {
+      "import": {
+        "nikku:source": "./src/index.ts",
+        "default": "./dist/bfstm.mjs"
+      },
+      "require": "./dist/bfstm.js"
+    }
+  },
+  "types": "./types/index.d.ts",
+  "files": [
+    "dist/",
+    "types/",
+    "src/"
+  ],
+  "author": {
+    "name": "Kenrick",
+    "email": "kenrick95@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kenrick95/nikku.git",
+    "directory": "packages/bfstm"
+  },
+  "homepage": "https://github.com/kenrick95/nikku",
+  "bugs": {
+    "url": "https://github.com/kenrick95/nikku/issues"
+  },
+  "license": "MIT",
+  "scripts": {
+    "prepublishOnly": "pnpm run build",
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false",
+    "build": "pnpm run build-declaration && pnpm build-lib",
+    "build-declaration": "tsc",
+    "build-lib": "vite build"
+  },
+  "devDependencies": {
+    "@nikku/utils": "workspace:*",
+    "typescript": "^4.8.4",
+    "vite": "^3.1.8"
+  }
+}

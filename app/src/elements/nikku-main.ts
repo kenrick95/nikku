@@ -95,7 +95,7 @@ export class NikkuMain extends LitElement {
           <input
             type="file"
             id="controls-select-file"
-            accept=".brstm"
+            accept=".brstm,.bfstm"
             @change=${this.#handleFileInputChange}
           />
           <span id="controls-select-file-custom"></span>
@@ -210,6 +210,8 @@ export class NikkuMain extends LitElement {
     try {
       await this.workerInstance.init(transfer(buffer, [buffer]));
       const metadata = await this.workerInstance.getMetadata();
+      console.log('metadata', metadata);
+      return;
 
       if (this.audioPlayer) {
         await this.audioPlayer.destroy();

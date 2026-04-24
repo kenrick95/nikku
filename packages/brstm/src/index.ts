@@ -4,8 +4,8 @@ import {
   getInt16,
   clamp,
   getEndianness,
-} from './utils';
-import type { Endianness } from './utils';
+} from '@nikku/utils';
+import type { Endianness } from '@nikku/utils';
 import type {
   ChannelInfo,
   CodecType,
@@ -20,7 +20,7 @@ declare var console: any;
 /**
  * @class
  */
-export class Brstm {
+export class Bfstm {
   rawData: Uint8Array;
   endianness: Endianness;
   /** Offset to HEAD chunk, relative to beginning of file */
