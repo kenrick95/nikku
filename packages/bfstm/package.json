@@ -1,42 +1,42 @@
 {
-  "name": "brstm",
-  "version": "1.7.0",
-  "description": "BRSTM Decoder",
+  "name": "bfstm",
+  "version": "1.0.0",
+  "description": "BFSTM Decoder",
   "keywords": [
-    "brstm"
+    "bfstm"
   ],
   "sideEffects": false,
   "source": "src/index.ts",
-  "main": "./dist/brstm.js",
-  "module": "./dist/brstm.mjs",
-  "umd:main": "./dist/brstm.umd.js",
-  "unpkg": "./dist/brstm.umd.js",
-  "types": "./types/index.d.ts",
-  "publishConfig": {
-    "main": "./dist/brstm.js",
-    "module": "./dist/brstm.mjs",
-    "umd:main": "./dist/brstm.umd.js",
-    "unpkg": "./dist/brstm.umd.js",
-    "types": "./types/index.d.ts",
-    "exports": {
-      ".": {
-        "import": {
-          "types": "./types/index.d.ts",
-          "default": "./dist/brstm.mjs"
-        },
-        "require": {
-          "types": "./types/index.d.ts",
-          "default": "./dist/brstm.js"
-        }
-      }
-    }
-  },
+  "main": "./dist/bfstm.js",
+  "module": "./dist/bfstm.mjs",
+  "umd:main": "./dist/bfstm.umd.js",
+  "unpkg": "./dist/bfstm.umd.js",
   "exports": {
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
     }
   },
+  "publishConfig": {
+    "main": "./dist/bfstm.js",
+    "module": "./dist/bfstm.mjs",
+    "umd:main": "./dist/bfstm.umd.js",
+    "unpkg": "./dist/bfstm.umd.js",
+    "types": "./types/index.d.ts",
+    "exports": {
+      ".": {
+        "import": {
+          "types": "./types/index.d.ts",
+          "default": "./dist/bfstm.mjs"
+        },
+        "require": {
+          "types": "./types/index.d.ts",
+          "default": "./dist/bfstm.js"
+        }
+      }
+    }
+  },
+  "types": "./types/index.d.ts",
   "files": [
     "dist/",
     "types/",
@@ -49,7 +49,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/kenrick95/nikku.git",
-    "directory": "packages/brstm"
+    "directory": "packages/bfstm"
   },
   "homepage": "https://github.com/kenrick95/nikku",
   "bugs": {
@@ -61,12 +61,11 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false",
     "build": "pnpm run build-declaration && pnpm build-lib",
     "build-declaration": "tsc",
-    "build-lib": "vite build",
-    "test": "pnpm run build-lib && node tests/index.test.js"
+    "build-lib": "vite build"
   },
   "devDependencies": {
     "@nikku/utils": "workspace:*",
-    "typescript": "^5.8.2",
-    "vite": "^6.4.2"
+    "typescript": "^4.8.4",
+    "vite": "^3.1.8"
   }
 }

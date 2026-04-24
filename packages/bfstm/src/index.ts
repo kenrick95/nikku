@@ -20,25 +20,19 @@ declare var console: any;
 /**
  * @class
  */
-export class Brstm {
+export class Bfstm {
   rawData: Uint8Array;
   endianness: Endianness;
-  /** Offset to HEAD chunk, relative to beginning of file */
-  #offsetToHead: number;
-  /** Offset to HEAD chunk part 1, relative to beginning of file */
-  #offsetToHeadChunk1: number;
-  /** Offset to HEAD chunk part 2, relative to beginning of file */
-  #offsetToHeadChunk2: number;
-  /** Offset to HEAD chunk part 3, relative to beginning of file */
-  #offsetToHeadChunk3: number;
-  /** Offset to ADPC chunk, relative to beginning of file */
-  #offsetToAdpc: number;
-  /** Offset to DATA, relative to beginning of file */
-  #offsetToData: number;
+  versionNumber: number;
   metadata: Metadata;
-  /** per-channel samples */
+
+  #offsetToInfo: number;
+  #offsetToStreamInfo: number;
+  #offsetToSeek: number;
+  #offsetToData: number;
+
   #cachedSamples: null | Array<Int16Array> = null;
-  #partitionedAdpcChunkData: null | Array<Array<{ yn1: number; yn2: number }>> =
+  #partitionedSeekData: null | Array<Array<{ yn1: number; yn2: number }>> =
     null;
   #cachedChannelInfo: null | ChannelInfo[] = null;
   /** per-channel (`c`) samples at block `b`. Access by this.#cachedBlockResults[b][c] */
@@ -50,54 +44,41 @@ export class Brstm {
      */
     this.rawData = new Uint8Array(arrayBuffer);
 
-    if (getSliceAsString(this.rawData, 0, 4) !== 'RSTM') {
-      throw new Error('Not a valid BRSTM file');
+    if (getSliceAsString(this.rawData, 0, 4) !== 'FSTM') {
+      throw new Error('Not a valid BFSTM file');
     }
 
     this.endianness = getEndianness(this.rawData);
-
-    this.#offsetToHead = getSliceAsNumber(
+    this.versionNumber = getSliceAsNumber(
       this.rawData,
-      0x10,
+      0x08,
       4,
       this.endianness
     );
-    this.#offsetToHeadChunk1 =
-      this.#offsetToHead +
-      getSliceAsNumber(
-        this.rawData,
-        this.#offsetToHead + 0x0c,
-        4,
-        this.endianness
-      ) +
-      0x08;
-    this.#offsetToHeadChunk2 =
-      this.#offsetToHead +
-      getSliceAsNumber(
-        this.rawData,
-        this.#offsetToHead + 0x14,
-        4,
-        this.endianness
-      ) +
-      0x08;
-    this.#offsetToHeadChunk3 =
-      this.#offsetToHead +
-      getSliceAsNumber(
-        this.rawData,
-        this.#offsetToHead + 0x1c,
-        4,
-        this.endianness
-      ) +
-      0x08;
-    this.#offsetToAdpc = getSliceAsNumber(
+    this.#offsetToInfo = getSliceAsNumber(
       this.rawData,
       0x18,
       4,
       this.endianness
     );
+    this.#offsetToStreamInfo =
+      this.#offsetToInfo +
+      getSliceAsNumber(
+        this.rawData,
+        this.#offsetToInfo + 0x0c,
+        4,
+        this.endianness
+      ) +
+      0x08;
+    this.#offsetToSeek = getSliceAsNumber(
+      this.rawData,
+      0x24,
+      4,
+      this.endianness
+    );
     this.#offsetToData = getSliceAsNumber(
       this.rawData,
-      0x20,
+      0x30,
       4,
       this.endianness
     );
@@ -109,234 +90,277 @@ export class Brstm {
     if (this.#cachedChannelInfo) {
       return this.#cachedChannelInfo;
     }
+
     const { numberChannels } = this.metadata;
-    const channelInfo = [];
+
+    // offsetToChannelInfo: points to the reference table for channel info entries
+    const offsetToChannelInfo =
+      this.#offsetToInfo +
+      getSliceAsNumber(
+        this.rawData,
+        this.#offsetToInfo + 0x1c,
+        4,
+        this.endianness
+      ) +
+      0x08;
+
+    const channelInfo: Array<ChannelInfo> = [];
 
     for (let c = 0; c < numberChannels; c++) {
-      const offsetToChannelInfo =
-        this.#offsetToHead +
-        getSliceAsNumber(
-          this.rawData,
-          this.#offsetToHeadChunk3 + 0x08 + c * 8,
-          4,
-          this.endianness
-        ) +
-        0x08 +
-        8;
-      /**
-       * @type {Array<number>}
-       */
+      // Reference table entry for channel c: each entry is 8 bytes (2 type + 2 pad + 4 offset)
+      // The offset is relative to the start of the reference table (offsetToChannelInfo)
+      const refEntryOffset = getSliceAsNumber(
+        this.rawData,
+        offsetToChannelInfo + 0x04 + c * 8 + 0x04,
+        4,
+        this.endianness
+      );
+      const channelInfoEntryAddr = offsetToChannelInfo + refEntryOffset;
+
+      // Each channel info entry: 2-byte type + 2-byte pad + 4-byte offset to DSP ADPCM info
+      // The ADPCM offset is relative to the start of the channel info entry
+      const adpcmOffset = getSliceAsNumber(
+        this.rawData,
+        channelInfoEntryAddr + 0x04,
+        4,
+        this.endianness
+      );
+      const adpcmInfoAddr = channelInfoEntryAddr + adpcmOffset;
+
       const adpcmCoefficients: Array<number> = [];
       for (let i = 0; i < 16; i++) {
-        const num = getSliceAsNumber(
-          this.rawData,
-          offsetToChannelInfo + 2 * i,
-          2,
-          this.endianness
+        adpcmCoefficients.push(
+          getInt16(
+            getSliceAsNumber(
+              this.rawData,
+              adpcmInfoAddr + i * 2,
+              2,
+              this.endianness
+            )
+          )
         );
-        // Covert number to int16
-        adpcmCoefficients.push(getInt16(num));
       }
 
       channelInfo.push({
         adpcmCoefficients,
         gain: getSliceAsNumber(
           this.rawData,
-          offsetToChannelInfo + 0x28,
+          adpcmInfoAddr + 0x20,
           2,
           this.endianness
         ),
-
         initialPredictorScale: getSliceAsNumber(
           this.rawData,
-          offsetToChannelInfo + 0x2a,
+          adpcmInfoAddr + 0x22,
           2,
           this.endianness
         ),
-
-        historySample1: getSliceAsNumber(
-          this.rawData,
-          offsetToChannelInfo + 0x2c,
-          2,
-          this.endianness
+        historySample1: getInt16(
+          getSliceAsNumber(
+            this.rawData,
+            adpcmInfoAddr + 0x24,
+            2,
+            this.endianness
+          )
         ),
-
-        historySample2: getSliceAsNumber(
-          this.rawData,
-          offsetToChannelInfo + 0x2e,
-          2,
-          this.endianness
+        historySample2: getInt16(
+          getSliceAsNumber(
+            this.rawData,
+            adpcmInfoAddr + 0x26,
+            2,
+            this.endianness
+          )
         ),
-
         loopPredictorScale: getSliceAsNumber(
           this.rawData,
-          offsetToChannelInfo + 0x30,
+          adpcmInfoAddr + 0x28,
           2,
           this.endianness
         ),
-
-        loopHistorySample1: getSliceAsNumber(
-          this.rawData,
-          offsetToChannelInfo + 0x32,
-          2,
-          this.endianness
+        loopHistorySample1: getInt16(
+          getSliceAsNumber(
+            this.rawData,
+            adpcmInfoAddr + 0x2a,
+            2,
+            this.endianness
+          )
         ),
-
-        loopHistorySample2: getSliceAsNumber(
-          this.rawData,
-          offsetToChannelInfo + 0x34,
-          2,
-          this.endianness
+        loopHistorySample2: getInt16(
+          getSliceAsNumber(
+            this.rawData,
+            adpcmInfoAddr + 0x2c,
+            2,
+            this.endianness
+          )
         ),
       });
     }
+
     this.#cachedChannelInfo = channelInfo;
     return channelInfo;
   }
 
-  #getMetadata() {
-    const numberChannels = getSliceAsNumber(
+  #getMetadata(): Metadata {
+    const offsetToStreamInfo = this.#offsetToStreamInfo;
+
+    // Track info flag at INFO + 0x10; if 0, track info is not used
+    const trackInfoFlag = getSliceAsNumber(
       this.rawData,
-      this.#offsetToHeadChunk1 + 0x0002,
-      1,
+      this.#offsetToInfo + 0x10,
+      2,
       this.endianness
     );
-    const numberTracks = getSliceAsNumber(
-      this.rawData,
-      this.#offsetToHeadChunk2,
-      1,
-      this.endianness
-    );
-    const trackDescriptionType = getSliceAsNumber(
-      this.rawData,
-      this.#offsetToHeadChunk2 + 0x01,
-      1,
-      this.endianness
-    );
+
+    let numberTracks = 0;
+    let trackDescriptionType = 0;
     const trackDescriptions: Array<TrackDescription> = [];
 
-    for (let t = 0; t < numberTracks; t++) {
-      const offsetToTrackDescriptionEntry =
-        this.#offsetToHead +
-        0x08 +
+    if (trackInfoFlag !== 0) {
+      const offsetToTrackInfo =
+        this.#offsetToInfo +
         getSliceAsNumber(
           this.rawData,
-          this.#offsetToHeadChunk2 + 0x04 + t * 8 + 0x04,
+          this.#offsetToInfo + 0x14,
+          4,
+          this.endianness
+        ) +
+        0x08;
+
+      // Reference table: 4-byte count, then entries of 8 bytes each
+      numberTracks = getSliceAsNumber(
+        this.rawData,
+        offsetToTrackInfo,
+        4,
+        this.endianness
+      );
+      trackDescriptionType = 1;
+
+      for (let t = 0; t < numberTracks; t++) {
+        // Each reference table entry is 8 bytes: 2-byte type + 2-byte pad + 4-byte offset
+        // Offset is relative to start of reference table entry
+        const refEntryOffset = getSliceAsNumber(
+          this.rawData,
+          offsetToTrackInfo + 0x04 + t * 8 + 0x04,
+          4,
+          this.endianness
+        );
+        const trackStructAddr =
+          offsetToTrackInfo + 0x04 + t * 8 + refEntryOffset;
+
+        // Track struct: volume(1) + pan(1) + span(1) + flags(1) + globalChanIdxTableFlag(2) + pad(2) + globalChanIdxOffset(4)
+        const globalChanIdxOffset = getSliceAsNumber(
+          this.rawData,
+          trackStructAddr + 0x08,
+          4,
+          this.endianness
+        );
+        const chanIdxTableAddr = trackStructAddr + globalChanIdxOffset;
+
+        // Global channel index table: 4-byte count + count bytes of channel indices
+        const numberChannelsInTrack = getSliceAsNumber(
+          this.rawData,
+          chanIdxTableAddr,
           4,
           this.endianness
         );
 
-      const trackDescriptionType = getSliceAsNumber(
-        this.rawData,
-        this.#offsetToHeadChunk2 + 0x04 + t * 8 + 0x01,
-        1,
-        this.endianness
-      );
-
-      let numberChannelsInTrack = 0;
-      if (trackDescriptionType === 0) {
-        numberChannelsInTrack = getSliceAsNumber(
-          this.rawData,
-          offsetToTrackDescriptionEntry,
-          1,
-          this.endianness
-        );
-      } else if (trackDescriptionType === 1) {
-        numberChannelsInTrack = getSliceAsNumber(
-          this.rawData,
-          offsetToTrackDescriptionEntry + 0x0008,
-          1,
-          this.endianness
-        );
+        trackDescriptions.push({
+          numberChannels: numberChannelsInTrack,
+          type: 1,
+        });
       }
-      trackDescriptions.push({
-        numberChannels: numberChannelsInTrack,
-        type: trackDescriptionType,
-      });
     }
 
-    /**
-     * @type {Metadata}
-     */
     const metadata: Metadata = {
-      fileSize: getSliceAsNumber(this.rawData, 8, 4, this.endianness),
+      fileSize: getSliceAsNumber(this.rawData, 0x0c, 4, this.endianness),
       endianness: this.endianness,
       codec: getSliceAsNumber(
         this.rawData,
-        this.#offsetToHeadChunk1,
+        offsetToStreamInfo,
         1,
         this.endianness
       ) as CodecType,
       loopFlag: getSliceAsNumber(
         this.rawData,
-        this.#offsetToHeadChunk1 + 0x0001,
+        offsetToStreamInfo + 0x01,
         1,
         this.endianness
       ),
-      numberChannels,
+      numberChannels: getSliceAsNumber(
+        this.rawData,
+        offsetToStreamInfo + 0x02,
+        1,
+        this.endianness
+      ),
+      numberRegions: getSliceAsNumber(
+        this.rawData,
+        offsetToStreamInfo + 0x03,
+        1,
+        this.endianness
+      ),
       sampleRate: getSliceAsNumber(
         this.rawData,
-        this.#offsetToHeadChunk1 + 0x0004,
-        2,
+        offsetToStreamInfo + 0x04,
+        4,
         this.endianness
       ),
       loopStartSample: getSliceAsNumber(
         this.rawData,
-        this.#offsetToHeadChunk1 + 0x0008,
+        offsetToStreamInfo + 0x08,
         4,
         this.endianness
       ),
       totalSamples: getSliceAsNumber(
         this.rawData,
-        this.#offsetToHeadChunk1 + 0x000c,
+        offsetToStreamInfo + 0x0c,
         4,
         this.endianness
       ),
       totalBlocks: getSliceAsNumber(
         this.rawData,
-        this.#offsetToHeadChunk1 + 0x0014,
+        offsetToStreamInfo + 0x10,
         4,
         this.endianness
       ),
       blockSize: getSliceAsNumber(
         this.rawData,
-        this.#offsetToHeadChunk1 + 0x0018,
+        offsetToStreamInfo + 0x14,
         4,
         this.endianness
       ),
       samplesPerBlock: getSliceAsNumber(
         this.rawData,
-        this.#offsetToHeadChunk1 + 0x001c,
+        offsetToStreamInfo + 0x18,
         4,
         this.endianness
       ),
       finalBlockSize: getSliceAsNumber(
         this.rawData,
-        this.#offsetToHeadChunk1 + 0x0020,
-        4,
-        this.endianness
-      ),
-      finalBlockSizeWithPadding: getSliceAsNumber(
-        this.rawData,
-        this.#offsetToHeadChunk1 + 0x0028,
+        offsetToStreamInfo + 0x1c,
         4,
         this.endianness
       ),
       totalSamplesInFinalBlock: getSliceAsNumber(
         this.rawData,
-        this.#offsetToHeadChunk1 + 0x0024,
+        offsetToStreamInfo + 0x20,
         4,
         this.endianness
       ),
-      adpcTableSamplesPerEntry: getSliceAsNumber(
+      finalBlockSizeWithPadding: getSliceAsNumber(
         this.rawData,
-        this.#offsetToHeadChunk1 + 0x002c,
+        offsetToStreamInfo + 0x24,
         4,
         this.endianness
       ),
       adpcTableBytesPerEntry: getSliceAsNumber(
         this.rawData,
-        this.#offsetToHeadChunk1 + 0x0030,
+        offsetToStreamInfo + 0x28,
+        4,
+        this.endianness
+      ),
+      adpcTableSamplesPerEntry: getSliceAsNumber(
+        this.rawData,
+        offsetToStreamInfo + 0x2c,
         4,
         this.endianness
       ),
@@ -345,14 +369,58 @@ export class Brstm {
       trackDescriptions,
     };
 
-    // Check if loop point is valid
     if (metadata.loopStartSample >= metadata.totalSamples) {
       metadata.loopFlag = 0;
       metadata.loopStartSample = 0;
       console.warn('The loop start sample in this file is invalid.');
     }
 
+    if (metadata.numberTracks === 0) {
+      // No explicit track info: synthesize one track covering all channels
+      metadata.numberTracks = 1;
+      metadata.trackDescriptionType = 1;
+      metadata.trackDescriptions = [
+        { numberChannels: metadata.numberChannels, type: 1 },
+      ];
+    }
+
     return metadata;
+  }
+
+  /**
+   * @returns {Array<Array<{yn1: number, yn2: number}>>}
+   */
+  #getPartitionedSeekData(): Array<Array<{ yn1: number; yn2: number }>> {
+    if (this.#partitionedSeekData) {
+      return this.#partitionedSeekData;
+    }
+
+    const { totalBlocks, numberChannels } = this.metadata;
+
+    // SEEK section: 4-byte magic + 4-byte size = 0x08 bytes header
+    // Layout: HistoryInfo[totalBlocks][numberChannels], 4 bytes each (Int16 yn1 + Int16 yn2)
+    const seekDataStart = this.#offsetToSeek + 0x08;
+
+    const result: Array<Array<{ yn1: number; yn2: number }>> = [];
+    for (let c = 0; c < numberChannels; c++) {
+      result.push([]);
+    }
+
+    for (let b = 0; b < totalBlocks; b++) {
+      for (let c = 0; c < numberChannels; c++) {
+        const entryOffset = seekDataStart + (b * numberChannels + c) * 4;
+        const yn1 = getInt16(
+          getSliceAsNumber(this.rawData, entryOffset, 2, this.endianness)
+        );
+        const yn2 = getInt16(
+          getSliceAsNumber(this.rawData, entryOffset + 2, 2, this.endianness)
+        );
+        result[c].push({ yn1, yn2 });
+      }
+    }
+
+    this.#partitionedSeekData = result;
+    return result;
   }
 
   /**
@@ -376,7 +444,7 @@ export class Brstm {
       );
     }
 
-    let b = block;
+    const b = block;
     for (let c = 0; c < numberChannels; c++) {
       const rawDataOffset =
         // Final block on non-zero channel: need to consider the previous channels' finalBlockSizeWithPadding!
@@ -398,105 +466,6 @@ export class Brstm {
   }
 
   /**
-   * @return {Array<Array<{yn1: number, yn2: number}>>}
-   */
-  #getPartitionedAdpcChunkData(): Array<Array<{ yn1: number; yn2: number }>> {
-    if (this.#partitionedAdpcChunkData) {
-      return this.#partitionedAdpcChunkData;
-    }
-    const { totalBlocks, numberChannels } = this.metadata;
-    const adpcDataSize = getSliceAsNumber(
-      this.rawData,
-      this.#offsetToAdpc + 0x04,
-      4,
-      this.endianness
-    );
-
-    // `rawData` here is adpc chunk's raw data
-    const rawData = this.rawData.slice(
-      this.#offsetToAdpc + 0x08,
-      this.#offsetToAdpc + 0x08 + adpcDataSize
-    );
-
-    let offset = 0;
-    let yn1 = 0;
-    let yn2 = 0;
-    for (let c = 0; c < numberChannels; c++) {
-      yn1 = getInt16(getSliceAsNumber(rawData, offset, 2, this.endianness));
-      offset += 2;
-      yn2 = getInt16(getSliceAsNumber(rawData, offset, 2, this.endianness));
-      offset += 2;
-    }
-
-    /**
-     * `transposedResult[b][c]`
-     *
-     * @type {Array<Array<{yn1: number, yn2: number}>>}
-     */
-    const transposedResult: Array<Array<{ yn1: number; yn2: number }>> = [];
-    for (let b = 0; b < totalBlocks; b++) {
-      transposedResult.push([]);
-      for (let c = 0; c < numberChannels; c++) {
-        if (b > 0) {
-          yn1 = getInt16(getSliceAsNumber(rawData, offset, 2, this.endianness));
-          offset += 2;
-          yn2 = getInt16(getSliceAsNumber(rawData, offset, 2, this.endianness));
-          offset += 2;
-        }
-        transposedResult[b].push({
-          yn1,
-          yn2,
-        });
-      }
-    }
-
-    /**
-     * `result[c][b]`
-     *
-     * @type {Array<Array<{yn1: number, yn2: number}>>}
-     */
-    let result: Array<Array<{ yn1: number; yn2: number }>> = [];
-    for (let c = 0; c < numberChannels; c++) {
-      result.push(
-        transposedResult.map((r) => {
-          return r[c];
-        })
-      );
-    }
-
-    this.#partitionedAdpcChunkData = result;
-    return result;
-  }
-
-  /**
-   *
-   * @returns {Array<Int16Array>} per-channel samples
-   */
-  getAllSamples(): Array<Int16Array> {
-    if (this.#cachedSamples) {
-      return this.#cachedSamples;
-    }
-
-    const { numberChannels, totalSamples, totalBlocks, samplesPerBlock } =
-      this.metadata;
-    const result = [];
-    for (let c = 0; c < numberChannels; c++) {
-      result.push(new Int16Array(totalSamples));
-    }
-    for (let b = 0; b < totalBlocks; b++) {
-      const sampleResult = this.#getSamplesAtBlock(b);
-      for (let c = 0; c < numberChannels; c++) {
-        result[c].set(sampleResult[c], b * samplesPerBlock);
-      }
-    }
-
-    this.#cachedSamples = result;
-
-    return result;
-  }
-
-  /**
-   *
    * @param {number} b blockIndex
    * @returns {Array<Int16Array>} per-channel samples in block `b`
    */
@@ -514,7 +483,7 @@ export class Brstm {
     } = this.metadata;
     const channelInfo = this.#getChannelInfo();
     const allChannelsBlockData = this.#getPartitionedBlockData(b);
-    const adpcChunkData = this.#getPartitionedAdpcChunkData();
+    const seekData = this.#getPartitionedSeekData();
 
     const result = [];
     const totalSamplesInBlock =
@@ -528,16 +497,12 @@ export class Brstm {
       const { adpcmCoefficients } = channelInfo[c];
       const blockData = allChannelsBlockData[c];
 
-      /**
-       * @type {Array<number>}
-       */
       const sampleResult: Array<number> = [];
       if (codec === 2) {
-        // 4-bit ADPCM
+        // 4-bit DSP ADPCM
         const ps = blockData[0];
-        const { yn1, yn2 } = adpcChunkData[c][b];
+        const { yn1, yn2 } = seekData[c][b];
 
-        // #region Magic adapted from brawllib's ADPCMState.cs
         let cps = ps,
           cyn1 = yn1,
           cyn2 = yn2,
@@ -574,12 +539,9 @@ export class Brstm {
 
         // Overwrite history samples for the next block with decoded samples
         if (b < totalBlocks - 1) {
-          adpcChunkData[c][b + 1].yn1 = sampleResult[totalSamplesInBlock - 1];
-          adpcChunkData[c][b + 1].yn2 = sampleResult[totalSamplesInBlock - 2];
+          seekData[c][b + 1].yn1 = sampleResult[totalSamplesInBlock - 1];
+          seekData[c][b + 1].yn2 = sampleResult[totalSamplesInBlock - 2];
         }
-
-        // #endregion
-        // console.log('>>', c, b, yn1, yn2, ps, blockData, sampleResult);
       } else if (codec === 1) {
         // 16-bit PCM
         for (
@@ -587,10 +549,11 @@ export class Brstm {
           sampleIndex < totalSamplesInBlock;
           sampleIndex++
         ) {
-          const result = getInt16(
-            getSliceAsNumber(blockData, sampleIndex * 2, 2, this.endianness)
+          sampleResult.push(
+            getInt16(
+              getSliceAsNumber(blockData, sampleIndex * 2, 2, this.endianness)
+            )
           );
-          sampleResult.push(result);
         }
       } else if (codec === 0) {
         // 8-bit PCM
@@ -601,6 +564,8 @@ export class Brstm {
         ) {
           sampleResult.push(getInt16(blockData[sampleIndex]) * 256);
         }
+      } else if (codec === 3) {
+        throw new Error('IMA ADPCM codec is not supported');
       } else {
         throw new Error('Invalid codec');
       }
@@ -609,32 +574,38 @@ export class Brstm {
     }
 
     this.#cachedBlockResults[b] = result;
-
     return result;
   }
 
   /**
-   * Same as `getSamples`
-   *
-   * @deprecated Please use `getSamples`
-   *
-   * @param {number} offset
-   * @param {number} size
-   * @returns {Array<Int16Array>} per-channel samples from `offset`-th sample until `(offset + size - 1)`-th sample
+   * @returns {Array<Int16Array>} per-channel samples
    */
-  getBuffer(offset: number, size: number): Array<Int16Array> {
-    return this.getSamples(offset, size);
+  getAllSamples(): Array<Int16Array> {
+    if (this.#cachedSamples) {
+      return this.#cachedSamples;
+    }
+
+    const { numberChannels, totalSamples, totalBlocks, samplesPerBlock } =
+      this.metadata;
+    const result = [];
+    for (let c = 0; c < numberChannels; c++) {
+      result.push(new Int16Array(totalSamples));
+    }
+    for (let b = 0; b < totalBlocks; b++) {
+      const sampleResult = this.#getSamplesAtBlock(b);
+      for (let c = 0; c < numberChannels; c++) {
+        result[c].set(sampleResult[c], b * samplesPerBlock);
+      }
+    }
+
+    this.#cachedSamples = result;
+    return result;
   }
 
   /**
    * Get buffer of Int16 samples
    *
-   *
    * Make sure to not ask for anything outside the file!
-   *
-   * Example:
-   * - Total samples: 10000
-   * - brstm.getSamples(8000, 4000); is invalid
    *
    * @param {number} offset
    * @param {number} size
@@ -658,21 +629,18 @@ export class Brstm {
     for (let b = blockIndexStart; b <= blockIndexEnd; b++) {
       result.push(this.#getSamplesAtBlock(b));
     }
-    /**
-     * @type {Array<Int16Array>}
-     */
+
     const transformedResult: Array<Int16Array> = [];
     for (let c = 0; c < numberChannels; c++) {
       transformedResult.push(new Int16Array(sampleEnd - sampleStart));
     }
 
     for (let b = blockIndexStart; b <= blockIndexEnd; b++) {
-      const resulBlockIndex = b - blockIndexStart;
+      const resultBlockIndex = b - blockIndexStart;
       if (b === blockIndexStart && b === blockIndexEnd) {
-        // Slice `result[b][c]` so it starts at `offset` AND ends at `offset + size - 1`
         for (let c = 0; c < numberChannels; c++) {
           transformedResult[c].set(
-            result[resulBlockIndex][c].slice(
+            result[resultBlockIndex][c].slice(
               sampleStart - blockIndexStart * samplesPerBlock,
               sampleStart - blockIndexStart * samplesPerBlock + size
             ),
@@ -680,24 +648,20 @@ export class Brstm {
           );
         }
       } else if (b === blockIndexStart) {
-        // Slice `result[b][c]` so it starts at `offset`
         for (let c = 0; c < numberChannels; c++) {
-          const slice = result[resulBlockIndex][c].slice(
+          const slice = result[resultBlockIndex][c].slice(
             sampleStart - blockIndexStart * samplesPerBlock
           );
           transformedResult[c].set(slice, 0);
         }
       } else if (b === blockIndexEnd) {
-        // Slice `result[b][c]` so it ends at the requested place (`offset + size - 1`)
         for (let c = 0; c < numberChannels; c++) {
-          const slice = result[resulBlockIndex][c].slice(
+          const slice = result[resultBlockIndex][c].slice(
             0,
             sampleEnd -
-              result[resulBlockIndex][c].length -
+              result[resultBlockIndex][c].length -
               blockIndexStart * samplesPerBlock
           );
-          // At the final block, the slice sometimes ends up too large
-          // This is to prevent transformedResult from being overflowed
           if (
             slice.length + (b * samplesPerBlock - sampleStart) >
             transformedResult[c].length
@@ -713,7 +677,7 @@ export class Brstm {
       } else {
         for (let c = 0; c < numberChannels; c++) {
           transformedResult[c].set(
-            result[resulBlockIndex][c],
+            result[resultBlockIndex][c],
             b * samplesPerBlock - sampleStart
           );
         }

@@ -29,6 +29,7 @@
     "build-gh-pages": "vite build --base \"/nikku/\""
   },
   "dependencies": {
+    "bfstm": "workspace:^",
     "brstm": "workspace:^",
     "comlink": "^4.4.2",
     "lit": "^3.2.1"
