@@ -211,7 +211,6 @@ export class NikkuMain extends LitElement {
       await this.workerInstance.init(transfer(buffer, [buffer]));
       const metadata = await this.workerInstance.getMetadata();
       console.log('metadata', metadata);
-      return;
 
       if (this.audioPlayer) {
         await this.audioPlayer.destroy();
