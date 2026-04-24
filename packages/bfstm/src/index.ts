@@ -375,6 +375,15 @@ export class Bfstm {
       console.warn('The loop start sample in this file is invalid.');
     }
 
+    if (metadata.numberTracks === 0) {
+      // No explicit track info: synthesize one track covering all channels
+      metadata.numberTracks = 1;
+      metadata.trackDescriptionType = 1;
+      metadata.trackDescriptions = [
+        { numberChannels: metadata.numberChannels, type: 1 },
+      ];
+    }
+
     return metadata;
   }
 
@@ -388,9 +397,9 @@ export class Bfstm {
 
     const { totalBlocks, numberChannels } = this.metadata;
 
-    // SEEK section: 4-byte magic + 4-byte size + 8-byte padding = 0x10 bytes header
+    // SEEK section: 4-byte magic + 4-byte size = 0x08 bytes header
     // Layout: HistoryInfo[totalBlocks][numberChannels], 4 bytes each (Int16 yn1 + Int16 yn2)
-    const seekDataStart = this.#offsetToSeek + 0x10;
+    const seekDataStart = this.#offsetToSeek + 0x08;
 
     const result: Array<Array<{ yn1: number; yn2: number }>> = [];
     for (let c = 0; c < numberChannels; c++) {
