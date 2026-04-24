@@ -15,27 +15,22 @@ export function getMetadata(): Metadata | undefined {
   return instance.metadata;
 }
 
-// export function getAllSamples() {
-//   if (!brstm) {
-//     return;
-//   }
-//   const allSamples = brstm.getAllSamples();
-//   return transfer(
-//     allSamples,
-//     allSamples.map((allSamplesPerChannel) => allSamplesPerChannel.buffer)
-//   );
-// }
+export function getAllSamples(): Array<Int16Array> | undefined {
+  if (!instance) {
+    return;
+  }
+  return instance.getAllSamples();
+}
 
-// export function getSamples(offset: number, size: number) {
-//   if (!brstm) {
-//     return;
-//   }
-//   const allSamples = brstm.getSamples(offset, size).map(convertToFloat32);
-//   return transfer(
-//     allSamples,
-//     allSamples.map((allSamplesPerChannel) => allSamplesPerChannel.buffer)
-//   );
-// }
+export function getSamples(
+  offset: number,
+  size: number
+): Array<Float32Array> | undefined {
+  if (!instance) {
+    return;
+  }
+  return instance.getSamples(offset, size).map(convertToFloat32);
+}
 
 
 function convertToFloat32(pcmSamples: Int16Array): Float32Array {
