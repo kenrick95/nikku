@@ -13,11 +13,27 @@
   "unpkg": "./dist/bfstm.umd.js",
   "exports": {
     ".": {
-      "import": {
-        "nikku:source": "./src/index.ts",
-        "default": "./dist/bfstm.mjs"
-      },
-      "require": "./dist/bfstm.js"
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "publishConfig": {
+    "main": "./dist/bfstm.js",
+    "module": "./dist/bfstm.mjs",
+    "umd:main": "./dist/bfstm.umd.js",
+    "unpkg": "./dist/bfstm.umd.js",
+    "types": "./types/index.d.ts",
+    "exports": {
+      ".": {
+        "import": {
+          "types": "./types/index.d.ts",
+          "default": "./dist/bfstm.mjs"
+        },
+        "require": {
+          "types": "./types/index.d.ts",
+          "default": "./dist/bfstm.js"
+        }
+      }
     }
   },
   "types": "./types/index.d.ts",
