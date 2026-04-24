@@ -1,37 +1,50 @@
-import { Bfstm, Metadata } from 'bfstm';
-// import { transfer } from 'comlink';
+import { Brstm, Metadata as BrstmMetadata } from 'brstm';
+import { Bfstm, Metadata as BfstmMetadata } from 'bfstm';
+import { transfer } from 'comlink';
 
-let instance: Bfstm | null = null;
+let instance: Brstm | Bfstm | null = null;
 export function init(receivedBuffer: ArrayBuffer) {
-  instance = new Bfstm(receivedBuffer);
+  try {
+    instance = new Brstm(receivedBuffer);
+  } catch (e) {
+    try {
+      instance = new Bfstm(receivedBuffer);
+    } catch (e) {
+      console.error('Failed to decode the audio data as Brstm and Bfstm.', e);
+    }
+  }
 }
 export function destroy() {
   instance = null;
 }
-export function getMetadata(): Metadata | undefined {
+export function getMetadata(): BrstmMetadata | BfstmMetadata | undefined {
   if (!instance) {
     return;
   }
   return instance.metadata;
 }
 
-export function getAllSamples(): Array<Int16Array> | undefined {
+export function getAllSamples() {
   if (!instance) {
     return;
   }
-  return instance.getAllSamples();
+  const allSamples = instance.getAllSamples();
+  return transfer(
+    allSamples,
+    allSamples.map((allSamplesPerChannel) => allSamplesPerChannel.buffer),
+  );
 }
 
-export function getSamples(
-  offset: number,
-  size: number
-): Array<Float32Array> | undefined {
+export function getSamples(offset: number, size: number) {
   if (!instance) {
     return;
   }
-  return instance.getSamples(offset, size).map(convertToFloat32);
+  const allSamples = instance.getSamples(offset, size).map(convertToFloat32);
+  return transfer(
+    allSamples,
+    allSamples.map((allSamplesPerChannel) => allSamplesPerChannel.buffer),
+  );
 }
-
 
 function convertToFloat32(pcmSamples: Int16Array): Float32Array {
   // https://stackoverflow.com/a/17888298/917957
