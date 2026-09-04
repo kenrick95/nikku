@@ -1,25 +1,39 @@
-import { Brstm, Metadata } from 'brstm';
+import { Bfstm } from 'bfstm';
+import type { Metadata as BfstmMetadata } from 'bfstm';
+import { Brstm } from 'brstm';
+import type { Metadata as BrstmMetadata } from 'brstm';
 import { transfer } from 'comlink';
 
-let brstm: Brstm | null = null;
+let instance: Brstm | Bfstm | null = null;
 export function init(receivedBuffer: ArrayBuffer) {
-  brstm = new Brstm(receivedBuffer);
+  instance = null;
+  if (receivedBuffer.byteLength < 4) {
+    throw new Error('Unsupported file: expected a BRSTM or BFSTM file');
+  }
+  const magic = String.fromCharCode(...new Uint8Array(receivedBuffer, 0, 4));
+  if (magic === 'RSTM') {
+    instance = new Brstm(receivedBuffer);
+  } else if (magic === 'FSTM') {
+    instance = new Bfstm(receivedBuffer);
+  } else {
+    throw new Error('Unsupported file: expected a BRSTM or BFSTM file');
+  }
 }
 export function destroy() {
-  brstm = null;
+  instance = null;
 }
-export function getMetadata(): Metadata | undefined {
-  if (!brstm) {
+export function getMetadata(): BrstmMetadata | BfstmMetadata | undefined {
+  if (!instance) {
     return;
   }
-  return brstm.metadata;
+  return instance.metadata;
 }
 
 export function getAllSamples() {
-  if (!brstm) {
+  if (!instance) {
     return;
   }
-  const allSamples = brstm.getAllSamples();
+  const allSamples = instance.getAllSamples();
   return transfer(
     allSamples,
     allSamples.map((allSamplesPerChannel) => allSamplesPerChannel.buffer)
@@ -27,16 +41,15 @@ export function getAllSamples() {
 }
 
 export function getSamples(offset: number, size: number) {
-  if (!brstm) {
+  if (!instance) {
     return;
   }
-  const allSamples = brstm.getSamples(offset, size).map(convertToFloat32);
+  const allSamples = instance.getSamples(offset, size).map(convertToFloat32);
   return transfer(
     allSamples,
     allSamples.map((allSamplesPerChannel) => allSamplesPerChannel.buffer)
   );
 }
-
 
 function convertToFloat32(pcmSamples: Int16Array): Float32Array {
   // https://stackoverflow.com/a/17888298/917957

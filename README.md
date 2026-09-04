@@ -1,8 +1,8 @@
 # Nikku
 
-Web-based BRSTM player
+Web-based BRSTM and BFSTM player
 
-Just open [the demo](https://kenrick95.github.io/nikku/) in modern browser, select a `.brstm` file, and enjoy!
+Just open [the demo](https://kenrick95.github.io/nikku/) in a modern browser, select a `.brstm` or `.bfstm` file, and enjoy!
 
 ## What Is BRSTM?
 
@@ -33,6 +33,7 @@ Browser needs to support the following features without any vendor prefix:
 
 - [WiiBrew](https://wiibrew.org/wiki/BRSTM_file), for BRSTM file description.
 - [BrawlLib](https://github.com/libertyernie/brawltools) codes, on how to decode BRSTM.
+- [OpenRevolution](https://github.com/ic-scm/openrevolution), for the BFSTM container layout.
 
 ## See Also
 

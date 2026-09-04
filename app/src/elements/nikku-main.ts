@@ -95,7 +95,7 @@ export class NikkuMain extends LitElement {
           <input
             type="file"
             id="controls-select-file"
-            accept=".brstm"
+            accept=".brstm,.bfstm"
             @change=${this.#handleFileInputChange}
           />
           <span id="controls-select-file-custom"></span>
@@ -129,7 +129,7 @@ export class NikkuMain extends LitElement {
           hidden: !this.fileDraggingOver,
         })}
       >
-        Drop BRSTM file to start playback
+        Drop BRSTM or BFSTM file to start playback
       </div>
     `;
   }

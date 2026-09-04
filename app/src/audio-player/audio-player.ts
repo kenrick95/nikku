@@ -1,6 +1,9 @@
-import type { Metadata } from 'brstm';
+import type { Metadata as BfstmMetadata } from 'bfstm';
+import type { Metadata as BrstmMetadata } from 'brstm';
 import { Timer } from '../timer';
 import AudioSourceCode from './worklet/audio-source.js?raw';
+
+type Metadata = BrstmMetadata | BfstmMetadata;
 
 export type AudioPlayerOptions = {
   onPlay: () => void;

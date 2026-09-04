@@ -164,8 +164,14 @@ class AudioSourceNode extends AudioWorkletProcessor {
         trackIndex++
       ) {
         // Not all tracks have 2 channels, must read from track descriptions
-        const trackChannelCount =
-          this.trackDescriptions[trackIndex].numberChannels;
+        const trackDescription = this.trackDescriptions[trackIndex];
+        const trackChannelCount = trackDescription.numberChannels;
+        const trackChannelIndices =
+          trackDescription.channelIndices ||
+          Array.from(
+            { length: trackChannelCount },
+            (_, trackChannelIndex) => channelIndex + trackChannelIndex
+          );
 
         if (this.trackStates[trackIndex]) {
           const finalOddTrackChannelCountIndex =
@@ -173,17 +179,18 @@ class AudioSourceNode extends AudioWorkletProcessor {
 
           // Distribute left-right for first (N - (N % 2))
           for (let tc = 0; tc < finalOddTrackChannelCountIndex; tc++) {
-            sums[tc % 2] += segment[channelIndex + tc][segmentSampleIndex];
+            sums[tc % 2] +=
+              segment[trackChannelIndices[tc]][segmentSampleIndex];
           }
 
           // Put the final odd track into both left and right output
           if (trackChannelCount % 2 === 1) {
             sums[0] +=
-              segment[channelIndex + finalOddTrackChannelCountIndex][
+              segment[trackChannelIndices[finalOddTrackChannelCountIndex]][
                 segmentSampleIndex
               ];
             sums[1] +=
-              segment[channelIndex + finalOddTrackChannelCountIndex][
+              segment[trackChannelIndices[finalOddTrackChannelCountIndex]][
                 segmentSampleIndex
               ];
           }
