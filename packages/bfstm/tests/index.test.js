@@ -1,5 +1,6 @@
+const assert = require('node:assert/strict');
+const { test } = require('node:test');
 const { Bfstm } = require('../dist/bfstm.js');
-const { expect, test } = require('./helper.js');
 
 function createWriter(size, littleEndian) {
   const buffer = new ArrayBuffer(size);
@@ -214,42 +215,48 @@ function makeLittleEndianAdpcmBfstm() {
 
 test('reads section references, track references, and PCM16 blocks', () => {
   const bfstm = new Bfstm(makePcm16Bfstm());
-  expect(bfstm.metadata.endianness).toBe(1);
-  expect(bfstm.metadata.codec).toBe(1);
-  expect(bfstm.metadata.sampleRate).toBe(32000);
-  expect(bfstm.metadata.loopStartSample).toBe(2);
-  expect(bfstm.metadata.trackDescriptions).toEqual([
+  assert.equal(bfstm.metadata.endianness, 1);
+  assert.equal(bfstm.metadata.codec, 1);
+  assert.equal(bfstm.metadata.sampleRate, 32000);
+  assert.equal(bfstm.metadata.loopStartSample, 2);
+  assert.deepEqual(bfstm.metadata.trackDescriptions, [
     { type: 1, numberChannels: 1, channelIndices: [1] },
     { type: 1, numberChannels: 1, channelIndices: [0] },
   ]);
-  expect(bfstm.getAllSamples().map((samples) => Array.from(samples))).toEqual([
-    [100, -200, 300, -400, 500, -600],
-    [1000, -2000, 3000, -4000, 5000, -6000],
-  ]);
-  expect(bfstm.getSamples(3, 2).map((samples) => Array.from(samples))).toEqual([
-    [-400, 500],
-    [-4000, 5000],
-  ]);
+  assert.deepEqual(
+    bfstm.getAllSamples().map((samples) => Array.from(samples)),
+    [
+      [100, -200, 300, -400, 500, -600],
+      [1000, -2000, 3000, -4000, 5000, -6000],
+    ]
+  );
+  assert.deepEqual(
+    bfstm.getSamples(3, 2).map((samples) => Array.from(samples)),
+    [
+      [-400, 500],
+      [-4000, 5000],
+    ]
+  );
 });
 
 test('decodes little-endian DSP ADPCM using SEEK history', () => {
   const bfstm = new Bfstm(makeLittleEndianAdpcmBfstm());
-  expect(bfstm.metadata.endianness).toBe(0);
-  expect(bfstm.metadata.trackDescriptions).toEqual([
+  assert.equal(bfstm.metadata.endianness, 0);
+  assert.deepEqual(bfstm.metadata.trackDescriptions, [
     { type: 1, numberChannels: 1, channelIndices: [0] },
   ]);
-  expect(Array.from(bfstm.getAllSamples()[0])).toEqual([
+  assert.deepEqual(Array.from(bfstm.getAllSamples()[0]), [
     1, 2, 3, 4, 5, 6, 7, -8, -7, -6, -5, -4, -3, -2,
     1234, 1234, 1234, 1234,
   ]);
-  expect(Array.from(bfstm.getSamples(12, 5)[0])).toEqual([
+  assert.deepEqual(Array.from(bfstm.getSamples(12, 5)[0]), [
     -3, -2, 1234, 1234, 1234,
   ]);
 });
 
 test('rejects invalid input', () => {
-  expect(() => new Bfstm(new ArrayBuffer(4))).toThrow(/header is out of range/);
+  assert.throws(() => new Bfstm(new ArrayBuffer(4)), /header is out of range/);
   const invalid = new ArrayBuffer(0x40);
   new Uint8Array(invalid).set([0x4e, 0x4f, 0x50, 0x45]);
-  expect(() => new Bfstm(invalid)).toThrow(/valid BFSTM/);
+  assert.throws(() => new Bfstm(invalid), /valid BFSTM/);
 });
