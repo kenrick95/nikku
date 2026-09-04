@@ -44,6 +44,19 @@ class AudioSourceNode extends AudioWorkletProcessor {
     this.trackStates = options?.processorOptions?.trackStates || {};
     /** @type {TrackDescription[]} */
     this.trackDescriptions = options?.processorOptions?.trackDescriptions || [];
+    /** @type {Array<Array<number>>} */
+    this.trackChannelIndices = [];
+    let channelIndex = 0;
+    for (const trackDescription of this.trackDescriptions) {
+      this.trackChannelIndices.push(
+        trackDescription.channelIndices ||
+          Array.from(
+            { length: trackDescription.numberChannels },
+            (_, trackChannelIndex) => channelIndex + trackChannelIndex
+          )
+      );
+      channelIndex += trackDescription.numberChannels;
+    }
     /** @type {boolean} */
     this.shouldLoop = options?.processorOptions?.shouldLoop || true;
 
@@ -158,20 +171,11 @@ class AudioSourceNode extends AudioWorkletProcessor {
 
       // Mixing tracks, basically summing all active tracks together
       let sums = [0, 0];
-      for (
-        let trackIndex = 0, channelIndex = 0;
-        trackIndex < this.trackStates.length;
-        trackIndex++
-      ) {
+      for (let trackIndex = 0; trackIndex < this.trackStates.length; trackIndex++) {
         // Not all tracks have 2 channels, must read from track descriptions
         const trackDescription = this.trackDescriptions[trackIndex];
         const trackChannelCount = trackDescription.numberChannels;
-        const trackChannelIndices =
-          trackDescription.channelIndices ||
-          Array.from(
-            { length: trackChannelCount },
-            (_, trackChannelIndex) => channelIndex + trackChannelIndex
-          );
+        const trackChannelIndices = this.trackChannelIndices[trackIndex];
 
         if (this.trackStates[trackIndex]) {
           const finalOddTrackChannelCountIndex =
@@ -195,7 +199,6 @@ class AudioSourceNode extends AudioWorkletProcessor {
               ];
           }
         }
-        channelIndex += trackChannelCount;
       }
 
       output[0][s] = clamp(sums[0], -1, 1);
