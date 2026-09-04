@@ -1,32 +1,32 @@
 {
-  "name": "brstm",
-  "version": "1.7.0",
-  "description": "BRSTM Decoder",
+  "name": "bfstm",
+  "version": "1.0.0",
+  "description": "BFSTM Decoder",
   "keywords": [
-    "brstm"
+    "bfstm"
   ],
   "sideEffects": false,
   "source": "src/index.ts",
-  "main": "./dist/brstm.js",
-  "module": "./dist/brstm.mjs",
-  "umd:main": "./dist/brstm.umd.js",
-  "unpkg": "./dist/brstm.umd.js",
+  "main": "./dist/bfstm.js",
+  "module": "./dist/bfstm.mjs",
+  "umd:main": "./dist/bfstm.umd.js",
+  "unpkg": "./dist/bfstm.umd.js",
   "types": "./types/index.d.ts",
   "publishConfig": {
-    "main": "./dist/brstm.js",
-    "module": "./dist/brstm.mjs",
-    "umd:main": "./dist/brstm.umd.js",
-    "unpkg": "./dist/brstm.umd.js",
+    "main": "./dist/bfstm.js",
+    "module": "./dist/bfstm.mjs",
+    "umd:main": "./dist/bfstm.umd.js",
+    "unpkg": "./dist/bfstm.umd.js",
     "types": "./types/index.d.ts",
     "exports": {
       ".": {
         "import": {
           "types": "./types/index.d.ts",
-          "default": "./dist/brstm.mjs"
+          "default": "./dist/bfstm.mjs"
         },
         "require": {
           "types": "./types/index.d.ts",
-          "default": "./dist/brstm.js"
+          "default": "./dist/bfstm.js"
         }
       }
     }
@@ -49,7 +49,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/kenrick95/nikku.git",
-    "directory": "packages/brstm"
+    "directory": "packages/bfstm"
   },
   "homepage": "https://github.com/kenrick95/nikku",
   "bugs": {

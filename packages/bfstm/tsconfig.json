@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "module": "ES2022",
+    "lib": ["ES2022"],
+    "outDir": "./types",
+    "rootDir": "./src",
+    "strict": true,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "moduleResolution": "Bundler",
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "target": "ES2022",
+    "skipLibCheck": true,
+    "typeRoots": []
+  },
+  "include": ["src/"],
+  "exclude": ["node_modules/", "tests/"]
+}

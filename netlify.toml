@@ -2,6 +2,9 @@
   command = "npx pnpm run netlify-build"
   publish = "app/dist"
 
+[build.environment]
+  NODE_VERSION = "24.20.0"
+
 [[plugins]]
   package = "/netlify-plugins/pnpm-preinstaller"
 

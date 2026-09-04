@@ -12,6 +12,7 @@ export type ChannelInfo = {
 export type TrackDescription = {
   numberChannels: number;
   type: number;
+  channelIndices?: number[];
 };
 /**
  * - 0 - 8-bit PCM
