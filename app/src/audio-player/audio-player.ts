@@ -33,6 +33,7 @@ export class AudioPlayer {
   #shouldLoop: boolean = false;
   #hasBufferReachedEnd: boolean = true;
   #isPlaying: boolean = false;
+  #generation = 0;
 
   /** 0..1 */
   #volume: number = 0;
@@ -94,14 +95,23 @@ export class AudioPlayer {
   }
 
   async destroy() {
-    await this.pause();
-    this.init();
+    this.#generation++;
+    this.#timer?.stop();
+    this.options.onPause();
+    this.#audioSourceNode?.disconnect();
+    this.#audioSourceNode?.port.close();
+    this.#gainNode?.disconnect();
+    if (this.#audioContext && this.#audioContext.state !== 'closed') {
+      await this.#audioContext.close();
+    }
+    await this.init();
   }
 
   async start() {
     if (!this.metadata || !this.#audioContext) {
       return;
     }
+    const generation = this.#generation;
     const { totalSamples, sampleRate } = this.metadata;
     const amountTimeInS = totalSamples / sampleRate;
 
@@ -113,6 +123,9 @@ export class AudioPlayer {
       initialSamplesSize
     );
     console.timeEnd('getSamples');
+    if (generation !== this.#generation) {
+      return;
+    }
     this.#load(initialSamples, 0);
 
     // Decode in small segments, because postMessage-ing with a big data may cause jank
@@ -129,12 +142,18 @@ export class AudioPlayer {
 
     (async () => {
       for (const segment of segmentsInSeconds) {
+        if (generation !== this.#generation) {
+          return;
+        }
         console.time('getSamples');
         const samples = await this.options.decodeSamples(
           segment.offset * sampleRate,
           segment.size * sampleRate
         );
         console.timeEnd('getSamples');
+        if (generation !== this.#generation) {
+          return;
+        }
         this.#load(samples, segment.offset * sampleRate);
       }
     })();
@@ -152,9 +171,6 @@ export class AudioPlayer {
 
     if (offset === 0) {
       this.initPlayback(newSamples);
-      this.#timer?.start();
-      this.#isPlaying = true;
-      this.options.onPlay();
     } else {
       if (this.#audioSourceNode) {
         this.#audioSourceNode.port.postMessage(
