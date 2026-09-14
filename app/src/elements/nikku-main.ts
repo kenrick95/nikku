@@ -96,6 +96,16 @@ export class NikkuMain extends LitElement {
     await this.#loadFile(file);
   }
 
+  async #playFolderFile(file: File) {
+    if (this.loading) return;
+    this.selectedFile = file;
+    await this.#loadFile(file);
+    await this.updateComplete;
+    const index = this.folderFiles.indexOf(file);
+    if (index < 0) return;
+    this.renderRoot.querySelectorAll<HTMLButtonElement>('.folder-item')[index]?.focus();
+  }
+
   private workerInstance = new ComlinkWorker(new URL('../audio-decoder/worker', import.meta.url))
 
   private timer = new Timer({
@@ -205,7 +215,7 @@ export class NikkuMain extends LitElement {
                       aria-current=${file === this.currentFile ? 'true' : 'false'}
                       aria-disabled=${this.loading}
                       @click=${() => { if (!this.loading) this.selectedFile = file; }}
-                      @dblclick=${() => this.#loadFile(file)}
+                      @dblclick=${() => this.#playFolderFile(file)}
                       @keydown=${(event: KeyboardEvent) => {
                         if (event.key === 'Enter' && !this.loading) {
                           event.preventDefault();
@@ -218,7 +228,7 @@ export class NikkuMain extends LitElement {
                     </button>
                     <button class="play-file" aria-label=${`Play ${file.name}`}
                       aria-disabled=${this.loading}
-                      @click=${() => { if (!this.loading) void this.#loadFile(file); }}>
+                      @click=${() => this.#playFolderFile(file)}>
                       <span aria-hidden="true">▶</span>
                     </button>
                   </li>

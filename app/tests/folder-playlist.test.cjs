@@ -29,6 +29,7 @@ function handlers(result, name) {
 }
 function setup() {
   const calls = [];
+  const focused = [];
   class AudioPlayer {
     constructor(options) { this.options = options; }
     async destroy() { calls.push('destroy'); }
@@ -44,7 +45,12 @@ function setup() {
     async getMetadata() { return { totalSamples: 100, sampleRate: 10, numberTracks: 1 }; }
   }
   const { NikkuMain } = loadSource('../src/elements/nikku-main.ts', {
-    lit: { html: template, css: template, LitElement: class {} },
+    lit: { html: template, css: template, LitElement: class {
+      updateComplete = Promise.resolve();
+      renderRoot = { querySelectorAll: () => Array.from({ length: 10 }, (_, index) => ({
+        focus() { focused.push(index); },
+      })) };
+    } },
     'lit/decorators.js': { customElement: () => (value) => value, state: () => () => {} },
     'lit/directives/class-map.js': { classMap: (value) => value },
     '../audio-player/audio-player': { AudioPlayer },
@@ -52,7 +58,7 @@ function setup() {
     '../media-session': loadSource('../src/media-session.ts', {}),
     comlink: { transfer: (value) => value },
   }, { ComlinkWorker: Worker });
-  return { app: new NikkuMain(), calls };
+  return { app: new NikkuMain(), calls, focused };
 }
 const file = (path) => ({ name: path.split('/').at(-1), webkitRelativePath: path, arrayBuffer: async () => new ArrayBuffer(8) });
 function chooseFolder(app, files) {
@@ -73,8 +79,8 @@ test('filters and sorts nested files, preserves cancellation, and handles no mat
   assert.equal(app.folderFiles.length, 0);
   assert.equal(app.selectedFile, null);
 });
-test('double-click plays files, serializes loads, and destroys before changing decoder', async () => {
-  const { app, calls } = setup();
+test('double-click plays files, moves focus, serializes loads, and destroys before changing decoder', async () => {
+  const { app, calls, focused } = setup();
   const files = [file('Music/a.brstm'), file('Music/b.bfstm')];
   chooseFolder(app, files);
   app.loop = 'off';
@@ -90,6 +96,8 @@ test('double-click plays files, serializes loads, and destroys before changing d
   assert.deepEqual(calls.slice(0, 2), ['destroy', 'decode']);
   assert.equal(app.currentFile, files[1]);
   assert.equal(app.trackTitle, 'b.bfstm');
+  assert.equal(app.selectedFile, files[1]);
+  assert.equal(focused.at(-1), 1);
 });
 test('a non-looping file advances to the next file when playback ends', async () => {
   const { app } = setup();
@@ -100,6 +108,15 @@ test('a non-looping file advances to the next file when playback ends', async ()
   await app.audioPlayer.options.onEnded();
   assert.equal(app.currentFile, files[1]);
   assert.equal(app.trackTitle, 'b.bfstm');
+});
+test('a row play button selects and focuses the file it starts', async () => {
+  const { app, focused } = setup();
+  const files = [file('Music/a.brstm'), file('Music/b.bfstm')];
+  chooseFolder(app, files);
+  await handlers(app.render(), 'click').at(-1)();
+  assert.equal(app.currentFile, files[1]);
+  assert.equal(app.selectedFile, files[1]);
+  assert.equal(focused.at(-1), 1);
 });
 test('read failure releases loading state and allows another file to play', async () => {
   const { app } = setup();
