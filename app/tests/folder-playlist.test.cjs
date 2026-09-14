@@ -36,6 +36,7 @@ function setup() {
     async setVolume(value) { calls.push(['volume', value]); }
     async start() { calls.push('start'); }
     async play() { calls.push('play'); }
+    getCurrrentPlaybackTime() { return 0; }
   }
   class Worker {
     async init() { calls.push('decode'); }
@@ -47,6 +48,7 @@ function setup() {
     'lit/directives/class-map.js': { classMap: (value) => value },
     '../audio-player/audio-player': { AudioPlayer },
     '../timer': { Timer },
+    '../media-session': loadSource('../src/media-session.ts', {}),
     comlink: { transfer: (value) => value },
   }, { ComlinkWorker: Worker });
   return { app: new NikkuMain(), calls };
@@ -110,6 +112,8 @@ test('destroy closes audio and discards a pending decode after switching files',
     '../timer': { Timer }, './worklet/audio-source.js?raw': { default: '' },
   }, { AudioContext: class {
     state = 'running';
+    currentTime = 0;
+    async suspend() { this.state = 'suspended'; }
     async close() { closed++; this.state = 'closed'; }
   } });
   const player = new AudioPlayer({ onPlay() {}, onPause() {}, decodeSamples: () => {
@@ -135,6 +139,8 @@ test('play resumes a suspended context after initial samples are loaded', async 
   }, {
     AudioContext: class {
       state = 'suspended';
+      currentTime = 0;
+      async suspend() {}
       createGain() { return { gain: {}, connect() {} }; }
       async resume() { resumed++; }
     },

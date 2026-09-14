@@ -58,7 +58,7 @@ class AudioSourceNode extends AudioWorkletProcessor {
       channelIndex += trackDescription.numberChannels;
     }
     /** @type {boolean} */
-    this.shouldLoop = options?.processorOptions?.shouldLoop || true;
+    this.shouldLoop = options?.processorOptions?.shouldLoop ?? true;
 
     /** @type {number} */
     this.totalSamples = options?.processorOptions?.totalSamples || 0;
@@ -69,6 +69,9 @@ class AudioSourceNode extends AudioWorkletProcessor {
 
     /** @type {number} */
     this._bufferHead = 0;
+    this._framesSinceTimestamp = 0;
+    this._seekVersion = 0;
+    this._endedReported = false;
 
     this.port.onmessage = (event) => {
       switch (event.data.type) {
@@ -98,6 +101,9 @@ class AudioSourceNode extends AudioWorkletProcessor {
             event.data.payload.playbackTimeInS
           );
           this._bufferHead = Math.floor(playbackTimeInS * this.sampleRate);
+          this._seekVersion = event.data.payload.seekVersion;
+          this._endedReported = false;
+          this.reportPosition();
           console.log('[AudioSourceNode] SEEK', playbackTimeInS);
           break;
         }
@@ -109,16 +115,24 @@ class AudioSourceNode extends AudioWorkletProcessor {
           break;
         }
         case 'TIMESTAMP_QUERY': {
-          this.port.postMessage({
-            type: 'TIMESTAMP_REPLY',
-            payload: {
-              timestamp: this._bufferHead / this.sampleRate,
-            },
-          });
+          this.reportPosition();
           break;
         }
       }
     };
+  }
+
+  /** @param {number} contextTime */
+  reportPosition(contextTime = currentTime) {
+    this._framesSinceTimestamp = 0;
+    this.port.postMessage({
+      type: 'TIMESTAMP_REPLY',
+      payload: {
+        timestamp: this._bufferHead / this.sampleRate,
+        contextTime,
+        seekVersion: this._seekVersion,
+      },
+    });
   }
 
   /**
@@ -154,6 +168,11 @@ class AudioSourceNode extends AudioWorkletProcessor {
       return false;
     }
     let absoluteSampleIndex = this._bufferHead;
+    let didLoop = false;
+    if (absoluteSampleIndex >= this.totalSamples && this.shouldLoop && this.totalSamples > 0) {
+      absoluteSampleIndex = this.loopStartSample;
+      didLoop = true;
+    }
 
     for (let s = 0; s < output[0].length; s++) {
       if (absoluteSampleIndex >= this.totalSamples) {
@@ -208,18 +227,24 @@ class AudioSourceNode extends AudioWorkletProcessor {
       if (absoluteSampleIndex >= this.totalSamples) {
         if (this.shouldLoop) {
           absoluteSampleIndex = this.loopStartSample;
-          this.port.postMessage({
-            type: 'BUFFER_LOOPED',
-          });
-        } else {
-          this.port.postMessage({
-            type: 'BUFFER_ENDED',
-          });
+          didLoop = true;
         }
       }
     }
 
     this._bufferHead = absoluteSampleIndex;
+    this._framesSinceTimestamp += output[0].length;
+    const ended = absoluteSampleIndex >= this.totalSamples && !this.shouldLoop;
+    if (didLoop || (ended && !this._endedReported) || this._framesSinceTimestamp >= this.sampleRate / 4) {
+      this.reportPosition(currentTime + output[0].length / this.sampleRate);
+    }
+    if (ended && !this._endedReported) {
+      this.port.postMessage({
+        type: 'BUFFER_ENDED',
+        payload: { seekVersion: this._seekVersion },
+      });
+    }
+    this._endedReported = ended;
     return true;
   }
 }
