@@ -18,7 +18,6 @@ export class ControlsLoop extends LitElement {
     }
     .button {
       all: initial;
-      color: var(--primary-dark);
       width: 40px;
       height: 40px;
       border-radius: 20px;
@@ -27,11 +26,7 @@ export class ControlsLoop extends LitElement {
       outline: 2px solid var(--primary-dark);
       outline-offset: 3px;
     }
-    .button:disabled {
-      opacity: 0.5;
-    }
     svg {
-      fill: currentColor;
       width: 100%;
       height: 100%;
     }
@@ -40,9 +35,8 @@ export class ControlsLoop extends LitElement {
       box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.24);
       cursor: pointer;
     }
-    .button.on {
-      background: var(--primary-lightest-2);
-      box-shadow: inset 0 0 0 2px currentColor;
+    .button.off svg {
+      fill: var(--primary-lighter);
     }
     .button.disabled:hover {
       cursor: not-allowed;

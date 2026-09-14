@@ -115,6 +115,18 @@ test('read failure releases loading state and allows another file to play', asyn
   assert.equal(app.errorMessage, '');
   assert.equal(app.disabled, false);
 });
+test('selecting a standalone file clears the folder playlist', async () => {
+  const { app } = setup();
+  chooseFolder(app, [file('Music/a.brstm'), file('Music/b.bfstm')]);
+  const standalone = file('standalone.brstm');
+  const input = { files: [standalone], value: 'standalone' };
+  handlers(app.render(), 'change')[0].call(app, { target: input });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(app.currentFile, standalone);
+  assert.equal(app.folderName, '');
+  assert.equal(app.folderFiles.length, 0);
+  assert.equal(app.selectedFile, null);
+});
 test('destroy closes audio and discards a pending decode after switching files', async () => {
   let closed = 0;
   let resolveDecode;

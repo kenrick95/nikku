@@ -24,7 +24,7 @@ export class ControlsTracks extends LitElement {
     label {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
       min-height: 28px;
       cursor: pointer;
     }
@@ -33,18 +33,27 @@ export class ControlsTracks extends LitElement {
       outline-offset: 2px;
     }
     input[type='checkbox'] {
-      accent-color: var(--primary-dark);
+      appearance: none;
       position: relative;
       background: var(--primary-lightest-2);
       border-radius: 2px;
       padding: 2px;
       margin: 0;
 
-      width: 20px;
-      height: 20px;
+      width: 15px;
+      height: 15px;
       display: inline-block;
       vertical-align: middle;
       top: -1px;
+    }
+    input[type='checkbox']:checked:after {
+      content: '✔';
+      position: absolute;
+      left: 2px;
+      top: 0;
+      font-size: 12px;
+      line-height: 13px;
+      color: var(--primary-darker);
     }
   `;
 

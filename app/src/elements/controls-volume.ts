@@ -18,20 +18,51 @@ export class ControlsVolume extends LitElement {
       width: 40px;
       height: 40px;
       border-radius: 20px;
-      color: var(--primary-dark);
       cursor: pointer;
     }
-    button:hover:not(:disabled) { background: var(--primary-lightest-1); }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
-    svg { width: 100%; height: 100%; fill: currentColor; }
+    button:disabled { cursor: not-allowed; }
+    svg { width: 100%; height: 100%; }
     input {
+      appearance: none;
       width: 100px;
-      height: 28px;
+      height: 10px;
       margin: 0;
-      accent-color: var(--primary-dark);
+      background: transparent;
       cursor: pointer;
     }
-    input:disabled { cursor: not-allowed; }
+    input::-webkit-slider-runnable-track {
+      height: 2px;
+      border-radius: 1px;
+      background: linear-gradient(to right, var(--primary) 0 var(--volume), #e0e4e8 var(--volume) 100%);
+    }
+    input::-webkit-slider-thumb {
+      appearance: none;
+      width: 10px;
+      height: 10px;
+      margin-top: -4px;
+      border: 0;
+      border-radius: 50%;
+      background: var(--primary);
+    }
+    input::-moz-range-track {
+      height: 2px;
+      border: 0;
+      border-radius: 1px;
+      background: #e0e4e8;
+    }
+    input::-moz-range-progress {
+      height: 2px;
+      border-radius: 1px;
+      background: var(--primary);
+    }
+    input::-moz-range-thumb {
+      width: 10px;
+      height: 10px;
+      border: 0;
+      border-radius: 50%;
+      background: var(--primary);
+    }
+    input:disabled { opacity: 1; cursor: not-allowed; }
     button:focus-visible, input:focus-visible {
       outline: 2px solid var(--primary-dark);
       outline-offset: 2px;
@@ -48,6 +79,7 @@ export class ControlsVolume extends LitElement {
         aria-valuetext=${`${Math.round(this.volume * 100)}%${this.muted ? ', muted' : ''}`}
         min="0" max="100" step="1"
         .value=${String(Math.round(this.volume * 100))}
+        style=${`--volume: ${this.muted ? 0 : Math.round(this.volume * 100)}%`}
         ?disabled=${this.disabled} @input=${this.#handleInput} />
     </div>`;
   }

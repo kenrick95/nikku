@@ -322,6 +322,11 @@ export class NikkuMain extends LitElement {
     if (this.loading) {
       return;
     }
+    if (!this.folderFiles.includes(file)) {
+      this.folderFiles = [];
+      this.folderName = '';
+      this.selectedFile = null;
+    }
     this.loading = true;
     this.disabled = true;
     this.#clearError();
@@ -593,7 +598,7 @@ export class NikkuMain extends LitElement {
       margin-top: 100px;
       display: grid;
       grid-template-columns: 2fr 80px 1fr 1fr;
-      grid-template-rows: auto 28px 32px 80px auto;
+      grid-template-rows: 20px 15px 24px 80px auto;
       row-gap: 10px;
       column-gap: 2rem;
       margin-bottom: 10px;
@@ -646,7 +651,7 @@ export class NikkuMain extends LitElement {
       #main {
         margin-top: 50px;
         grid-template-columns: minmax(0, 1fr) 80px minmax(0, 1fr);
-        grid-template-rows: auto auto 28px 32px 80px auto;
+        grid-template-rows: 20px 20px 15px 24px 80px auto;
         column-gap: 0.75rem;
       }
       #track-title {
@@ -689,12 +694,15 @@ export class NikkuMain extends LitElement {
       position: relative;
       display: inline-block;
       cursor: pointer;
-      width: 100px;
+      width: 80px;
+    }
+    .source-picker:last-child {
+      width: 94px;
     }
     .source-picker > input {
       margin: 0;
       opacity: 0;
-      height: 32px;
+      height: 24px;
       width: 100%;
     }
     .source-picker > span {
@@ -707,13 +715,12 @@ export class NikkuMain extends LitElement {
 
       box-sizing: border-box;
       border-radius: 5px;
-      color: var(--primary-dark);
-      border: 1px solid var(--primary-dark);
+      color: var(--primary);
       background-color: var(--primary-lightest-2);
       user-select: none;
       font-size: 12px;
       line-height: 16px;
-      height: 32px;
+      height: 24px;
       display: inline-flex;
       align-items: center;
       padding: 2px 4px;
