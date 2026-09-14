@@ -138,18 +138,27 @@ export class NikkuMain extends LitElement {
             @progressValueChange=${this.#handleProgressValueChange}
           ></controls-progress>
         </div>
-        <label id="controls-select-file-container">
-          <input
-            type="file"
-            id="controls-select-file"
-            aria-label="Select file"
-            accept=".brstm,.bfstm"
-            aria-disabled=${this.loading}
-            @click=${(event: MouseEvent) => { if (this.loading) event.preventDefault(); }}
-            @change=${this.#handleFileInputChange}
-          />
-          <span id="controls-select-file-custom" aria-hidden="true">Select file…</span>
-        </label>
+        <div id="controls-select-sources">
+          <label class="source-picker">
+            <input
+              type="file"
+              aria-label="Select file"
+              accept=".brstm,.bfstm"
+              aria-disabled=${this.loading}
+              @click=${(event: MouseEvent) => { if (this.loading) event.preventDefault(); }}
+              @change=${this.#handleFileInputChange}
+            />
+            <span aria-hidden="true">Select file…</span>
+          </label>
+          <label class="source-picker">
+            <input type="file" webkitdirectory multiple
+              aria-label="Select folder"
+              aria-disabled=${this.loading}
+              @click=${(event: MouseEvent) => { if (this.loading) event.preventDefault(); }}
+              @change=${this.#handleFolderInputChange} />
+            <span aria-hidden="true">Select folder…</span>
+          </label>
+        </div>
 
         <div id="controls-play-pause">
           <controls-play-pause
@@ -181,26 +190,13 @@ export class NikkuMain extends LitElement {
           ></controls-tracks>
         </div>
       </div>
-      <section id="folder-view" aria-labelledby="folder-title">
-        <div class="folder-toolbar">
-          <div>
-            <h2 id="folder-title">Music folder</h2>
-            ${!this.folderName ? html`<p>Play BRSTM and BFSTM files from one folder.</p>` : ''}
+      ${this.folderName ? html`
+        <section id="folder-view" aria-labelledby="folder-title">
+          <div class="folder-heading">
+            <h2 id="folder-title">${this.folderName}</h2>
+            <span class="file-count" role="status" aria-atomic="true">${this.folderFiles.length} ${this.folderFiles.length === 1 ? 'file' : 'files'}</span>
           </div>
-          <label class="folder-picker">
-            ${this.folderName ? 'Change folder…' : 'Choose folder…'}
-            <input type="file" webkitdirectory multiple
-              aria-label="Select folder"
-              @change=${this.#handleFolderInputChange} />
-          </label>
-        </div>
-        ${this.folderName ? html`
           ${this.folderFiles.length ? html`
-            <details open>
-              <summary>
-                <span class="folder-name">${this.folderName}</span>
-                <span class="file-count" role="status" aria-atomic="true">${this.folderFiles.length} ${this.folderFiles.length === 1 ? 'file' : 'files'}</span>
-              </summary>
               <ul>
                 ${this.folderFiles.map((file) => html`
                   <li class=${classMap({ selected: file === this.selectedFile, current: file === this.currentFile })}>
@@ -228,10 +224,9 @@ export class NikkuMain extends LitElement {
                   </li>
                 `)}
               </ul>
-            </details>
           ` : html`<p role="status">No BRSTM or BFSTM files found in this folder.</p>`}
-        ` : ''}
-      </section>
+        </section>
+      ` : ''}
       <p role="status" aria-atomic="true">${this.loading
         ? 'Loading audio…'
         : this.currentFile
@@ -462,84 +457,38 @@ export class NikkuMain extends LitElement {
       margin-top: 1.5rem;
       border: 1px solid var(--primary-light);
       border-radius: 8px;
-      background: var(--primary-lightest-2);
+      background: var(--white-lighter);
       overflow: hidden;
     }
-    .folder-toolbar {
+    .folder-heading {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 1rem;
-      padding: 0.85rem 1rem;
+      gap: 0.75rem;
+      padding: 0.65rem 0.85rem;
+      background: var(--primary-lightest-2);
     }
-    .folder-toolbar h2, .folder-toolbar p {
+    .folder-heading h2 {
+      min-width: 0;
       margin: 0;
+      overflow-wrap: anywhere;
+      font-size: 0.9rem;
     }
-    .folder-toolbar h2 {
-      font-size: 1rem;
-    }
-    .folder-toolbar p {
-      margin-top: 0.2rem;
-      font-size: 12px;
-      font-weight: 400;
-    }
-    #folder-view button, .folder-picker, #folder-view summary {
+    #folder-view button {
       font: inherit;
       color: var(--main-text-color);
       cursor: pointer;
     }
-    .folder-picker {
-      position: relative;
-      overflow: hidden;
-      flex-shrink: 0;
-      color: var(--primary-dark);
-      border: 1px solid var(--primary-dark);
-      border-radius: 5px;
-      padding: 0.4rem 0.6rem;
-    }
-    .folder-picker input {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      opacity: 0;
-      cursor: pointer;
-    }
-    .folder-picker:focus-within, #folder-view button:focus-visible, #folder-view summary:focus-visible {
+    #folder-view button:focus-visible {
       outline: 2px solid var(--primary-dark);
-      outline-offset: 2px;
+      outline-offset: -2px;
     }
     #folder-view button:disabled, #folder-view button[aria-disabled='true'] {
       opacity: 0.5;
       cursor: default;
     }
-    #folder-view details {
-      border-top: 1px solid var(--primary-light);
-    }
-    #folder-view summary {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      padding: 0.7rem 1rem;
-      background: var(--white-lighter);
-      list-style: none;
-    }
-    #folder-view summary::-webkit-details-marker {
-      display: none;
-    }
-    #folder-view summary::after {
-      content: '⌄';
-      margin-left: auto;
-      font-size: 1.1rem;
-      transform: rotate(0deg);
-    }
-    #folder-view details:not([open]) summary::after {
-      transform: rotate(-90deg);
-    }
-    .folder-name, .file-path {
+    .file-path {
       overflow-wrap: anywhere;
-    }
-    .folder-name {
-      font-weight: 600;
     }
     .file-count {
       color: var(--primary-dark);
@@ -552,7 +501,6 @@ export class NikkuMain extends LitElement {
       padding: 0;
       max-height: 20rem;
       overflow: auto;
-      background: var(--white-lighter);
       border-top: 1px solid var(--primary-light);
     }
     #folder-view li {
@@ -665,7 +613,7 @@ export class NikkuMain extends LitElement {
       grid-column: 1 / span 4;
       grid-row: 2;
     }
-    #controls-select-file-container {
+    #controls-select-sources {
       grid-column: 1 / span 4;
       grid-row: 3;
     }
@@ -695,12 +643,6 @@ export class NikkuMain extends LitElement {
     }
 
     @media (max-width: 640px) {
-      .folder-toolbar {
-        align-items: flex-start;
-      }
-      .folder-toolbar p {
-        max-width: 12rem;
-      }
       #main {
         margin-top: 50px;
         grid-template-columns: minmax(0, 1fr) 80px minmax(0, 1fr);
@@ -719,7 +661,7 @@ export class NikkuMain extends LitElement {
         grid-column: 1 / span 3;
         grid-row: 3;
       }
-      #controls-select-file-container {
+      #controls-select-sources {
         grid-column: 1 / span 3;
         grid-row: 4;
       }
@@ -739,19 +681,23 @@ export class NikkuMain extends LitElement {
     }
 
     /* Modified from "file" from https://github.com/mdo/wtf-forms/blob/master/wtf-forms.css */
-    #controls-select-file-container {
+    #controls-select-sources {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .source-picker {
       position: relative;
       display: inline-block;
       cursor: pointer;
       width: 100px;
     }
-    #controls-select-file-container > input {
+    .source-picker > input {
       margin: 0;
       opacity: 0;
       height: 32px;
       width: 100%;
     }
-    #controls-select-file-custom {
+    .source-picker > span {
       position: absolute;
       top: 0;
       right: 0;
@@ -773,18 +719,18 @@ export class NikkuMain extends LitElement {
       padding: 2px 4px;
       text-align: center;
     }
-    #controls-select-file-custom:hover {
+    .source-picker:hover > span {
       background-color: var(--primary-lightest-1);
     }
 
-    #controls-select-file-container:focus-within {
+    .source-picker:focus-within {
       outline: 2px solid var(--primary-dark);
       outline-offset: 2px;
       border-radius: 5px;
     }
 
     @media (prefers-color-scheme: dark) {
-      #controls-select-file-custom {
+      .source-picker > span {
         color: var(--main-text-color);
       }
     }

@@ -28,6 +28,8 @@ export class AudioPlayer {
 
   #audioSourceNode: null | AudioWorkletNode = null;
   #gainNode: null | GainNode = null;
+  #mediaStreamDestination: null | MediaStreamAudioDestinationNode = null;
+  #mediaElement: null | HTMLAudioElement = null;
 
   #currentTimestamp: number = 0;
   #timestampContextTime = 0;
@@ -82,6 +84,8 @@ export class AudioPlayer {
 
     this.#audioSourceNode = null;
     this.#gainNode = null;
+    this.#mediaStreamDestination = null;
+    this.#mediaElement = null;
 
     this.#currentTimestamp = 0;
     this.#timestampContextTime = this.#audioContext?.currentTime ?? 0;
@@ -97,9 +101,12 @@ export class AudioPlayer {
   async destroy() {
     this.#generation++;
     this.options.onPause();
+    this.#mediaElement?.pause();
+    if (this.#mediaElement) this.#mediaElement.srcObject = null;
     this.#audioSourceNode?.disconnect();
     this.#audioSourceNode?.port.close();
     this.#gainNode?.disconnect();
+    this.#mediaStreamDestination?.disconnect();
     if (this.#audioContext && this.#audioContext.state !== 'closed') {
       await this.#audioContext.close();
     }
@@ -250,7 +257,19 @@ export class AudioPlayer {
     this.#gainNode.gain.value = this.#volume;
 
     this.#audioSourceNode.connect(this.#gainNode);
-    this.#gainNode.connect(this.#audioContext.destination);
+    try {
+      if (typeof Audio === 'undefined') throw new Error('HTML audio is unavailable');
+      this.#mediaStreamDestination = this.#audioContext.createMediaStreamDestination();
+      this.#mediaElement = new Audio();
+      this.#mediaElement.srcObject = this.#mediaStreamDestination.stream;
+      this.#mediaElement.autoplay = true;
+      this.#mediaElement.setAttribute('playsinline', '');
+      this.#gainNode.connect(this.#mediaStreamDestination);
+    } catch {
+      this.#mediaStreamDestination = null;
+      this.#mediaElement = null;
+      this.#gainNode.connect(this.#audioContext.destination);
+    }
 
     this.#hasBufferReachedEnd = false;
   }
@@ -291,6 +310,18 @@ export class AudioPlayer {
     if (this.#hasBufferReachedEnd) await this.seek(0, false);
     await context.resume();
     if (context !== this.#audioContext) return;
+    if (this.#mediaElement) {
+      try {
+        await this.#mediaElement.play();
+      } catch {
+        // Keep playback working when MediaStream-backed media elements are unavailable.
+        this.#gainNode?.disconnect(this.#mediaStreamDestination!);
+        this.#mediaElement.srcObject = null;
+        this.#mediaElement = null;
+        this.#mediaStreamDestination = null;
+        this.#gainNode?.connect(context.destination);
+      }
+    }
     this.#isPlaying = true;
     this.options.onPlay();
   }
@@ -301,6 +332,7 @@ export class AudioPlayer {
     const context = this.#audioContext;
     await context.suspend();
     if (context !== this.#audioContext) return;
+    this.#mediaElement?.pause();
     this.#currentTimestamp = this.getCurrrentPlaybackTime();
     this.#timestampContextTime = context.currentTime;
     this.#isPlaying = false;

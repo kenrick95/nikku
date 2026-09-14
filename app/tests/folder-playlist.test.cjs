@@ -169,6 +169,56 @@ test('play resumes a suspended context after initial samples are loaded', async 
   assert.equal(resumed, 1);
   assert.equal(played, 1);
 });
+test('routes playback through an audio element for platform media controls', async () => {
+  const connections = [];
+  const mediaStream = {};
+  let mediaElement;
+  const { AudioPlayer } = loadSource('../src/audio-player/audio-player.ts', {
+    '../timer': { Timer }, './worklet/audio-source.js?raw': { default: '' },
+  }, {
+    AudioContext: class {
+      state = 'suspended';
+      currentTime = 0;
+      destination = { type: 'speakers' };
+      async suspend() { this.state = 'suspended'; }
+      async resume() { this.state = 'running'; }
+      createMediaStreamDestination() {
+        return { stream: mediaStream, disconnect() {} };
+      }
+      createGain() {
+        return {
+          gain: {}, connect(target) { connections.push(target); }, disconnect() {},
+        };
+      }
+    },
+    Audio: class {
+      constructor() { mediaElement = this; }
+      setAttribute() {}
+      async play() { this.played = true; }
+      pause() { this.paused = true; }
+    },
+    AudioWorkletNode: class {
+      port = { addEventListener() {}, start() {}, close() {} };
+      connect() {}
+      disconnect() {}
+    },
+  });
+  const player = new AudioPlayer({
+    onPlay() {}, onPause() {}, decodeSamples: async () => [],
+  });
+  await player.init({
+    totalSamples: 10, sampleRate: 10, numberTracks: 1,
+    loopStartSample: 0, trackDescriptions: [],
+  });
+  await player.start();
+  await player.play();
+  assert.equal(mediaElement.srcObject, mediaStream);
+  assert.equal(mediaElement.autoplay, true);
+  assert.equal(mediaElement.played, true);
+  assert.equal(connections[0].stream, mediaStream);
+  await player.pause();
+  assert.equal(mediaElement.paused, true);
+});
 test('audio completion pauses playback and emits the ended callback', async () => {
   let messageHandler;
   let ended = 0;
