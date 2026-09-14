@@ -7,6 +7,7 @@ type Metadata = BrstmMetadata | BfstmMetadata;
 export type AudioPlayerOptions = {
   onPlay: () => void;
   onPause: () => void;
+  onEnded?: () => void | Promise<void>;
   onPosition?: () => void;
   decodeSamples: (offset: number, size: number) => Promise<Float32Array[]>;
 };
@@ -228,7 +229,7 @@ export class AudioPlayer {
               this.#currentTimestamp = totalSamples / sampleRate;
               this.#timestampContextTime = this.#audioContext?.currentTime ?? 0;
               this.#hasBufferReachedEnd = true;
-              void this.pause();
+              void this.pause().then(() => this.options.onEnded?.());
               break;
             }
 

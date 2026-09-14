@@ -30,6 +30,7 @@ function handlers(result, name) {
 function setup() {
   const calls = [];
   class AudioPlayer {
+    constructor(options) { this.options = options; }
     async destroy() { calls.push('destroy'); }
     async init() { calls.push('init'); }
     setLoop(value) { calls.push(['loop', value]); }
@@ -87,6 +88,16 @@ test('double-click plays files, serializes loads, and destroys before changing d
   calls.length = 0;
   await second();
   assert.deepEqual(calls.slice(0, 2), ['destroy', 'decode']);
+  assert.equal(app.currentFile, files[1]);
+  assert.equal(app.trackTitle, 'b.bfstm');
+});
+test('a non-looping file advances to the next file when playback ends', async () => {
+  const { app } = setup();
+  const files = [file('Music/a.brstm'), file('Music/b.bfstm')];
+  chooseFolder(app, files);
+  const [first] = handlers(app.render(), 'dblclick');
+  await first();
+  await app.audioPlayer.options.onEnded();
   assert.equal(app.currentFile, files[1]);
   assert.equal(app.trackTitle, 'b.bfstm');
 });
@@ -157,6 +168,42 @@ test('play resumes a suspended context after initial samples are loaded', async 
   await player.play();
   assert.equal(resumed, 1);
   assert.equal(played, 1);
+});
+test('audio completion pauses playback and emits the ended callback', async () => {
+  let messageHandler;
+  let ended = 0;
+  const { AudioPlayer } = loadSource('../src/audio-player/audio-player.ts', {
+    '../timer': { Timer }, './worklet/audio-source.js?raw': { default: '' },
+  }, {
+    AudioContext: class {
+      state = 'suspended';
+      currentTime = 0;
+      destination = {};
+      async suspend() { this.state = 'suspended'; }
+      async resume() { this.state = 'running'; }
+      createGain() { return { gain: {}, connect() {}, disconnect() {} }; }
+    },
+    AudioWorkletNode: class {
+      port = {
+        addEventListener(_type, handler) { messageHandler = handler; },
+        start() {}, postMessage() {}, close() {},
+      };
+      connect() {}
+      disconnect() {}
+    },
+  });
+  const player = new AudioPlayer({
+    onPlay() {}, onPause() {}, onEnded() { ended++; }, decodeSamples: async () => [],
+  });
+  await player.init({
+    totalSamples: 10, sampleRate: 10, numberTracks: 1,
+    loopStartSample: 0, trackDescriptions: [],
+  });
+  await player.start();
+  await player.play();
+  messageHandler({ data: { type: 'BUFFER_ENDED', payload: { seekVersion: 0 } } });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(ended, 1);
 });
 
 // The controls use native buttons/ranges; verify their events and exposed state.

@@ -4,7 +4,7 @@ Web-based BRSTM and BFSTM player
 
 Just open [the demo](https://kenrick95.github.io/nikku/) in a modern browser, select a `.brstm` or `.bfstm` file, and enjoy!
 
-Use **Select folder…** to list the `.brstm` and `.bfstm` files in a folder and its subfolders. Double-click a file to play, press Enter on a focused file, or select it and choose **Play selected**. The current file is marked in the list. Folder selection requires a browser with directory upload support; files stay on your device. Playback follows the loop control and does not automatically advance to the next file.
+Use **Choose folder…** to list the `.brstm` and `.bfstm` files in a folder and its subfolders. Use a row's Play button, double-click the filename, or press Enter on a focused filename to play it. The current file is marked in the expandable folder list. Folder selection requires a browser with directory upload support; files stay on your device. Each file follows the loop control; with looping off, playback advances to the next file in the folder.
 
 On supported browsers, Nikku publishes the current filename and playback position to system media controls. Media keys can play, pause, stop, seek, and move to the previous or next file in the selected folder. Browser and operating-system support varies, especially for background Web Audio playback on mobile devices.
 

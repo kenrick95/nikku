@@ -181,48 +181,55 @@ export class NikkuMain extends LitElement {
           ></controls-tracks>
         </div>
       </div>
-      <section id="folder-view" aria-label="Folder playlist">
+      <section id="folder-view" aria-labelledby="folder-title">
         <div class="folder-toolbar">
+          <div>
+            <h2 id="folder-title">Music folder</h2>
+            ${!this.folderName ? html`<p>Play BRSTM and BFSTM files from one folder.</p>` : ''}
+          </div>
           <label class="folder-picker">
-            Select folder…
+            ${this.folderName ? 'Change folder…' : 'Choose folder…'}
             <input type="file" webkitdirectory multiple
               aria-label="Select folder"
               @change=${this.#handleFolderInputChange} />
           </label>
-          <button ?disabled=${!this.selectedFile} aria-disabled=${this.loading}
-            @click=${() => this.selectedFile && this.#loadFile(this.selectedFile)}>
-            Play selected
-          </button>
         </div>
-        <p id="folder-hint">Select a folder, including subfolders. Double-click a file
-          or press Enter to play. You can also select a file and use Play selected.</p>
-        <p class="folder-heading" role="status" aria-atomic="true">${this.folderName
-          ? `${this.folderName} · ${this.folderFiles.length} files` : ''}</p>
         ${this.folderName ? html`
           ${this.folderFiles.length ? html`
-            <ul aria-describedby="folder-hint">
-              ${this.folderFiles.map((file) => html`
-                <li>
-                  <button class=${classMap({ 'folder-item': true, selected: file === this.selectedFile })}
-                    aria-pressed=${file === this.selectedFile}
-                    aria-current=${file === this.currentFile ? 'true' : 'false'}
-                    aria-disabled=${this.loading}
-                    @click=${() => { if (!this.loading) this.selectedFile = file; }}
-                    @dblclick=${() => this.#loadFile(file)}
-                    @keydown=${(event: KeyboardEvent) => {
-                      if (event.key === 'Enter' && !this.loading) {
-                        event.preventDefault();
-                        this.selectedFile = file;
-                        void this.#loadFile(file);
-                      }
-                    }}>
-                    <span class="file-path"><span aria-hidden="true">${file === this.selectedFile ? '✓ ' : ''}</span>${file.webkitRelativePath.split('/').slice(1).join('/') || file.name}</span>
-                    ${file === this.currentFile ? html`<span class="current-label">Current</span>` : ''}
-                  </button>
-                </li>
-              `)}
-            </ul>
-          ` : html`<p>No BRSTM or BFSTM files found in this folder.</p>`}
+            <details open>
+              <summary>
+                <span class="folder-name">${this.folderName}</span>
+                <span class="file-count" role="status" aria-atomic="true">${this.folderFiles.length} ${this.folderFiles.length === 1 ? 'file' : 'files'}</span>
+              </summary>
+              <ul>
+                ${this.folderFiles.map((file) => html`
+                  <li class=${classMap({ selected: file === this.selectedFile, current: file === this.currentFile })}>
+                    <button class="folder-item"
+                      aria-pressed=${file === this.selectedFile}
+                      aria-current=${file === this.currentFile ? 'true' : 'false'}
+                      aria-disabled=${this.loading}
+                      @click=${() => { if (!this.loading) this.selectedFile = file; }}
+                      @dblclick=${() => this.#loadFile(file)}
+                      @keydown=${(event: KeyboardEvent) => {
+                        if (event.key === 'Enter' && !this.loading) {
+                          event.preventDefault();
+                          this.selectedFile = file;
+                          void this.#loadFile(file);
+                        }
+                      }}>
+                      <span class="file-path">${file.webkitRelativePath.split('/').slice(1).join('/') || file.name}</span>
+                      ${file === this.currentFile ? html`<span class="current-label">${this.playPauseIcon === 'pause' ? 'Playing' : 'Current'}</span>` : ''}
+                    </button>
+                    <button class="play-file" aria-label=${`Play ${file.name}`}
+                      aria-disabled=${this.loading}
+                      @click=${() => { if (!this.loading) void this.#loadFile(file); }}>
+                      <span aria-hidden="true">▶</span>
+                    </button>
+                  </li>
+                `)}
+              </ul>
+            </details>
+          ` : html`<p role="status">No BRSTM or BFSTM files found in this folder.</p>`}
         ` : ''}
       </section>
       <p role="status" aria-atomic="true">${this.loading
@@ -350,6 +357,7 @@ export class NikkuMain extends LitElement {
             this.timer.stop();
             this.#syncMediaSession();
           },
+          onEnded: () => this.#playAdjacentFile(1),
           onPosition: () => {
             this.#syncMediaSession();
             // Refresh the paused UI once; running UI updates remain on rAF.
@@ -452,26 +460,42 @@ export class NikkuMain extends LitElement {
   static styles = css`
     #folder-view {
       margin-top: 1.5rem;
-      border-top: 1px solid var(--primary-light);
-      padding-top: 1rem;
+      border: 1px solid var(--primary-light);
+      border-radius: 8px;
+      background: var(--primary-lightest-2);
+      overflow: hidden;
     }
     .folder-toolbar {
       display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.85rem 1rem;
     }
-    #folder-view button, .folder-picker {
+    .folder-toolbar h2, .folder-toolbar p {
+      margin: 0;
+    }
+    .folder-toolbar h2 {
+      font-size: 1rem;
+    }
+    .folder-toolbar p {
+      margin-top: 0.2rem;
+      font-size: 12px;
+      font-weight: 400;
+    }
+    #folder-view button, .folder-picker, #folder-view summary {
       font: inherit;
       color: var(--main-text-color);
-      background: var(--primary-lightest-2);
-      border: 1px solid var(--primary-dark);
-      border-radius: 5px;
-      padding: 0.4rem 0.6rem;
       cursor: pointer;
     }
     .folder-picker {
       position: relative;
       overflow: hidden;
+      flex-shrink: 0;
+      color: var(--primary-dark);
+      border: 1px solid var(--primary-dark);
+      border-radius: 5px;
+      padding: 0.4rem 0.6rem;
     }
     .folder-picker input {
       position: absolute;
@@ -480,7 +504,7 @@ export class NikkuMain extends LitElement {
       opacity: 0;
       cursor: pointer;
     }
-    .folder-picker:focus-within, #folder-view button:focus-visible {
+    .folder-picker:focus-within, #folder-view button:focus-visible, #folder-view summary:focus-visible {
       outline: 2px solid var(--primary-dark);
       outline-offset: 2px;
     }
@@ -488,32 +512,87 @@ export class NikkuMain extends LitElement {
       opacity: 0.5;
       cursor: default;
     }
-    #folder-hint {
-      font-size: 12px;
-      font-weight: 400;
+    #folder-view details {
+      border-top: 1px solid var(--primary-light);
     }
-    .folder-heading, .file-path {
+    #folder-view summary {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.7rem 1rem;
+      background: var(--white-lighter);
+      list-style: none;
+    }
+    #folder-view summary::-webkit-details-marker {
+      display: none;
+    }
+    #folder-view summary::after {
+      content: '⌄';
+      margin-left: auto;
+      font-size: 1.1rem;
+      transform: rotate(0deg);
+    }
+    #folder-view details:not([open]) summary::after {
+      transform: rotate(-90deg);
+    }
+    .folder-name, .file-path {
       overflow-wrap: anywhere;
+    }
+    .folder-name {
+      font-weight: 600;
+    }
+    .file-count {
+      color: var(--primary-dark);
+      font-size: 12px;
+      white-space: nowrap;
     }
     #folder-view ul {
       list-style: none;
       margin: 0;
-      padding: 2px;
+      padding: 0;
       max-height: 20rem;
       overflow: auto;
+      background: var(--white-lighter);
+      border-top: 1px solid var(--primary-light);
+    }
+    #folder-view li {
+      display: flex;
+      align-items: stretch;
+      border-left: 3px solid transparent;
+      border-bottom: 1px solid var(--primary-lightest-2);
+    }
+    #folder-view li:last-child {
+      border-bottom: 0;
+    }
+    #folder-view li:hover, #folder-view li.selected {
+      background: var(--primary-lightest-2);
+    }
+    #folder-view li.current {
+      border-left-color: var(--primary-dark);
     }
     #folder-view .folder-item {
-      width: 100%;
+      min-width: 0;
+      flex: 1;
       display: flex;
+      align-items: center;
       justify-content: space-between;
       gap: 1rem;
       text-align: left;
       background: transparent;
-      border-color: transparent;
+      border: 0;
+      border-radius: 0;
+      padding: 0.65rem 0.75rem;
     }
-    #folder-view .folder-item:hover, #folder-view .folder-item.selected {
-      background: var(--primary-lightest-2);
-      border-color: var(--primary-light);
+    #folder-view .play-file {
+      width: 2.75rem;
+      flex: 0 0 2.75rem;
+      color: var(--primary-dark);
+      background: transparent;
+      border: 0;
+      border-left: 1px solid transparent;
+    }
+    #folder-view li:hover .play-file, #folder-view .play-file:focus-visible {
+      border-left-color: var(--primary-light);
     }
     .current-label {
       font-size: 12px;
@@ -616,6 +695,12 @@ export class NikkuMain extends LitElement {
     }
 
     @media (max-width: 640px) {
+      .folder-toolbar {
+        align-items: flex-start;
+      }
+      .folder-toolbar p {
+        max-width: 12rem;
+      }
       #main {
         margin-top: 50px;
         grid-template-columns: minmax(0, 1fr) 80px minmax(0, 1fr);
