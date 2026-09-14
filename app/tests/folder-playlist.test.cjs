@@ -16,7 +16,7 @@ function loadSource(path, dependencies, globals = {}) {
   runInNewContext(outputText, { exports, require: (name) => {
     assert.ok(name in dependencies, 'Unexpected dependency: ' + name);
     return dependencies[name];
-  }, URL, console, ...globals });
+  }, URL, console: { ...console, error() {} }, ...globals });
   return exports;
 }
 function handlers(result, name) {
@@ -151,4 +151,72 @@ test('play resumes a suspended context after initial samples are loaded', async 
   await player.play();
   assert.equal(resumed, 1);
   assert.equal(played, 1);
+});
+
+// The controls use native buttons/ranges; verify their events and exposed state.
+function control(name, className) {
+  const events = [];
+  const dependencies = {
+    lit: { html: template, css: template, LitElement: class {
+      dispatchEvent(event) { events.push(event); }
+    } },
+    'lit/decorators.js': { customElement: () => (value) => value, property: () => () => {} },
+    'lit/directives/class-map.js': { classMap: (value) => value },
+    'lit/directives/unsafe-html.js': { unsafeHTML: (value) => value },
+  };
+  for (const icon of ['loop', 'play', 'pause', 'volume', 'volume-icon-muted']) {
+    const path = icon === 'volume-icon-muted' ? icon : icon + '-icon';
+    dependencies['../../assets/' + path + '.svg?raw'] = { default: '<svg></svg>' };
+  }
+  const exports = loadSource('../src/elements/controls-' + name + '.ts', dependencies, {
+    CustomEvent: class { constructor(type, options) { this.type = type; this.detail = options.detail; } },
+  });
+  return { element: new exports[className](), events };
+}
+function boundValue(result, attribute) {
+  return result.values[result.strings.findIndex((part) => part.endsWith(attribute + '='))];
+}
+test('play/pause and loop expose their names, toggle state and honor disabled', () => {
+  for (const [name, className, eventType] of [
+    ['play-pause', 'ControlsPlayPause', 'playPauseClick'], ['loop', 'ControlsLoop', 'loopClick'],
+  ]) {
+    const { element, events } = control(name, className);
+    if (name === 'play-pause') assert.equal(boundValue(element.render(), 'aria-label'), 'Play');
+    else assert.equal(boundValue(element.render(), 'aria-pressed'), true);
+    handlers(element.render(), 'click')[0].call(element);
+    assert.equal(events[0].type, eventType);
+    if (name === 'play-pause') assert.equal(boundValue(element.render(), 'aria-label'), 'Pause');
+    else assert.equal(boundValue(element.render(), 'aria-pressed'), false);
+    element.disabled = true;
+    assert.equal(boundValue(element.render(), '?disabled'), true);
+    handlers(element.render(), 'click')[0].call(element);
+    assert.equal(events.length, 1);
+  }
+});
+test('volume range changes unmute, preserve percentage semantics and respect disabled', () => {
+  const { element, events } = control('volume', 'ControlsVolume');
+  handlers(element.render(), 'click')[0].call(element);
+  assert.equal(boundValue(element.render(), 'aria-pressed'), true);
+  assert.equal(boundValue(element.render(), 'aria-valuetext'), '100%, muted');
+  handlers(element.render(), 'input')[0].call(element, { target: { value: '35' } });
+  assert.equal(element.volume, 0.35);
+  assert.equal(element.muted, false);
+  assert.equal(events[1].type, 'volumeChange');
+  assert.equal(events[1].detail.volume, 0.35);
+  element.disabled = true;
+  handlers(element.render(), 'input')[0].call(element, { target: { value: '80' } });
+  handlers(element.render(), 'click')[0].call(element);
+  assert.equal(events.length, 2);
+});
+test('seek range exposes readable time and emits seconds, but cannot seek while disabled', () => {
+  const { element, events } = control('progress', 'ControlsProgress');
+  assert.equal(boundValue(element.render(), '?disabled'), true);
+  element.max = 125;
+  element.value = 62;
+  assert.equal(boundValue(element.render(), 'aria-valuetext'), '1 minute 2 seconds of 2 minutes 5 seconds');
+  handlers(element.render(), 'input')[0].call(element, { target: { value: '63' } });
+  assert.equal(events[0].detail.value, 63);
+  element.disabled = true;
+  handlers(element.render(), 'input')[0].call(element, { target: { value: '70' } });
+  assert.equal(events.length, 1);
 });

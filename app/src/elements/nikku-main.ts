@@ -71,22 +71,15 @@ export class NikkuMain extends LitElement {
     return html`
       <div
         id="error"
-        class=${classMap({
-          hidden: !this.errorMessage,
-        })}
+        class=${this.errorMessage ? 'has-error' : ''}
+        role="alert"
+        aria-atomic="true"
       >
         ${this.errorMessage}
       </div>
-      <main id="main">
-        <div id="track-title">${this.trackTitle}</div>
-        <div id="controls-tracks">
-          <controls-tracks
-            ?disabled=${this.disabled}
-            count=${this.tracksCount}
-            .active=${this.tracksActive}
-            @tracksActiveChange=${this.#handleTracksActiveChange}
-          ></controls-tracks>
-        </div>
+      <main aria-label="Audio player">
+      <div id="main">
+        <div id="track-title" title=${this.trackTitle}>${this.trackTitle}</div>
         <div id="controls-time-display">
           <controls-time-display
             ?disabled=${this.disabled}
@@ -106,11 +99,13 @@ export class NikkuMain extends LitElement {
           <input
             type="file"
             id="controls-select-file"
+            aria-label="Select file"
             accept=".brstm,.bfstm"
-            ?disabled=${this.loading}
+            aria-disabled=${this.loading}
+            @click=${(event: MouseEvent) => { if (this.loading) event.preventDefault(); }}
             @change=${this.#handleFileInputChange}
           />
-          <span id="controls-select-file-custom"></span>
+          <span id="controls-select-file-custom" aria-hidden="true">Select file…</span>
         </label>
 
         <div id="controls-play-pause">
@@ -134,8 +129,16 @@ export class NikkuMain extends LitElement {
             @volumeChange=${this.#handleVolumeChange}
           ></controls-volume>
         </div>
-      </main>
-      <section id="folder-view" aria-label="Folder playlist" aria-busy=${this.loading}>
+        <div id="controls-tracks">
+          <controls-tracks
+            ?disabled=${this.disabled}
+            count=${this.tracksCount}
+            .active=${this.tracksActive}
+            @tracksActiveChange=${this.#handleTracksActiveChange}
+          ></controls-tracks>
+        </div>
+      </div>
+      <section id="folder-view" aria-label="Folder playlist">
         <div class="folder-toolbar">
           <label class="folder-picker">
             Select folder…
@@ -143,15 +146,16 @@ export class NikkuMain extends LitElement {
               aria-label="Select folder"
               @change=${this.#handleFolderInputChange} />
           </label>
-          <button ?disabled=${!this.selectedFile || this.loading}
+          <button ?disabled=${!this.selectedFile} aria-disabled=${this.loading}
             @click=${() => this.selectedFile && this.#loadFile(this.selectedFile)}>
             Play selected
           </button>
         </div>
-        <p id="folder-hint">Select a folder, then double-click a file to play it.
-          Subfolders are included.</p>
+        <p id="folder-hint">Select a folder, including subfolders. Double-click a file
+          or press Enter to play. You can also select a file and use Play selected.</p>
+        <p class="folder-heading" role="status" aria-atomic="true">${this.folderName
+          ? `${this.folderName} · ${this.folderFiles.length} files` : ''}</p>
         ${this.folderName ? html`
-          <p class="folder-heading">${this.folderName} · ${this.folderFiles.length} files</p>
           ${this.folderFiles.length ? html`
             <ul aria-describedby="folder-hint">
               ${this.folderFiles.map((file) => html`
@@ -159,17 +163,17 @@ export class NikkuMain extends LitElement {
                   <button class=${classMap({ 'folder-item': true, selected: file === this.selectedFile })}
                     aria-pressed=${file === this.selectedFile}
                     aria-current=${file === this.currentFile ? 'true' : 'false'}
-                    ?disabled=${this.loading}
-                    @click=${() => { this.selectedFile = file; }}
+                    aria-disabled=${this.loading}
+                    @click=${() => { if (!this.loading) this.selectedFile = file; }}
                     @dblclick=${() => this.#loadFile(file)}
                     @keydown=${(event: KeyboardEvent) => {
-                      if (event.key === 'Enter') {
+                      if (event.key === 'Enter' && !this.loading) {
                         event.preventDefault();
                         this.selectedFile = file;
                         void this.#loadFile(file);
                       }
                     }}>
-                    <span class="file-path">${file.webkitRelativePath.split('/').slice(1).join('/') || file.name}</span>
+                    <span class="file-path"><span aria-hidden="true">${file === this.selectedFile ? '✓ ' : ''}</span>${file.webkitRelativePath.split('/').slice(1).join('/') || file.name}</span>
                     ${file === this.currentFile ? html`<span class="current-label">Current</span>` : ''}
                   </button>
                 </li>
@@ -177,8 +181,13 @@ export class NikkuMain extends LitElement {
             </ul>
           ` : html`<p>No BRSTM or BFSTM files found in this folder.</p>`}
         ` : ''}
-        <p role="status">${this.loading ? 'Loading audio…' : ''}</p>
       </section>
+      <p role="status" aria-atomic="true">${this.loading
+        ? 'Loading audio…'
+        : this.currentFile
+          ? `${this.playPauseIcon === 'pause' ? 'Playing' : 'Paused'}: ${this.trackTitle}`
+          : ''}</p>
+      </main>
       <div
         id="drag-and-drop-overlay"
         class=${classMap({
@@ -230,7 +239,8 @@ export class NikkuMain extends LitElement {
   }
 
   #showError(error: Error) {
-    this.errorMessage = error.message + (error.stack ? '\n' + error.stack : '');
+    this.errorMessage = error.message;
+    console.error(error);
   }
   #clearError() {
     this.errorMessage = '';
@@ -239,7 +249,6 @@ export class NikkuMain extends LitElement {
   #handleFileInputChange(e: InputEvent) {
     const files = (e.target as HTMLInputElement).files;
     if (!files || !files.length) {
-      this.#showError(new Error('No file read'));
       return;
     }
 
@@ -397,7 +406,7 @@ export class NikkuMain extends LitElement {
       font: inherit;
       color: var(--main-text-color);
       background: var(--primary-lightest-2);
-      border: 1px solid var(--primary-light);
+      border: 1px solid var(--primary-dark);
       border-radius: 5px;
       padding: 0.4rem 0.6rem;
       cursor: pointer;
@@ -417,7 +426,7 @@ export class NikkuMain extends LitElement {
       outline: 2px solid var(--primary-dark);
       outline-offset: 2px;
     }
-    #folder-view button:disabled {
+    #folder-view button:disabled, #folder-view button[aria-disabled='true'] {
       opacity: 0.5;
       cursor: default;
     }
@@ -457,12 +466,15 @@ export class NikkuMain extends LitElement {
       padding: 0.6rem;
       margin-top: 0.6rem;
       margin-bottom: 0.6rem;
-      color: #ff4136;
+      color: var(--error-color);
+      overflow-wrap: anywhere;
       border: 1px solid currentColor;
       padding: 0.6rem;
     }
-    #error.hidden {
-      display: none;
+    #error:not(.has-error) {
+      padding: 0;
+      border: 0;
+      margin: 0;
     }
     #drag-and-drop-overlay {
       position: fixed;
@@ -496,7 +508,7 @@ export class NikkuMain extends LitElement {
       margin-top: 100px;
       display: grid;
       grid-template-columns: 2fr 80px 1fr 1fr;
-      grid-template-rows: 20px 15px 24px 80px auto;
+      grid-template-rows: auto 28px 32px 80px auto;
       row-gap: 10px;
       column-gap: 2rem;
       margin-bottom: 10px;
@@ -548,7 +560,9 @@ export class NikkuMain extends LitElement {
     @media (max-width: 640px) {
       #main {
         margin-top: 50px;
-        grid-template-rows: 20px 20px 15px 24px 80px auto;
+        grid-template-columns: minmax(0, 1fr) 80px minmax(0, 1fr);
+        grid-template-rows: auto auto 28px 32px 80px auto;
+        column-gap: 0.75rem;
       }
       #track-title {
         grid-column: 1 / span 3;
@@ -586,12 +600,12 @@ export class NikkuMain extends LitElement {
       position: relative;
       display: inline-block;
       cursor: pointer;
-      width: 80px;
+      width: 100px;
     }
     #controls-select-file-container > input {
       margin: 0;
       opacity: 0;
-      height: 24px;
+      height: 32px;
       width: 100%;
     }
     #controls-select-file-custom {
@@ -604,26 +618,26 @@ export class NikkuMain extends LitElement {
 
       box-sizing: border-box;
       border-radius: 5px;
-      color: var(--primary);
+      color: var(--primary-dark);
+      border: 1px solid var(--primary-dark);
       background-color: var(--primary-lightest-2);
       user-select: none;
       font-size: 12px;
       line-height: 16px;
-      height: 24px;
+      height: 32px;
       display: inline-flex;
       align-items: center;
       padding: 2px 4px;
       text-align: center;
     }
-    #controls-select-file-custom:after {
-      content: 'Select file...';
-    }
     #controls-select-file-custom:hover {
       background-color: var(--primary-lightest-1);
     }
 
-    #controls-select-fileinput:focus ~ #controls-select-file-custom {
-      box-shadow: 0 0 0 0.075rem #fff, 0 0 0 0.2rem var(--primary-dark);
+    #controls-select-file-container:focus-within {
+      outline: 2px solid var(--primary-dark);
+      outline-offset: 2px;
+      border-radius: 5px;
     }
 
     @media (prefers-color-scheme: dark) {

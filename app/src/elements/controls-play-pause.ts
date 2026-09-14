@@ -15,11 +15,20 @@ export class ControlsPlayPause extends LitElement {
   static styles = css`
     .button {
       all: initial;
+      color: var(--primary-dark);
       width: 80px;
       height: 80px;
       border-radius: 40px;
     }
+    .button:focus-visible {
+      outline: 2px solid var(--primary-dark);
+      outline-offset: 3px;
+    }
+    .button:disabled {
+      opacity: 0.5;
+    }
     svg {
+      fill: currentColor;
       width: 100%;
       height: 100%;
     }
@@ -39,10 +48,12 @@ export class ControlsPlayPause extends LitElement {
         button: true,
         disabled: this.disabled,
       })}
+      type="button"
+      aria-label=${this.mode === 'play' ? 'Play' : 'Pause'}
       ?disabled=${this.disabled}
       @click=${this.#handleClick}
     >
-      ${this.mode === 'play' ? unsafeHTML(IconPlay) : unsafeHTML(IconPause)}
+      <span aria-hidden="true">${this.mode === 'play' ? unsafeHTML(IconPlay) : unsafeHTML(IconPause)}</span>
     </button>`;
   }
   #handleClick() {

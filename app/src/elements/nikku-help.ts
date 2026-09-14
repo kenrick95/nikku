@@ -1,12 +1,9 @@
 import { html, css, LitElement } from 'lit';
-import { customElement, state } from 'lit/decorators.js';
+import { customElement } from 'lit/decorators.js';
 import { createRef, ref, Ref } from 'lit/directives/ref.js';
 
 @customElement('nikku-help')
 export class NikkuHelp extends LitElement {
-  @state()
-  private dialogOpen: boolean = false;
-
   dialog: Ref<HTMLDialogElement> = createRef();
 
   isDialogSupported = !!self.HTMLDialogElement;
@@ -26,26 +23,30 @@ export class NikkuHelp extends LitElement {
 
   render() {
     if (!this.isDialogSupported) {
-      return html`<span id="help" title=${this.explanations.join('\n')}
-        ><slot></slot>
-      </span>`;
+      return html`<details><summary><slot></slot></summary>
+        ${this.explanations.map((exp) => html`<p>${exp}</p>`)}
+      </details>`;
     }
 
     return html`
-      <span
+      <button
+        type="button"
         id="help"
+        aria-label="About BRSTM"
+        aria-haspopup="dialog"
         @click=${this.#openDialog}
         title="Click to open explanation"
         ><slot></slot
-      ></span>
+      ></button>
       <dialog
         id="brstm-explanation"
-        ?open=${this.dialogOpen}
+        aria-labelledby="help-title"
         ${ref(this.dialog)}
       >
+        <h2 id="help-title">About BRSTM</h2>
         ${this.explanations.map((exp) => html`<p>${exp}</p>`)}
 
-        <button @click=${this.#closeDialog}>OK</button>
+        <button type="button" autofocus @click=${this.#closeDialog}>Close</button>
       </dialog>
     `;
   }
@@ -64,20 +65,32 @@ export class NikkuHelp extends LitElement {
       backdrop-filter: blur(5px);
     }
     #help {
+      font: inherit;
+      color: inherit;
+      background: transparent;
+      padding: 0 2px;
+      min-width: 0;
+      min-height: 28px;
+      outline: none;
       text-decoration: underline;
     }
+    button:focus-visible, #help:focus-visible, summary:focus-visible {
+      outline: 2px solid var(--primary-dark);
+      outline-offset: 2px;
+    }
+    details { display: inline-block; }
     #help:hover {
       cursor: help;
     }
     button {
       box-sizing: border-box;
       border-radius: 5px;
-      color: var(--primary);
+      color: var(--primary-dark);
       background-color: var(--primary-lightest-2);
       outline-color: currentColor;
 
       min-width: 4rem;
-      min-height: 1.6rem;
+      min-height: 2rem;
       border: none;
       border-radius: 5px;
       outline-style: solid;

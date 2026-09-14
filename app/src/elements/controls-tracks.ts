@@ -21,29 +21,30 @@ export class ControlsTracks extends LitElement {
       margin-top: 6px;
       user-select: none;
     }
+    label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 28px;
+      cursor: pointer;
+    }
+    input:focus-visible {
+      outline: 2px solid var(--primary-dark);
+      outline-offset: 2px;
+    }
     input[type='checkbox'] {
-      appearance: none;
+      accent-color: var(--primary-dark);
       position: relative;
       background: var(--primary-lightest-2);
       border-radius: 2px;
       padding: 2px;
       margin: 0;
 
-      width: 15px;
-      height: 15px;
+      width: 20px;
+      height: 20px;
       display: inline-block;
       vertical-align: middle;
       top: -1px;
-    }
-    input[type='checkbox']:checked:after {
-      content: '\u2714';
-      position: absolute;
-      left: 2px;
-      top: 0;
-
-      font-size: 12px;
-      line-height: 13px;
-      color: var(--primary-darker);
     }
   `;
 
@@ -51,6 +52,8 @@ export class ControlsTracks extends LitElement {
     return html`
       <div
         id="container"
+        role="group"
+        aria-label="Active audio tracks"
         class=${classMap({
           hidden: this.count === 1 || this.disabled,
         })}
@@ -64,7 +67,8 @@ export class ControlsTracks extends LitElement {
                 <label>
                   <input
                     type="checkbox"
-                    ?checked="${this.active[i]}"
+                    .checked=${this.active[i]}
+                    ?disabled=${this.disabled}
                     @input=${(e: InputEvent) => {
                       const newChecked = (e.target as HTMLInputElement).checked;
                       const newStateActive = [...this.active];

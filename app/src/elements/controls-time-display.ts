@@ -19,8 +19,17 @@ export class ControlsTimeDisplay extends LitElement {
       margin-inline-start: 4px;
       margin-inline-end: 4px;
     }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
     .time {
-      width: 3em;
+      min-width: 3em;
       text-align: center;
     }
     @media (max-width: 640px) {
@@ -34,10 +43,10 @@ export class ControlsTimeDisplay extends LitElement {
   `;
 
   render() {
-    return html` <div class="progress-time-display">
-      <div class="time" id="current">${getFormattedTime(this.value)}</div>
-      <div class="separator">/</div>
-      <div class="time" id="total">${getFormattedTime(this.max)}</div>
+    return html` <div class="progress-time-display" role="group" aria-label="Playback time">
+      <div class="time" id="current"><span class="sr-only">Elapsed </span>${getFormattedTime(this.value)}</div>
+      <div class="separator" aria-hidden="true">/</div>
+      <div class="time" id="total"><span class="sr-only">Duration </span>${getFormattedTime(this.max)}</div>
     </div>`;
   }
 }

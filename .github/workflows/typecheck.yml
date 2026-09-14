@@ -35,3 +35,5 @@ jobs:
       run: pnpm run -r build-declaration
     - name: Typecheck
       run: pnpm run -r typecheck
+    - name: Player tests
+      run: pnpm --filter @kenrick95/nikku test
