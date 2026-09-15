@@ -9,14 +9,17 @@ export class ControlsProgress extends LitElement {
   @property({ type: Number }) max = 0;
 
   static styles = css`
-    :host { display: block; }
+    :host {
+      display: block;
+      height: 15px;
+    }
     input {
       appearance: none;
       display: block;
       box-sizing: border-box;
       width: 100%;
-      height: 15px;
-      margin: 0;
+      height: 24px;
+      margin: -4.5px 0 0;
       background: transparent;
       cursor: pointer;
     }

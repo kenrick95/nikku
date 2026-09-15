@@ -30,6 +30,7 @@ function handlers(result, name) {
 function setup() {
   const calls = [];
   const focused = [];
+  const scrolled = [];
   class AudioPlayer {
     constructor(options) { this.options = options; }
     async destroy() { calls.push('destroy'); }
@@ -49,6 +50,7 @@ function setup() {
       updateComplete = Promise.resolve();
       renderRoot = { querySelectorAll: () => Array.from({ length: 10 }, (_, index) => ({
         focus() { focused.push(index); },
+        scrollIntoView(options) { scrolled.push([index, options.block]); },
       })) };
     } },
     'lit/decorators.js': { customElement: () => (value) => value, state: () => () => {} },
@@ -58,7 +60,7 @@ function setup() {
     '../media-session': loadSource('../src/media-session.ts', {}),
     comlink: { transfer: (value) => value },
   }, { ComlinkWorker: Worker });
-  return { app: new NikkuMain(), calls, focused };
+  return { app: new NikkuMain(), calls, focused, scrolled };
 }
 const file = (path) => ({ name: path.split('/').at(-1), webkitRelativePath: path, arrayBuffer: async () => new ArrayBuffer(8) });
 async function chooseFolder(app, files) {
@@ -81,13 +83,13 @@ test('filters and sorts nested files, preserves cancellation, and handles no mat
   assert.equal(app.selectedFile, null);
   assert.equal(app.currentFile, null);
 });
-test('double-click plays files, moves focus, serializes loads, and destroys before changing decoder', async () => {
+test('single-click plays files, moves focus, serializes loads, and destroys before changing decoder', async () => {
   const { app, calls, focused } = setup();
   const files = [file('Music/a.brstm'), file('Music/b.bfstm')];
   app.loop = 'off';
   app.muted = true;
   const selecting = chooseFolder(app, files);
-  const [, second] = handlers(app.render(), 'dblclick');
+  const [, , second] = handlers(app.render(), 'click');
   await second();
   await selecting;
   assert.equal(app.currentFile, files[0]);
@@ -114,32 +116,38 @@ test('selecting another folder starts its first file', async () => {
   assert.deepEqual(calls.slice(0, 2), ['destroy', 'decode']);
 });
 test('a non-looping file advances to the next file when playback ends', async () => {
-  const { app } = setup();
+  const { app, focused, scrolled } = setup();
   const files = [file('Music/a.brstm'), file('Music/b.bfstm')];
   app.loop = 'off';
   await chooseFolder(app, files);
   await app.audioPlayer.options.onEnded();
   assert.equal(app.currentFile, files[1]);
   assert.equal(app.trackTitle, 'b.bfstm');
+  assert.deepEqual(scrolled.at(-1), [1, 'nearest']);
+  assert.equal(focused.length, 0);
 });
-test('a row play button selects and focuses the file it starts', async () => {
+test('a filename click selects and focuses the file it starts', async () => {
   const { app, focused } = setup();
   const files = [file('Music/a.brstm'), file('Music/b.bfstm')];
   await chooseFolder(app, files);
-  await handlers(app.render(), 'click').at(-1)();
+  await handlers(app.render(), 'click')[2]();
   assert.equal(app.currentFile, files[1]);
   assert.equal(app.selectedFile, files[1]);
   assert.equal(focused.at(-1), 1);
 });
 test('read failure releases loading state and allows another file to play', async () => {
   const { app } = setup();
+  await chooseFolder(app, [file('Old/valid.brstm')]);
+  assert.equal(app.progressMax, 10);
   const broken = file('Music/broken.brstm');
   broken.arrayBuffer = async () => { throw new Error('Cannot read file'); };
   await chooseFolder(app, [broken, file('Music/valid.bfstm')]);
-  const [, second] = handlers(app.render(), 'dblclick');
+  const [, , second] = handlers(app.render(), 'click');
   assert.match(app.errorMessage, /Cannot read file/);
   assert.equal(app.loading, false);
   assert.equal(app.disabled, true);
+  assert.equal(app.progressMax, 0);
+  assert.equal(app.timeDisplayMax, 0);
   await second();
   assert.equal(app.errorMessage, '');
   assert.equal(app.disabled, false);

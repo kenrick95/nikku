@@ -94,6 +94,8 @@ export class NikkuMain extends LitElement {
     if (!file) return;
     this.selectedFile = file;
     await this.#loadFile(file);
+    await this.updateComplete;
+    this.#getFolderItem(file)?.scrollIntoView({ block: 'nearest' });
   }
 
   async #playFolderFile(file: File) {
@@ -101,9 +103,15 @@ export class NikkuMain extends LitElement {
     this.selectedFile = file;
     await this.#loadFile(file);
     await this.updateComplete;
+    const item = this.#getFolderItem(file);
+    item?.scrollIntoView({ block: 'nearest' });
+    item?.focus();
+  }
+
+  #getFolderItem(file: File) {
     const index = this.folderFiles.indexOf(file);
-    if (index < 0) return;
-    this.renderRoot.querySelectorAll<HTMLButtonElement>('.folder-item')[index]?.focus();
+    if (index < 0) return undefined;
+    return this.renderRoot.querySelectorAll<HTMLButtonElement>('.folder-item')[index];
   }
 
   private workerInstance = new ComlinkWorker(new URL('../audio-decoder/worker', import.meta.url))
@@ -130,9 +138,11 @@ export class NikkuMain extends LitElement {
       >
         ${this.errorMessage}
       </div>
-      <main aria-label="Audio player">
+      <main aria-label="Audio player" aria-busy=${this.loading}>
       <div id="main">
-        <div id="track-title" title=${this.trackTitle}>${this.trackTitle}</div>
+        <div id="track-title" title=${this.loading ? 'Loading audio' : this.trackTitle}>${this.loading
+          ? `Loading ${this.selectedFile?.name || 'audio'}…`
+          : this.trackTitle}</div>
         <div id="controls-time-display">
           <controls-time-display
             ?disabled=${this.disabled}
@@ -149,22 +159,20 @@ export class NikkuMain extends LitElement {
           ></controls-progress>
         </div>
         <div id="controls-select-sources">
-          <label class="source-picker">
+          <label class=${classMap({ 'source-picker': true, loading: this.loading })}>
             <input
               type="file"
               aria-label="Select file"
               accept=".brstm,.bfstm"
-              aria-disabled=${this.loading}
-              @click=${(event: MouseEvent) => { if (this.loading) event.preventDefault(); }}
+              ?disabled=${this.loading}
               @change=${this.#handleFileInputChange}
             />
             <span aria-hidden="true">Select file…</span>
           </label>
-          <label class="source-picker">
+          <label class=${classMap({ 'source-picker': true, loading: this.loading })}>
             <input type="file" webkitdirectory multiple
               aria-label="Select folder"
-              aria-disabled=${this.loading}
-              @click=${(event: MouseEvent) => { if (this.loading) event.preventDefault(); }}
+              ?disabled=${this.loading}
               @change=${this.#handleFolderInputChange} />
             <span aria-hidden="true">Select folder…</span>
           </label>
@@ -213,21 +221,13 @@ export class NikkuMain extends LitElement {
                     <button class="folder-item"
                       aria-pressed=${file === this.selectedFile}
                       aria-current=${file === this.currentFile ? 'true' : 'false'}
-                      aria-disabled=${this.loading}
-                      @click=${() => { if (!this.loading) this.selectedFile = file; }}
-                      @dblclick=${() => this.#playFolderFile(file)}
-                      @keydown=${(event: KeyboardEvent) => {
-                        if (event.key === 'Enter' && !this.loading) {
-                          event.preventDefault();
-                          this.selectedFile = file;
-                          void this.#loadFile(file);
-                        }
-                      }}>
+                      ?disabled=${this.loading}
+                      @click=${() => this.#playFolderFile(file)}>
                       <span class="file-path">${file.webkitRelativePath.split('/').slice(1).join('/') || file.name}</span>
                       ${file === this.currentFile ? html`<span class="current-label">${this.playPauseIcon === 'pause' ? 'Playing' : 'Current'}</span>` : ''}
                     </button>
                     <button class="play-file" aria-label=${`Play ${file.name}`}
-                      aria-disabled=${this.loading}
+                      ?disabled=${this.loading}
                       @click=${() => this.#playFolderFile(file)}>
                       <span aria-hidden="true">▶</span>
                     </button>
@@ -237,7 +237,7 @@ export class NikkuMain extends LitElement {
           ` : html`<p role="status">No BRSTM or BFSTM files found in this folder.</p>`}
         </section>
       ` : ''}
-      <p role="status" aria-atomic="true">${this.loading
+      <p class="sr-only" role="status" aria-atomic="true">${this.loading
         ? 'Loading audio…'
         : this.currentFile
           ? `${this.playPauseIcon === 'pause' ? 'Playing' : 'Paused'}: ${this.trackTitle}`
@@ -375,7 +375,9 @@ export class NikkuMain extends LitElement {
       this.currentFile = null;
       this.trackTitle = '';
       this.progressValue = 0;
+      this.progressMax = 0;
       this.timeDisplayValue = 0;
+      this.timeDisplayMax = 0;
       const buffer = await file.arrayBuffer();
       await this.workerInstance.init(transfer(buffer, [buffer]));
       const metadata = await this.workerInstance.getMetadata();
@@ -493,6 +495,16 @@ export class NikkuMain extends LitElement {
   }
 
   static styles = css`
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
     #folder-view {
       margin-top: 1.5rem;
       border: 1px solid var(--primary-light);
@@ -734,11 +746,16 @@ export class NikkuMain extends LitElement {
     .source-picker:last-child {
       width: 94px;
     }
+    .source-picker.loading {
+      opacity: 0.55;
+      cursor: wait;
+    }
     .source-picker > input {
       margin: 0;
       opacity: 0;
       height: 24px;
       width: 100%;
+      cursor: inherit;
     }
     .source-picker > span {
       position: absolute;

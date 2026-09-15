@@ -57,8 +57,10 @@
         })()
       ) {
         document.addEventListener('DOMContentLoaded', function () {
-          document.getElementById('unsupported').style.display = 'block';
-          document.getElementById('main').style.display = 'none';
+          const unsupported = document.getElementById('unsupported');
+          const player = document.querySelector('nikku-main');
+          if (unsupported) unsupported.style.display = 'block';
+          if (player) player.style.display = 'none';
         });
       }
     </script>

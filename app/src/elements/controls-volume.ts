@@ -25,7 +25,7 @@ export class ControlsVolume extends LitElement {
     input {
       appearance: none;
       width: 100px;
-      height: 10px;
+      height: 24px;
       margin: 0;
       background: transparent;
       cursor: pointer;
