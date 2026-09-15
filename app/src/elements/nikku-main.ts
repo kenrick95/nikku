@@ -324,7 +324,32 @@ export class NikkuMain extends LitElement {
       .sort((a, b) => a.webkitRelativePath.localeCompare(b.webkitRelativePath, undefined, { numeric: true }));
     this.selectedFile = this.folderFiles[0] || null;
     input.value = '';
+    if (this.selectedFile) {
+      void this.#loadFile(this.selectedFile);
+    } else {
+      void this.#clearPlayback();
+    }
+  }
+
+  async #clearPlayback() {
+    if (this.loading) return;
+    this.loading = true;
+    this.disabled = true;
     this.#syncMediaSession();
+    try {
+      await this.audioPlayer?.destroy();
+      this.currentFile = null;
+      this.trackTitle = '';
+      this.progressValue = 0;
+      this.progressMax = 0;
+      this.timeDisplayValue = 0;
+      this.timeDisplayMax = 0;
+      this.playPauseIcon = 'play';
+      this.timer.stop();
+    } finally {
+      this.loading = false;
+      this.#syncMediaSession();
+    }
   }
 
   async #loadFile(file: File) {

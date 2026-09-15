@@ -61,32 +61,35 @@ function setup() {
   return { app: new NikkuMain(), calls, focused };
 }
 const file = (path) => ({ name: path.split('/').at(-1), webkitRelativePath: path, arrayBuffer: async () => new ArrayBuffer(8) });
-function chooseFolder(app, files) {
+async function chooseFolder(app, files) {
   const input = { files, value: 'folder' };
   handlers(app.render(), 'change')[1].call(app, { target: input });
+  await new Promise((resolve) => setImmediate(resolve));
   return input;
 }
-test('filters and sorts nested files, preserves cancellation, and handles no matches', () => {
+test('filters and sorts nested files, preserves cancellation, and handles no matches', async () => {
   const { app } = setup();
   const files = [file('Music/track10.BFSTM'), file('Music/track2.brstm'), file('Music/sub/song.bfstm'), file('Music/readme.txt')];
-  assert.equal(chooseFolder(app, files).value, '');
+  assert.equal((await chooseFolder(app, files)).value, '');
   assert.deepEqual(Array.from(app.folderFiles, (item) => item.webkitRelativePath), [
     'Music/sub/song.bfstm', 'Music/track2.brstm', 'Music/track10.BFSTM',
   ]);
-  chooseFolder(app, []);
+  await chooseFolder(app, []);
   assert.equal(app.folderFiles.length, 3);
-  chooseFolder(app, [file('Other/readme.txt')]);
+  await chooseFolder(app, [file('Other/readme.txt')]);
   assert.equal(app.folderFiles.length, 0);
   assert.equal(app.selectedFile, null);
+  assert.equal(app.currentFile, null);
 });
 test('double-click plays files, moves focus, serializes loads, and destroys before changing decoder', async () => {
   const { app, calls, focused } = setup();
   const files = [file('Music/a.brstm'), file('Music/b.bfstm')];
-  chooseFolder(app, files);
   app.loop = 'off';
   app.muted = true;
-  const [first, second] = handlers(app.render(), 'dblclick');
-  await Promise.all([first(), second()]);
+  const selecting = chooseFolder(app, files);
+  const [, second] = handlers(app.render(), 'dblclick');
+  await second();
+  await selecting;
   assert.equal(app.currentFile, files[0]);
   assert.equal(calls.filter((call) => call === 'decode').length, 1);
   assert.ok(calls.some((call) => call[0] === 'loop' && call[1] === false));
@@ -99,12 +102,22 @@ test('double-click plays files, moves focus, serializes loads, and destroys befo
   assert.equal(app.selectedFile, files[1]);
   assert.equal(focused.at(-1), 1);
 });
+test('selecting another folder starts its first file', async () => {
+  const { app, calls } = setup();
+  await chooseFolder(app, [file('First/old.brstm')]);
+  const nextFiles = [file('Second/a-new.brstm'), file('Second/b-later.bfstm')];
+  calls.length = 0;
+  await chooseFolder(app, nextFiles);
+  assert.equal(app.folderName, 'Second');
+  assert.equal(app.currentFile, nextFiles[0]);
+  assert.equal(app.selectedFile, nextFiles[0]);
+  assert.deepEqual(calls.slice(0, 2), ['destroy', 'decode']);
+});
 test('a non-looping file advances to the next file when playback ends', async () => {
   const { app } = setup();
   const files = [file('Music/a.brstm'), file('Music/b.bfstm')];
-  chooseFolder(app, files);
-  const [first] = handlers(app.render(), 'dblclick');
-  await first();
+  app.loop = 'off';
+  await chooseFolder(app, files);
   await app.audioPlayer.options.onEnded();
   assert.equal(app.currentFile, files[1]);
   assert.equal(app.trackTitle, 'b.bfstm');
@@ -112,7 +125,7 @@ test('a non-looping file advances to the next file when playback ends', async ()
 test('a row play button selects and focuses the file it starts', async () => {
   const { app, focused } = setup();
   const files = [file('Music/a.brstm'), file('Music/b.bfstm')];
-  chooseFolder(app, files);
+  await chooseFolder(app, files);
   await handlers(app.render(), 'click').at(-1)();
   assert.equal(app.currentFile, files[1]);
   assert.equal(app.selectedFile, files[1]);
@@ -122,9 +135,8 @@ test('read failure releases loading state and allows another file to play', asyn
   const { app } = setup();
   const broken = file('Music/broken.brstm');
   broken.arrayBuffer = async () => { throw new Error('Cannot read file'); };
-  chooseFolder(app, [broken, file('Music/valid.bfstm')]);
-  const [first, second] = handlers(app.render(), 'dblclick');
-  await first();
+  await chooseFolder(app, [broken, file('Music/valid.bfstm')]);
+  const [, second] = handlers(app.render(), 'dblclick');
   assert.match(app.errorMessage, /Cannot read file/);
   assert.equal(app.loading, false);
   assert.equal(app.disabled, true);
@@ -134,7 +146,7 @@ test('read failure releases loading state and allows another file to play', asyn
 });
 test('selecting a standalone file clears the folder playlist', async () => {
   const { app } = setup();
-  chooseFolder(app, [file('Music/a.brstm'), file('Music/b.bfstm')]);
+  await chooseFolder(app, [file('Music/a.brstm'), file('Music/b.bfstm')]);
   const standalone = file('standalone.brstm');
   const input = { files: [standalone], value: 'standalone' };
   handlers(app.render(), 'change')[0].call(app, { target: input });
