@@ -219,17 +219,12 @@ export class NikkuMain extends LitElement {
                 ${this.folderFiles.map((file) => html`
                   <li class=${classMap({ selected: file === this.selectedFile, current: file === this.currentFile })}>
                     <button class="folder-item"
-                      aria-pressed=${file === this.selectedFile}
+                      aria-label=${`Play ${file.name}`}
                       aria-current=${file === this.currentFile ? 'true' : 'false'}
                       ?disabled=${this.loading}
                       @click=${() => this.#playFolderFile(file)}>
                       <span class="file-path">${file.webkitRelativePath.split('/').slice(1).join('/') || file.name}</span>
                       ${file === this.currentFile ? html`<span class="current-label">${this.playPauseIcon === 'pause' ? 'Playing' : 'Current'}</span>` : ''}
-                    </button>
-                    <button class="play-file" aria-label=${`Play ${file.name}`}
-                      ?disabled=${this.loading}
-                      @click=${() => this.#playFolderFile(file)}>
-                      <span aria-hidden="true">▶</span>
                     </button>
                   </li>
                 `)}
@@ -582,17 +577,6 @@ export class NikkuMain extends LitElement {
       border: 0;
       border-radius: 0;
       padding: 0.65rem 0.75rem;
-    }
-    #folder-view .play-file {
-      width: 2.75rem;
-      flex: 0 0 2.75rem;
-      color: var(--primary-dark);
-      background: transparent;
-      border: 0;
-      border-left: 1px solid transparent;
-    }
-    #folder-view li:hover .play-file, #folder-view .play-file:focus-visible {
-      border-left-color: var(--primary-light);
     }
     .current-label {
       font-size: 12px;

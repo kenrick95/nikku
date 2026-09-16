@@ -89,7 +89,7 @@ test('single-click plays files, moves focus, serializes loads, and destroys befo
   app.loop = 'off';
   app.muted = true;
   const selecting = chooseFolder(app, files);
-  const [, , second] = handlers(app.render(), 'click');
+  const [, second] = handlers(app.render(), 'click');
   await second();
   await selecting;
   assert.equal(app.currentFile, files[0]);
@@ -130,7 +130,7 @@ test('a filename click selects and focuses the file it starts', async () => {
   const { app, focused } = setup();
   const files = [file('Music/a.brstm'), file('Music/b.bfstm')];
   await chooseFolder(app, files);
-  await handlers(app.render(), 'click')[2]();
+  await handlers(app.render(), 'click')[1]();
   assert.equal(app.currentFile, files[1]);
   assert.equal(app.selectedFile, files[1]);
   assert.equal(focused.at(-1), 1);
@@ -142,7 +142,7 @@ test('read failure releases loading state and allows another file to play', asyn
   const broken = file('Music/broken.brstm');
   broken.arrayBuffer = async () => { throw new Error('Cannot read file'); };
   await chooseFolder(app, [broken, file('Music/valid.bfstm')]);
-  const [, , second] = handlers(app.render(), 'click');
+  const [, second] = handlers(app.render(), 'click');
   assert.match(app.errorMessage, /Cannot read file/);
   assert.equal(app.loading, false);
   assert.equal(app.disabled, true);
