@@ -36,7 +36,8 @@ export class ControlsLoop extends LitElement {
       cursor: pointer;
     }
     .button.off svg {
-      fill: var(--primary-dark);
+      fill: var(--main-text-color);
+      opacity: 0.55;
     }
     .button.disabled:hover {
       cursor: not-allowed;
