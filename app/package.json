@@ -22,6 +22,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "vite",
+    "test": "node --test tests/*.test.cjs",
     "typecheck": "pnpm run typecheck-app && pnpm run typecheck-worklet",
     "typecheck-app": "tsc --noEmit --emitDeclarationOnly false",
     "typecheck-worklet": "tsc --noEmit --emitDeclarationOnly false --project src/audio-player/worklet",

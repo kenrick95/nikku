@@ -9,6 +9,7 @@ export class Timer {
     this.render = this.render.bind(this);
   }
   start() {
+    if (this.#shouldRender) return;
     this.#shouldRender = true;
     this.#animationFrame = requestAnimationFrame(this.render);
   }
@@ -16,6 +17,7 @@ export class Timer {
     if (this.#animationFrame) {
       cancelAnimationFrame(this.#animationFrame);
     }
+    this.#animationFrame = null;
     this.#shouldRender = false;
   }
   render() {

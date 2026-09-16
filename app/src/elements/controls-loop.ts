@@ -22,6 +22,10 @@ export class ControlsLoop extends LitElement {
       height: 40px;
       border-radius: 20px;
     }
+    .button:focus-visible {
+      outline: 2px solid var(--primary-dark);
+      outline-offset: 3px;
+    }
     svg {
       width: 100%;
       height: 100%;
@@ -31,8 +35,9 @@ export class ControlsLoop extends LitElement {
       box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.24);
       cursor: pointer;
     }
-    .button.off > svg {
-      fill: var(--primary-lighter);
+    .button.off svg {
+      fill: var(--main-text-color);
+      opacity: 0.55;
     }
     .button.disabled:hover {
       cursor: not-allowed;
@@ -47,9 +52,13 @@ export class ControlsLoop extends LitElement {
         disabled: this.disabled,
         button: true,
       })}
-      @click="${this.#loopClick}"
+      type="button"
+      aria-label="Loop"
+      aria-pressed=${this.mode === 'on'}
+      ?disabled=${this.disabled}
+      @click=${this.#loopClick}
     >
-      ${unsafeHTML(IconLoop)}
+      <span aria-hidden="true">${unsafeHTML(IconLoop)}</span>
     </button>`;
   }
 

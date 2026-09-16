@@ -4,6 +4,14 @@ Web-based BRSTM and BFSTM player
 
 Just open [the demo](https://kenrick95.github.io/nikku/) in a modern browser, select a `.brstm` or `.bfstm` file, and enjoy!
 
+Use **Select folder…** to show the `.brstm` and `.bfstm` files in a folder and its subfolders. Click a file row, or focus it and press Enter or Space, to play it. Folder selection requires a browser with directory upload support; files stay on your device. Each file follows the loop control; with looping off, playback advances to the next file.
+
+## Keyboard controls
+
+Use Tab and Shift+Tab to move between controls. Enter or Space activates playback, loop, mute, and help buttons; Space toggles audio track checkboxes. On the playback position and volume sliders, use arrow keys to adjust and Home/End to jump to the minimum/maximum. Escape closes the help dialog and returns focus to its button.
+
+The player announces loading, playback changes, folder results, and errors. Elapsed time is available without continuous live announcements.
+
 ## What Is BRSTM?
 
 BRSTM is a file format that contains audio data that's being used for some Nintendo consoles. One of the differences with the usual audio format (MP3, etc) is that this format can contain a loop point, making it suitable for usage in games.

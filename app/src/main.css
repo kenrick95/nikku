@@ -40,6 +40,7 @@
 
   --main-bg-color: var(--white);
   --main-text-color: var(--black);
+  --error-color: #b42318;
 
   --max-width: 40rem;
 }
@@ -47,6 +48,7 @@
   :root {
     --main-bg-color: black;
     --main-text-color: white;
+    --error-color: #ff8a80;
     --primary-dark: hsl(117, 33%, 65%);
     --primary-darker: hsl(117, 33%, 83%);
     --primary-light: hsl(117, 75%, 23%);
@@ -64,18 +66,17 @@ body {
   color: var(--main-text-color);
 }
 a {
-  color: var(--primary);
+  color: var(--primary-dark);
 }
 a:hover {
-  filter: brightness(0.6);
-  color: var(--primary);
+  color: var(--primary-dark);
 }
 a:visited {
-  color: var(--primary);
+  color: var(--primary-dark);
 }
 body {
   max-width: var(--max-width);
-  padding: 50px 70px;
+  padding: 50px clamp(16px, 8vw, 70px);
   margin: auto;
   font-family: 'Open Sans', sans-serif;
 
@@ -97,13 +98,13 @@ body {
   font-weight: 600;
   font-size: 18px;
   line-height: 24px;
-  color: var(--primary-light);
+  color: var(--primary-dark);
 
   /* To align with logo's text baseline */
   margin-top: 10px;
 }
 .error {
-  color: #ff4136;
+  color: var(--error-color);
   border: 1px solid currentColor;
   padding: 0.6rem;
 }

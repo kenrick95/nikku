@@ -40,7 +40,45 @@ export class NikkuMain extends LitElement {
   @state()
   private errorMessage: string = '';
 
+  @state()
+  private folderFiles: File[] = [];
+  @state()
+  private folderName = '';
+  @state()
+  private selectedFile: File | null = null;
+  @state()
+  private currentFile: File | null = null;
+  @state()
+  private loading = false;
+
   private audioPlayer: AudioPlayer | null = null;
+
+  async #playAdjacentFile(direction: -1 | 1) {
+    if (!this.currentFile || this.loading) return;
+    const index = this.folderFiles.indexOf(this.currentFile);
+    const file = index >= 0 ? this.folderFiles[index + direction] : undefined;
+    if (!file) return;
+    this.selectedFile = file;
+    await this.#loadFile(file);
+    await this.updateComplete;
+    this.#getFolderItem(file)?.scrollIntoView({ block: 'nearest' });
+  }
+
+  async #playFolderFile(file: File) {
+    if (this.loading) return;
+    this.selectedFile = file;
+    await this.#loadFile(file);
+    await this.updateComplete;
+    const item = this.#getFolderItem(file);
+    item?.scrollIntoView({ block: 'nearest' });
+    item?.focus();
+  }
+
+  #getFolderItem(file: File) {
+    const index = this.folderFiles.indexOf(file);
+    if (index < 0) return undefined;
+    return this.renderRoot.querySelectorAll<HTMLButtonElement>('.folder-item')[index];
+  }
 
   private workerInstance = new ComlinkWorker(new URL('../audio-decoder/worker', import.meta.url))
 
@@ -60,22 +98,17 @@ export class NikkuMain extends LitElement {
     return html`
       <div
         id="error"
-        class=${classMap({
-          hidden: !this.errorMessage,
-        })}
+        class=${this.errorMessage ? 'has-error' : ''}
+        role="alert"
+        aria-atomic="true"
       >
         ${this.errorMessage}
       </div>
-      <main id="main">
-        <div id="track-title">${this.trackTitle}</div>
-        <div id="controls-tracks">
-          <controls-tracks
-            ?disabled=${this.disabled}
-            count=${this.tracksCount}
-            .active=${this.tracksActive}
-            @tracksActiveChange=${this.#handleTracksActiveChange}
-          ></controls-tracks>
-        </div>
+      <main aria-label="Audio player" aria-busy=${this.loading}>
+      <div id="main">
+        <div id="track-title" title=${this.loading ? 'Loading audio' : this.trackTitle}>${this.loading
+          ? `Loading ${this.selectedFile?.name || 'audio'}…`
+          : this.trackTitle}</div>
         <div id="controls-time-display">
           <controls-time-display
             ?disabled=${this.disabled}
@@ -91,15 +124,25 @@ export class NikkuMain extends LitElement {
             @progressValueChange=${this.#handleProgressValueChange}
           ></controls-progress>
         </div>
-        <label id="controls-select-file-container">
-          <input
-            type="file"
-            id="controls-select-file"
-            accept=".brstm,.bfstm"
-            @change=${this.#handleFileInputChange}
-          />
-          <span id="controls-select-file-custom"></span>
-        </label>
+        <div id="controls-select-sources">
+          <label class=${classMap({ 'source-picker': true, loading: this.loading })}>
+            <input
+              type="file"
+              aria-label="Select file"
+              accept=".brstm,.bfstm"
+              ?disabled=${this.loading}
+              @change=${this.#handleFileInputChange}
+            />
+            <span aria-hidden="true">Select file…</span>
+          </label>
+          <label class=${classMap({ 'source-picker': true, loading: this.loading })}>
+            <input type="file" webkitdirectory multiple
+              aria-label="Select folder"
+              ?disabled=${this.loading}
+              @change=${this.#handleFolderInputChange} />
+            <span aria-hidden="true">Select folder…</span>
+          </label>
+        </div>
 
         <div id="controls-play-pause">
           <controls-play-pause
@@ -122,6 +165,44 @@ export class NikkuMain extends LitElement {
             @volumeChange=${this.#handleVolumeChange}
           ></controls-volume>
         </div>
+        <div id="controls-tracks">
+          <controls-tracks
+            ?disabled=${this.disabled}
+            count=${this.tracksCount}
+            .active=${this.tracksActive}
+            @tracksActiveChange=${this.#handleTracksActiveChange}
+          ></controls-tracks>
+        </div>
+      </div>
+      ${this.folderName ? html`
+        <section id="folder-view" aria-labelledby="folder-title">
+          <div class="folder-heading">
+            <h2 id="folder-title">${this.folderName}</h2>
+            <span class="file-count" role="status" aria-atomic="true">${this.folderFiles.length} ${this.folderFiles.length === 1 ? 'file' : 'files'}</span>
+          </div>
+          ${this.folderFiles.length ? html`
+              <ul>
+                ${this.folderFiles.map((file) => html`
+                  <li class=${classMap({ selected: file === this.selectedFile, current: file === this.currentFile })}>
+                    <button class="folder-item"
+                      aria-label=${`Play ${file.webkitRelativePath.split('/').slice(1).join('/') || file.name}`}
+                      aria-current=${file === this.currentFile ? 'true' : 'false'}
+                      ?disabled=${this.loading}
+                      @click=${() => this.#playFolderFile(file)}>
+                      <span class="file-path">${file.webkitRelativePath.split('/').slice(1).join('/') || file.name}</span>
+                      ${file === this.currentFile ? html`<span class="current-label">${this.playPauseIcon === 'pause' ? 'Playing' : 'Current'}</span>` : ''}
+                    </button>
+                  </li>
+                `)}
+              </ul>
+          ` : html`<p role="status">No BRSTM or BFSTM files found in this folder.</p>`}
+        </section>
+      ` : ''}
+      <p class="sr-only" role="status" aria-atomic="true">${this.loading
+        ? 'Loading audio…'
+        : this.currentFile
+          ? `${this.playPauseIcon === 'pause' ? 'Playing' : 'Paused'}: ${this.trackTitle}`
+          : ''}</p>
       </main>
       <div
         id="drag-and-drop-overlay"
@@ -169,51 +250,98 @@ export class NikkuMain extends LitElement {
         return;
       }
 
-      readFile(file).then(this.#handleFileSelected.bind(this));
+      void this.#loadFile(file);
     });
   }
 
   #showError(error: Error) {
-    this.errorMessage = error.message + (error.stack ? '\n' + error.stack : '');
+    this.errorMessage = error.message;
+    console.error(error);
   }
   #clearError() {
     this.errorMessage = '';
   }
 
   #handleFileInputChange(e: InputEvent) {
-    const files = (e.target as HTMLInputElement).files;
+    const input = e.target as HTMLInputElement;
+    const files = input.files;
     if (!files || !files.length) {
-      this.#showError(new Error('No file read'));
       return;
     }
 
     const file = files[0];
-    readFile(file).then(this.#handleFileSelected.bind(this));
+    input.value = '';
+    void this.#loadFile(file).finally(() => input.focus());
   }
 
-  async #handleFileSelected({
-    buffer,
-    file,
-  }: {
-    buffer: string | ArrayBuffer | null;
-    file: File;
-  }) {
-    this.#clearError();
-
-    if (!buffer || !(buffer instanceof ArrayBuffer)) {
+  #handleFolderInputChange(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const files = Array.from(input.files || []);
+    if (!files.length) {
       return;
     }
-    if (file.name) {
-      this.trackTitle = file.name;
+    this.folderName = files[0].webkitRelativePath.split('/')[0] || 'Selected folder';
+    this.folderFiles = files
+      .filter((file) => /\.(brstm|bfstm)$/i.test(file.name))
+      .sort((a, b) => a.webkitRelativePath.localeCompare(b.webkitRelativePath, undefined, { numeric: true }));
+    this.selectedFile = this.folderFiles[0] || null;
+    input.value = '';
+    if (this.selectedFile) {
+      void this.#loadFile(this.selectedFile).finally(() => input.focus());
+    } else {
+      void this.#clearPlayback().finally(() => input.focus());
     }
+  }
+
+  async #clearPlayback() {
+    if (this.loading) return;
+    this.#clearError();
+    this.loading = true;
+    this.disabled = true;
+    this.currentFile = null;
+    this.trackTitle = '';
+    try {
+      await this.audioPlayer?.destroy();
+      this.progressValue = 0;
+      this.progressMax = 0;
+      this.timeDisplayValue = 0;
+      this.timeDisplayMax = 0;
+      this.playPauseIcon = 'play';
+      this.timer.stop();
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  async #loadFile(file: File) {
+    // Only one load may use the shared decoder at a time.
+    if (this.loading) {
+      return;
+    }
+    if (!this.folderFiles.includes(file)) {
+      this.folderFiles = [];
+      this.folderName = '';
+      this.selectedFile = null;
+    }
+    this.loading = true;
+    this.disabled = true;
+    this.#clearError();
+    this.currentFile = null;
+    this.trackTitle = '';
 
     try {
+      if (this.audioPlayer) {
+        await this.audioPlayer.destroy();
+      }
+      this.progressValue = 0;
+      this.progressMax = 0;
+      this.timeDisplayValue = 0;
+      this.timeDisplayMax = 0;
+      const buffer = await file.arrayBuffer();
       await this.workerInstance.init(transfer(buffer, [buffer]));
       const metadata = await this.workerInstance.getMetadata();
 
-      if (this.audioPlayer) {
-        await this.audioPlayer.destroy();
-      } else {
+      if (!this.audioPlayer) {
         this.audioPlayer = new AudioPlayer({
           onPlay: () => {
             this.playPauseIcon = 'pause';
@@ -222,6 +350,15 @@ export class NikkuMain extends LitElement {
           onPause: () => {
             this.playPauseIcon = 'play';
             this.timer.stop();
+          },
+          onEnded: () => this.#playAdjacentFile(1),
+          onPosition: () => {
+            // Refresh the paused UI once; running UI updates remain on rAF.
+            if (this.playPauseIcon === 'play') {
+              const position = this.audioPlayer?.getCurrrentPlaybackTime() ?? 0;
+              this.progressValue = position;
+              this.timeDisplayValue = position;
+            }
           },
           decodeSamples: async (offset: number, size: number) => {
             const samples =
@@ -234,18 +371,14 @@ export class NikkuMain extends LitElement {
         throw new Error('metadata is undefined');
       }
       await this.audioPlayer.init(metadata);
+      this.audioPlayer.setLoop(this.loop === 'on');
+      await this.audioPlayer.setVolume(this.muted ? 0 : this.volume);
       await this.audioPlayer.start();
 
       const amountTimeInS = metadata.totalSamples / metadata.sampleRate;
       const numberTracks = metadata.numberTracks;
 
-      if (this.muted) {
-        this.audioPlayer.setVolume(0);
-      } else {
-        this.audioPlayer.setVolume(this.volume);
-      }
-
-      this.playPauseIcon = 'pause';
+      this.playPauseIcon = 'play';
       this.progressMax = amountTimeInS;
       this.timeDisplayMax = amountTimeInS;
 
@@ -253,11 +386,18 @@ export class NikkuMain extends LitElement {
       this.tracksActive = new Array(numberTracks)
         .fill(true)
         .map((_, i) => (i === 0 ? true : false));
+      await this.audioPlayer.play();
       this.disabled = false;
-
-      this.audioPlayer?.play();
+      this.trackTitle = file.name;
+      this.currentFile = file;
     } catch (e) {
+      this.disabled = true;
+      await this.audioPlayer?.destroy();
+      this.currentFile = null;
+      this.trackTitle = '';
       this.#showError(e as Error);
+    } finally {
+      this.loading = false;
     }
   }
 
@@ -311,16 +451,112 @@ export class NikkuMain extends LitElement {
   }
 
   static styles = css`
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+    #folder-view {
+      margin-top: 1.5rem;
+      border: 1px solid var(--primary-light);
+      border-radius: 8px;
+      background: var(--white-lighter);
+      overflow: hidden;
+    }
+    .folder-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.65rem 0.85rem;
+      background: var(--primary-lightest-2);
+    }
+    .folder-heading h2 {
+      min-width: 0;
+      margin: 0;
+      overflow-wrap: anywhere;
+      font-size: 0.9rem;
+    }
+    #folder-view button {
+      font: inherit;
+      color: var(--main-text-color);
+      cursor: pointer;
+    }
+    #folder-view button:focus-visible {
+      outline: 2px solid var(--primary-dark);
+      outline-offset: -2px;
+    }
+    #folder-view button:disabled, #folder-view button[aria-disabled='true'] {
+      opacity: 0.5;
+      cursor: default;
+    }
+    .file-path {
+      overflow-wrap: anywhere;
+    }
+    .file-count {
+      color: var(--primary-dark);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    #folder-view ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      max-height: 20rem;
+      overflow: auto;
+      border-top: 1px solid var(--primary-light);
+    }
+    #folder-view li {
+      display: flex;
+      align-items: stretch;
+      border-left: 3px solid transparent;
+      border-bottom: 1px solid var(--primary-lightest-2);
+    }
+    #folder-view li:last-child {
+      border-bottom: 0;
+    }
+    #folder-view li:hover, #folder-view li.selected {
+      background: var(--primary-lightest-2);
+    }
+    #folder-view li.current {
+      border-left-color: var(--primary-dark);
+    }
+    #folder-view .folder-item {
+      min-width: 0;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      text-align: left;
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      padding: 0.65rem 0.75rem;
+    }
+    .current-label {
+      font-size: 12px;
+      flex-shrink: 0;
+      color: var(--primary-dark);
+    }
     #error {
       padding: 0.6rem;
       margin-top: 0.6rem;
       margin-bottom: 0.6rem;
-      color: #ff4136;
+      color: var(--error-color);
+      overflow-wrap: anywhere;
       border: 1px solid currentColor;
       padding: 0.6rem;
     }
-    #error.hidden {
-      display: none;
+    #error:not(.has-error) {
+      padding: 0;
+      border: 0;
+      margin: 0;
     }
     #drag-and-drop-overlay {
       position: fixed;
@@ -374,7 +610,7 @@ export class NikkuMain extends LitElement {
       grid-column: 1 / span 4;
       grid-row: 2;
     }
-    #controls-select-file-container {
+    #controls-select-sources {
       grid-column: 1 / span 4;
       grid-row: 3;
     }
@@ -406,7 +642,9 @@ export class NikkuMain extends LitElement {
     @media (max-width: 640px) {
       #main {
         margin-top: 50px;
+        grid-template-columns: minmax(0, 1fr) 80px minmax(0, 1fr);
         grid-template-rows: 20px 20px 15px 24px 80px auto;
+        column-gap: 0.75rem;
       }
       #track-title {
         grid-column: 1 / span 3;
@@ -420,7 +658,7 @@ export class NikkuMain extends LitElement {
         grid-column: 1 / span 3;
         grid-row: 3;
       }
-      #controls-select-file-container {
+      #controls-select-sources {
         grid-column: 1 / span 3;
         grid-row: 4;
       }
@@ -440,19 +678,31 @@ export class NikkuMain extends LitElement {
     }
 
     /* Modified from "file" from https://github.com/mdo/wtf-forms/blob/master/wtf-forms.css */
-    #controls-select-file-container {
+    #controls-select-sources {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .source-picker {
       position: relative;
       display: inline-block;
       cursor: pointer;
       width: 80px;
     }
-    #controls-select-file-container > input {
+    .source-picker:last-child {
+      width: 94px;
+    }
+    .source-picker.loading {
+      opacity: 0.55;
+      cursor: wait;
+    }
+    .source-picker > input {
       margin: 0;
       opacity: 0;
       height: 24px;
       width: 100%;
+      cursor: inherit;
     }
-    #controls-select-file-custom {
+    .source-picker > span {
       position: absolute;
       top: 0;
       right: 0;
@@ -473,39 +723,22 @@ export class NikkuMain extends LitElement {
       padding: 2px 4px;
       text-align: center;
     }
-    #controls-select-file-custom:after {
-      content: 'Select file...';
-    }
-    #controls-select-file-custom:hover {
+    .source-picker:hover > span {
       background-color: var(--primary-lightest-1);
     }
 
-    #controls-select-fileinput:focus ~ #controls-select-file-custom {
-      box-shadow: 0 0 0 0.075rem #fff, 0 0 0 0.2rem var(--primary-dark);
+    .source-picker:focus-within {
+      outline: 2px solid var(--primary-dark);
+      outline-offset: 2px;
+      border-radius: 5px;
     }
 
     @media (prefers-color-scheme: dark) {
-      #controls-select-file-custom {
+      .source-picker > span {
         color: var(--main-text-color);
       }
     }
   `;
-}
-
-function readFile(
-  file: File
-): Promise<{ buffer: string | ArrayBuffer | null; file: File }> {
-  return new Promise((resolve) => {
-    const fileReader = new FileReader();
-    fileReader.addEventListener('loadend', (_ev) => {
-      const buffer = fileReader.result;
-      resolve({
-        buffer,
-        file,
-      });
-    });
-    fileReader.readAsArrayBuffer(file);
-  });
 }
 
 declare global {

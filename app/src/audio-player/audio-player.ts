@@ -1,6 +1,5 @@
 import type { Metadata as BfstmMetadata } from 'bfstm';
 import type { Metadata as BrstmMetadata } from 'brstm';
-import { Timer } from '../timer';
 import AudioSourceCode from './worklet/audio-source.js?raw';
 
 type Metadata = BrstmMetadata | BfstmMetadata;
@@ -8,6 +7,8 @@ type Metadata = BrstmMetadata | BfstmMetadata;
 export type AudioPlayerOptions = {
   onPlay: () => void;
   onPause: () => void;
+  onEnded?: () => void | Promise<void>;
+  onPosition?: () => void;
   decodeSamples: (offset: number, size: number) => Promise<Float32Array[]>;
 };
 
@@ -29,15 +30,16 @@ export class AudioPlayer {
   #gainNode: null | GainNode = null;
 
   #currentTimestamp: number = 0;
+  #timestampContextTime = 0;
 
   #shouldLoop: boolean = false;
   #hasBufferReachedEnd: boolean = true;
   #isPlaying: boolean = false;
+  #generation = 0;
+  #seekVersion = 0;
 
   /** 0..1 */
   #volume: number = 0;
-
-  #timer: Timer | null = null;
 
   constructor(options: AudioPlayerOptions) {
     this.options = options;
@@ -50,6 +52,7 @@ export class AudioPlayer {
       this.#audioContext = new AudioContext({
         sampleRate: metadata.sampleRate,
       });
+      await this.#audioContext.suspend();
       if (this.#audioContext.audioWorklet) {
         const blob = new Blob([AudioSourceCode], { type: 'text/javascript' });
         const blobUrl = URL.createObjectURL(blob);
@@ -59,14 +62,10 @@ export class AudioPlayer {
           URL.revokeObjectURL(blobUrl);
         }
       }
-      this.#timer = new Timer({
-        renderCallback: this.#updateTimestamp.bind(this),
-      });
     } else {
       // For destroy
       this.metadata = null;
       this.#audioContext = null;
-      this.#timer = null;
     }
 
     this.#trackStates = [true];
@@ -85,7 +84,9 @@ export class AudioPlayer {
     this.#gainNode = null;
 
     this.#currentTimestamp = 0;
+    this.#timestampContextTime = this.#audioContext?.currentTime ?? 0;
 
+    this.#seekVersion = 0;
     this.#shouldLoop = true;
     this.#hasBufferReachedEnd = false;
     this.#isPlaying = false;
@@ -94,14 +95,22 @@ export class AudioPlayer {
   }
 
   async destroy() {
-    await this.pause();
-    this.init();
+    this.#generation++;
+    this.options.onPause();
+    this.#audioSourceNode?.disconnect();
+    this.#audioSourceNode?.port.close();
+    this.#gainNode?.disconnect();
+    if (this.#audioContext && this.#audioContext.state !== 'closed') {
+      await this.#audioContext.close();
+    }
+    await this.init();
   }
 
   async start() {
     if (!this.metadata || !this.#audioContext) {
       return;
     }
+    const generation = this.#generation;
     const { totalSamples, sampleRate } = this.metadata;
     const amountTimeInS = totalSamples / sampleRate;
 
@@ -113,6 +122,9 @@ export class AudioPlayer {
       initialSamplesSize
     );
     console.timeEnd('getSamples');
+    if (generation !== this.#generation) {
+      return;
+    }
     this.#load(initialSamples, 0);
 
     // Decode in small segments, because postMessage-ing with a big data may cause jank
@@ -129,12 +141,18 @@ export class AudioPlayer {
 
     (async () => {
       for (const segment of segmentsInSeconds) {
+        if (generation !== this.#generation) {
+          return;
+        }
         console.time('getSamples');
         const samples = await this.options.decodeSamples(
           segment.offset * sampleRate,
           segment.size * sampleRate
         );
         console.timeEnd('getSamples');
+        if (generation !== this.#generation) {
+          return;
+        }
         this.#load(samples, segment.offset * sampleRate);
       }
     })();
@@ -152,9 +170,6 @@ export class AudioPlayer {
 
     if (offset === 0) {
       this.initPlayback(newSamples);
-      this.#timer?.start();
-      this.#isPlaying = true;
-      this.options.onPlay();
     } else {
       if (this.#audioSourceNode) {
         this.#audioSourceNode.port.postMessage(
@@ -196,25 +211,34 @@ export class AudioPlayer {
         },
       }
     );
+    const sourceNode = this.#audioSourceNode;
     if (this.#audioSourceNode.port) {
       this.#audioSourceNode.port.addEventListener(
         'message',
         (ev: MessageEvent) => {
+          // A closed port can still have a queued message from the previous file.
+          if (sourceNode !== this.#audioSourceNode) return;
           switch (ev.data.type) {
             case 'BUFFER_LOOPED': {
               console.log('[AudioPlayer]', ev.data.type);
               break;
             }
             case 'BUFFER_ENDED': {
+              if (ev.data.payload.seekVersion !== this.#seekVersion) break;
               console.log('[AudioPlayer]', ev.data.type);
-              this.pause();
+              this.#currentTimestamp = totalSamples / sampleRate;
+              this.#timestampContextTime = this.#audioContext?.currentTime ?? 0;
               this.#hasBufferReachedEnd = true;
+              void this.pause().then(() => this.options.onEnded?.());
               break;
             }
 
             case 'TIMESTAMP_REPLY': {
               // console.log('[AudioPlayer]', ev.data.type);
+              if (ev.data.payload.seekVersion !== this.#seekVersion) break;
               this.#currentTimestamp = ev.data.payload.timestamp as number;
+              this.#timestampContextTime = ev.data.payload.contextTime as number;
+              this.options.onPosition?.();
               break;
             }
           }
@@ -231,30 +255,30 @@ export class AudioPlayer {
     this.#hasBufferReachedEnd = false;
   }
 
-  #updateTimestamp() {
-    if (this.#audioSourceNode) {
-      this.#audioSourceNode.port.postMessage({
-        type: 'TIMESTAMP_QUERY',
-      });
-    }
-  }
-
   /**
    * @param {number} playbackTimeInS
    */
-  async seek(playbackTimeInS: number) {
-    if (!this.#audioContext) {
+  async seek(playbackTimeInS: number, resume = true) {
+    if (!this.#audioContext || !this.metadata || !Number.isFinite(playbackTimeInS)) {
       return;
     }
+    const duration = this.metadata.totalSamples / this.metadata.sampleRate;
+    playbackTimeInS = Math.max(0, Math.min(duration, playbackTimeInS));
+    this.#seekVersion++;
+    this.#currentTimestamp = playbackTimeInS;
+    this.#timestampContextTime = this.#audioContext.currentTime;
+    this.#hasBufferReachedEnd = playbackTimeInS >= duration;
     if (this.#audioSourceNode) {
       this.#audioSourceNode.port.postMessage({
         type: 'SEEK',
         payload: {
           playbackTimeInS,
+          seekVersion: this.#seekVersion,
         },
       });
     }
-    if (!this.#isPlaying) {
+    this.options.onPosition?.();
+    if (resume && !this.#isPlaying) {
       await this.play();
     }
   }
@@ -263,23 +287,25 @@ export class AudioPlayer {
     if (this.#isPlaying || !this.#audioContext) {
       return;
     }
+    const context = this.#audioContext;
+    if (this.#hasBufferReachedEnd) await this.seek(0, false);
+    await context.resume();
+    if (context !== this.#audioContext) return;
     this.#isPlaying = true;
-    this.#timer?.start();
     this.options.onPlay();
-    await this.#audioContext.resume();
-
-    if (this.#hasBufferReachedEnd) {
-      this.seek(0);
-    }
   }
   async pause() {
     if (!this.#isPlaying || !this.#audioContext) {
       return;
     }
+    const context = this.#audioContext;
+    await context.suspend();
+    if (context !== this.#audioContext) return;
+    this.#currentTimestamp = this.getCurrrentPlaybackTime();
+    this.#timestampContextTime = context.currentTime;
     this.#isPlaying = false;
-    this.#timer?.stop();
     this.options.onPause();
-    await this.#audioContext.suspend();
+    this.options.onPosition?.();
   }
 
   /**
@@ -325,13 +351,23 @@ export class AudioPlayer {
   }
 
   /**
-   * This timer does not rely on Web Audio API at all, might be less accurate, but more or less working
+   * Interpolate the worklet's sample position using the audio clock, never a UI timer.
    * @returns {number} current time in seconds, accounted for looping
    */
   getCurrrentPlaybackTime(): number {
     if (!this.#audioSourceNode) {
       return 0;
     }
-    return this.#currentTimestamp;
+    if (!this.metadata || !this.#audioContext) return this.#currentTimestamp;
+    const duration = this.metadata.totalSamples / this.metadata.sampleRate;
+    const elapsed = this.#isPlaying
+      ? Math.max(0, this.#audioContext.currentTime - this.#timestampContextTime)
+      : 0;
+    let position = this.#currentTimestamp + elapsed;
+    const loopStart = this.metadata.loopStartSample / this.metadata.sampleRate;
+    if (this.#shouldLoop && !this.#hasBufferReachedEnd && position >= duration && duration > loopStart) {
+      position = loopStart + (position - duration) % (duration - loopStart);
+    }
+    return Math.max(0, Math.min(duration, position));
   }
 }
