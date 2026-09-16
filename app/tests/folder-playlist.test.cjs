@@ -57,7 +57,6 @@ function setup() {
     'lit/directives/class-map.js': { classMap: (value) => value },
     '../audio-player/audio-player': { AudioPlayer },
     '../timer': { Timer },
-    '../media-session': loadSource('../src/media-session.ts', {}),
     comlink: { transfer: (value) => value },
   }, { ComlinkWorker: Worker });
   return { app: new NikkuMain(), calls, focused, scrolled };
@@ -223,33 +222,23 @@ test('play resumes a suspended context after initial samples are loaded', async 
   assert.equal(resumed, 1);
   assert.equal(played, 1);
 });
-test('routes playback through an audio element for platform media controls', async () => {
+test('routes playback directly to the audio context destination', async () => {
   const connections = [];
-  const mediaStream = {};
-  let mediaElement;
+  const audioDestination = {};
   const { AudioPlayer } = loadSource('../src/audio-player/audio-player.ts', {
     '../timer': { Timer }, './worklet/audio-source.js?raw': { default: '' },
   }, {
     AudioContext: class {
       state = 'suspended';
       currentTime = 0;
-      destination = { type: 'speakers' };
+      destination = audioDestination;
       async suspend() { this.state = 'suspended'; }
       async resume() { this.state = 'running'; }
-      createMediaStreamDestination() {
-        return { stream: mediaStream, disconnect() {} };
-      }
       createGain() {
         return {
           gain: {}, connect(target) { connections.push(target); }, disconnect() {},
         };
       }
-    },
-    Audio: class {
-      constructor() { mediaElement = this; }
-      setAttribute() {}
-      async play() { this.played = true; }
-      pause() { this.paused = true; }
     },
     AudioWorkletNode: class {
       port = { addEventListener() {}, start() {}, close() {} };
@@ -265,13 +254,9 @@ test('routes playback through an audio element for platform media controls', asy
     loopStartSample: 0, trackDescriptions: [],
   });
   await player.start();
-  assert.equal(mediaElement.played, undefined);
+  assert.equal(connections[0], audioDestination);
   await player.play();
-  assert.equal(mediaElement.srcObject, mediaStream);
-  assert.equal(mediaElement.played, true);
-  assert.equal(connections[0].stream, mediaStream);
   await player.pause();
-  assert.equal(mediaElement.paused, true);
 });
 test('audio completion pauses playback and emits the ended callback', async () => {
   let messageHandler;

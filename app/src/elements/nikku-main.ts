@@ -3,7 +3,6 @@ import { customElement, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { AudioPlayer } from '../audio-player/audio-player';
 import { Timer } from '../timer';
-import { PlayerMediaSession, prepareAudioSession } from '../media-session';
 import { transfer } from 'comlink';
 
 @customElement('nikku-main')
@@ -53,39 +52,6 @@ export class NikkuMain extends LitElement {
   private loading = false;
 
   private audioPlayer: AudioPlayer | null = null;
-
-  private mediaSession = new PlayerMediaSession({
-    play: async () => { if (!this.disabled && !this.loading) await this.audioPlayer?.play(); },
-    pause: async () => { if (!this.loading) await this.audioPlayer?.pause(); },
-    stop: async () => {
-      if (this.disabled || this.loading) return;
-      await this.audioPlayer?.pause();
-      await this.audioPlayer?.seek(0, false);
-    },
-    seek: async (position) => {
-      if (!this.disabled && !this.loading) await this.audioPlayer?.seek(position, false);
-    },
-    previous: () => this.#playAdjacentFile(-1),
-    next: () => this.#playAdjacentFile(1),
-    getPosition: () => this.audioPlayer?.getCurrrentPlaybackTime() ?? 0,
-    onError: (error) => this.#showError(error),
-  });
-
-  #syncMediaSession() {
-    if (!this.currentFile || !this.audioPlayer) {
-      this.mediaSession.update(null);
-      return;
-    }
-    const index = this.folderFiles.indexOf(this.currentFile);
-    this.mediaSession.update({
-      title: this.currentFile.name,
-      duration: this.timeDisplayMax,
-      position: this.audioPlayer.getCurrrentPlaybackTime(),
-      playing: this.playPauseIcon === 'pause',
-      canPrevious: index > 0,
-      canNext: index >= 0 && index < this.folderFiles.length - 1,
-    });
-  }
 
   async #playAdjacentFile(direction: -1 | 1) {
     if (!this.currentFile || this.loading) return;
@@ -334,7 +300,6 @@ export class NikkuMain extends LitElement {
     this.disabled = true;
     this.currentFile = null;
     this.trackTitle = '';
-    this.#syncMediaSession();
     try {
       await this.audioPlayer?.destroy();
       this.progressValue = 0;
@@ -345,7 +310,6 @@ export class NikkuMain extends LitElement {
       this.timer.stop();
     } finally {
       this.loading = false;
-      this.#syncMediaSession();
     }
   }
 
@@ -364,8 +328,6 @@ export class NikkuMain extends LitElement {
     this.#clearError();
     this.currentFile = null;
     this.trackTitle = '';
-    this.#syncMediaSession();
-    prepareAudioSession();
 
     try {
       if (this.audioPlayer) {
@@ -384,16 +346,13 @@ export class NikkuMain extends LitElement {
           onPlay: () => {
             this.playPauseIcon = 'pause';
             this.timer.start();
-            this.#syncMediaSession();
           },
           onPause: () => {
             this.playPauseIcon = 'play';
             this.timer.stop();
-            this.#syncMediaSession();
           },
           onEnded: () => this.#playAdjacentFile(1),
           onPosition: () => {
-            this.#syncMediaSession();
             // Refresh the paused UI once; running UI updates remain on rAF.
             if (this.playPauseIcon === 'play') {
               const position = this.audioPlayer?.getCurrrentPlaybackTime() ?? 0;
@@ -427,11 +386,10 @@ export class NikkuMain extends LitElement {
       this.tracksActive = new Array(numberTracks)
         .fill(true)
         .map((_, i) => (i === 0 ? true : false));
-      this.trackTitle = file.name;
-      this.currentFile = file;
-      this.#syncMediaSession();
       await this.audioPlayer.play();
       this.disabled = false;
+      this.trackTitle = file.name;
+      this.currentFile = file;
     } catch (e) {
       this.disabled = true;
       await this.audioPlayer?.destroy();
@@ -440,7 +398,6 @@ export class NikkuMain extends LitElement {
       this.#showError(e as Error);
     } finally {
       this.loading = false;
-      this.#syncMediaSession();
     }
   }
 
