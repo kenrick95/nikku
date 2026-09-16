@@ -366,8 +366,8 @@ test('seek range exposes readable time and emits seconds, but cannot seek while 
   element.max = 125;
   element.value = 62;
   assert.equal(boundValue(element.render(), 'aria-valuetext'), '1 minute 2 seconds of 2 minutes 5 seconds');
-  handlers(element.render(), 'input')[0].call(element, { target: { value: '63' } });
-  assert.equal(events[0].detail.value, 63);
+  handlers(element.render(), 'input')[0].call(element, { target: { value: '63.25' } });
+  assert.equal(events[0].detail.value, 63.25);
   element.disabled = true;
   handlers(element.render(), 'input')[0].call(element, { target: { value: '70' } });
   assert.equal(events.length, 1);

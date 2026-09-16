@@ -69,7 +69,7 @@ export class ControlsProgress extends LitElement {
       aria-valuetext=${`${describeTime(this.value)} of ${describeTime(this.max)}`}
       min="0"
       max=${this.max}
-      step="1"
+      step="any"
       .value=${String(this.value)}
       style=${`--progress: ${this.max > 0 ? Math.max(0, Math.min(100, this.value / this.max * 100)) : 0}%`}
       ?disabled=${this.disabled || this.max <= 0}
