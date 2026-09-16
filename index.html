@@ -56,13 +56,15 @@
         })()
       ) {
         document.addEventListener('DOMContentLoaded', function () {
-          document.getElementById('unsupported').style.display = 'block';
-          document.getElementById('main').style.display = 'none';
+          const unsupported = document.getElementById('unsupported');
+          const player = document.querySelector('nikku-main');
+          if (unsupported) unsupported.style.display = 'block';
+          if (player) player.style.display = 'none';
         });
       }
     </script>
-    <script type="module" crossorigin src="/nikku/assets/index-buUGpW4P.js"></script>
-    <link rel="stylesheet" crossorigin href="/nikku/assets/index-D9K2goY_.css">
+    <script type="module" crossorigin src="/nikku/assets/index-uOJkYeS6.js"></script>
+    <link rel="stylesheet" crossorigin href="/nikku/assets/index-DqSZkf5h.css">
   <link rel="manifest" href="/nikku/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/nikku/registerSW.js"></script></head>
   <body>
     <header id="header">
