@@ -264,8 +264,18 @@ export class AudioPlayer {
       this.#mediaElement.srcObject = this.#mediaStreamDestination.stream;
       this.#mediaElement.autoplay = true;
       this.#mediaElement.setAttribute('playsinline', '');
+      for (const eventName of ['play', 'playing', 'pause', 'waiting', 'error']) {
+        this.#mediaElement.addEventListener?.(eventName, () => {
+          console.info('[MediaSession] Bridge media element event', eventName, {
+            paused: this.#mediaElement?.paused,
+            error: this.#mediaElement?.error,
+          });
+        });
+      }
       this.#gainNode.connect(this.#mediaStreamDestination);
-    } catch {
+      console.info('[MediaSession] Web Audio routed through an HTML media element');
+    } catch (error) {
+      console.warn('[MediaSession] HTML media element bridge unavailable; using direct Web Audio output', error);
       this.#mediaStreamDestination = null;
       this.#mediaElement = null;
       this.#gainNode.connect(this.#audioContext.destination);
@@ -312,9 +322,12 @@ export class AudioPlayer {
     if (context !== this.#audioContext) return;
     if (this.#mediaElement) {
       try {
+        console.info('[MediaSession] Requesting bridge media element playback');
         await this.#mediaElement.play();
-      } catch {
+        console.info('[MediaSession] Bridge media element playback started');
+      } catch (error) {
         // Keep playback working when MediaStream-backed media elements are unavailable.
+        console.warn('[MediaSession] Bridge media element play failed; using direct Web Audio output', error);
         this.#gainNode?.disconnect(this.#mediaStreamDestination!);
         this.#mediaElement.srcObject = null;
         this.#mediaElement = null;
@@ -329,6 +342,7 @@ export class AudioPlayer {
     if (!this.#isPlaying || !this.#audioContext) {
       return;
     }
+    console.info('[MediaSession] Pausing Web Audio and bridge media element');
     const context = this.#audioContext;
     await context.suspend();
     if (context !== this.#audioContext) return;

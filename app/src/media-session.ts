@@ -26,7 +26,9 @@ export class PlayerMediaSession {
   constructor(
     private actions: Actions,
     private session = typeof navigator === 'undefined' ? undefined : navigator.mediaSession
-  ) {}
+  ) {
+    console.info('[MediaSession]', this.session ? 'API available' : 'API unavailable');
+  }
 
   update(state: SessionState | null) {
     const previous = this.state;
@@ -35,29 +37,34 @@ export class PlayerMediaSession {
 
     if (!state) {
       if (!previous) return;
-      this.safely(() => { this.session!.metadata = null; });
-      this.safely(() => { this.session!.playbackState = 'none'; });
-      this.safely(() => this.session!.setPositionState?.());
+      console.info('[MediaSession] Clearing active session');
+      this.safely('clear metadata', () => { this.session!.metadata = null; });
+      this.safely('clear playback state', () => { this.session!.playbackState = 'none'; });
+      this.safely('clear position state', () => this.session!.setPositionState?.());
       for (const action of this.registered.keys()) this.register(action, false, () => {});
       return;
     }
 
     if (previous?.title !== state.title && typeof MediaMetadata !== 'undefined') {
-      this.safely(() => {
+      this.safely('set metadata', () => {
         this.session!.metadata = new MediaMetadata({
           title: state.title,
           artist: 'Nikku',
           album: 'BRSTM / BFSTM player',
         });
+        console.info('[MediaSession] Metadata set', { title: state.title });
       });
+    } else if (previous?.title !== state.title) {
+      console.warn('[MediaSession] MediaMetadata is unavailable');
     }
     if (!previous || previous.playing !== state.playing) {
-      this.safely(() => {
+      this.safely('set playback state', () => {
         this.session!.playbackState = state.playing ? 'playing' : 'paused';
+        console.info('[MediaSession] Playback state set', this.session!.playbackState);
       });
     }
     if (Number.isFinite(state.duration) && state.duration > 0 && Number.isFinite(state.position)) {
-      this.safely(() => this.session!.setPositionState?.({
+      this.safely('set position state', () => this.session!.setPositionState?.({
         duration: state.duration,
         playbackRate: 1,
         position: Math.max(0, Math.min(state.duration, state.position)),
@@ -88,29 +95,43 @@ export class PlayerMediaSession {
   ) {
     if (this.registered.get(action) === enabled) return;
     this.registered.set(action, enabled);
-    this.safely(() => this.session!.setActionHandler(action, enabled ? (details) => {
-      if (!this.state) return;
-      Promise.resolve().then(() => handler(details)).catch(this.actions.onError);
-    } : null));
+    this.safely(`${enabled ? 'register' : 'remove'} ${action} handler`, () => {
+      this.session!.setActionHandler(action, enabled ? (details) => {
+        if (!this.state) return;
+        console.info('[MediaSession] Action received', action, details);
+        Promise.resolve().then(() => handler(details)).catch(this.actions.onError);
+      } : null);
+      console.info('[MediaSession] Action handler changed', { action, enabled });
+    });
   }
 
-  private safely(operation: () => void) {
+  private safely(label: string, operation: () => void) {
     try {
       operation();
-    } catch {
+    } catch (error) {
       // APIs and individual actions are not supported on every browser/platform.
+      console.warn(`[MediaSession] Could not ${label}`, error);
     }
   }
 }
 
 export function prepareAudioSession() {
-  if (typeof navigator === 'undefined') return;
+  if (typeof navigator === 'undefined') {
+    console.info('[MediaSession] Navigator is unavailable');
+    return;
+  }
   const audioSession = (navigator as Navigator & {
     audioSession?: { type: string };
   }).audioSession;
   try {
-    if (audioSession) audioSession.type = 'playback';
-  } catch {
+    if (audioSession) {
+      audioSession.type = 'playback';
+      console.info('[MediaSession] Audio Session type set to playback');
+    } else {
+      console.info('[MediaSession] Audio Session API unavailable');
+    }
+  } catch (error) {
     // This optional hint is currently supported by only some browsers.
+    console.warn('[MediaSession] Could not set Audio Session type', error);
   }
 }
