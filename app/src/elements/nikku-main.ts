@@ -72,7 +72,7 @@ export class NikkuMain extends LitElement {
   });
 
   #syncMediaSession() {
-    if (!this.currentFile || this.loading || this.disabled || !this.audioPlayer) {
+    if (!this.currentFile || !this.audioPlayer) {
       this.mediaSession.update(null);
       return;
     }
@@ -332,11 +332,11 @@ export class NikkuMain extends LitElement {
     this.#clearError();
     this.loading = true;
     this.disabled = true;
+    this.currentFile = null;
+    this.trackTitle = '';
     this.#syncMediaSession();
     try {
       await this.audioPlayer?.destroy();
-      this.currentFile = null;
-      this.trackTitle = '';
       this.progressValue = 0;
       this.progressMax = 0;
       this.timeDisplayValue = 0;
@@ -362,6 +362,8 @@ export class NikkuMain extends LitElement {
     this.loading = true;
     this.disabled = true;
     this.#clearError();
+    this.currentFile = null;
+    this.trackTitle = '';
     this.#syncMediaSession();
     prepareAudioSession();
 
@@ -369,8 +371,6 @@ export class NikkuMain extends LitElement {
       if (this.audioPlayer) {
         await this.audioPlayer.destroy();
       }
-      this.currentFile = null;
-      this.trackTitle = '';
       this.progressValue = 0;
       this.progressMax = 0;
       this.timeDisplayValue = 0;
@@ -419,7 +419,7 @@ export class NikkuMain extends LitElement {
       const amountTimeInS = metadata.totalSamples / metadata.sampleRate;
       const numberTracks = metadata.numberTracks;
 
-      this.playPauseIcon = 'pause';
+      this.playPauseIcon = 'play';
       this.progressMax = amountTimeInS;
       this.timeDisplayMax = amountTimeInS;
 
@@ -427,13 +427,16 @@ export class NikkuMain extends LitElement {
       this.tracksActive = new Array(numberTracks)
         .fill(true)
         .map((_, i) => (i === 0 ? true : false));
-      await this.audioPlayer.play();
-      this.disabled = false;
       this.trackTitle = file.name;
       this.currentFile = file;
+      this.#syncMediaSession();
+      await this.audioPlayer.play();
+      this.disabled = false;
     } catch (e) {
       this.disabled = true;
       await this.audioPlayer?.destroy();
+      this.currentFile = null;
+      this.trackTitle = '';
       this.#showError(e as Error);
     } finally {
       this.loading = false;

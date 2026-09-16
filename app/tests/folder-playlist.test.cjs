@@ -265,9 +265,9 @@ test('routes playback through an audio element for platform media controls', asy
     loopStartSample: 0, trackDescriptions: [],
   });
   await player.start();
+  assert.equal(mediaElement.played, undefined);
   await player.play();
   assert.equal(mediaElement.srcObject, mediaStream);
-  assert.equal(mediaElement.autoplay, true);
   assert.equal(mediaElement.played, true);
   assert.equal(connections[0].stream, mediaStream);
   await player.pause();

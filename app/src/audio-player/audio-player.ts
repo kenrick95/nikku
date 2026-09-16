@@ -262,7 +262,6 @@ export class AudioPlayer {
       this.#mediaStreamDestination = this.#audioContext.createMediaStreamDestination();
       this.#mediaElement = new Audio();
       this.#mediaElement.srcObject = this.#mediaStreamDestination.stream;
-      this.#mediaElement.autoplay = true;
       this.#mediaElement.setAttribute('playsinline', '');
       for (const eventName of ['play', 'playing', 'pause', 'waiting', 'error']) {
         this.#mediaElement.addEventListener?.(eventName, () => {
