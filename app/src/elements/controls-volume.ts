@@ -71,7 +71,7 @@ export class ControlsVolume extends LitElement {
 
   render() {
     return html`<div class="volume-container">
-      <button type="button" aria-label="Mute" aria-pressed=${this.muted}
+      <button type="button" aria-label=${this.muted ? 'Unmute' : 'Mute'} aria-pressed=${this.muted}
         ?disabled=${this.disabled} @click=${this.#handleVolumeIconClick}>
         <span aria-hidden="true">${unsafeHTML(this.muted ? IconVolumeMuted : IconVolumeNormal)}</span>
       </button>

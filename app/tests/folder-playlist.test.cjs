@@ -64,7 +64,7 @@ function setup() {
 }
 const file = (path) => ({ name: path.split('/').at(-1), webkitRelativePath: path, arrayBuffer: async () => new ArrayBuffer(8) });
 async function chooseFolder(app, files) {
-  const input = { files, value: 'folder' };
+  const input = { files, value: 'folder', focus() { this.focused = true; } };
   handlers(app.render(), 'change')[1].call(app, { target: input });
   await new Promise((resolve) => setImmediate(resolve));
   return input;
@@ -72,16 +72,20 @@ async function chooseFolder(app, files) {
 test('filters and sorts nested files, preserves cancellation, and handles no matches', async () => {
   const { app } = setup();
   const files = [file('Music/track10.BFSTM'), file('Music/track2.brstm'), file('Music/sub/song.bfstm'), file('Music/readme.txt')];
-  assert.equal((await chooseFolder(app, files)).value, '');
+  const input = await chooseFolder(app, files);
+  assert.equal(input.value, '');
+  assert.equal(input.focused, true);
   assert.deepEqual(Array.from(app.folderFiles, (item) => item.webkitRelativePath), [
     'Music/sub/song.bfstm', 'Music/track2.brstm', 'Music/track10.BFSTM',
   ]);
   await chooseFolder(app, []);
   assert.equal(app.folderFiles.length, 3);
+  app.errorMessage = 'Old error';
   await chooseFolder(app, [file('Other/readme.txt')]);
   assert.equal(app.folderFiles.length, 0);
   assert.equal(app.selectedFile, null);
   assert.equal(app.currentFile, null);
+  assert.equal(app.errorMessage, '');
 });
 test('single-click plays files, moves focus, serializes loads, and destroys before changing decoder', async () => {
   const { app, calls, focused } = setup();
@@ -156,13 +160,14 @@ test('selecting a standalone file clears the folder playlist', async () => {
   const { app } = setup();
   await chooseFolder(app, [file('Music/a.brstm'), file('Music/b.bfstm')]);
   const standalone = file('standalone.brstm');
-  const input = { files: [standalone], value: 'standalone' };
+  const input = { files: [standalone], value: 'standalone', focus() { this.focused = true; } };
   handlers(app.render(), 'change')[0].call(app, { target: input });
   await new Promise((resolve) => setImmediate(resolve));
   assert.equal(app.currentFile, standalone);
   assert.equal(app.folderName, '');
   assert.equal(app.folderFiles.length, 0);
   assert.equal(app.selectedFile, null);
+  assert.equal(input.focused, true);
 });
 test('destroy closes audio and discards a pending decode after switching files', async () => {
   let closed = 0;
@@ -349,6 +354,7 @@ test('volume range changes unmute, preserve percentage semantics and respect dis
   const { element, events } = control('volume', 'ControlsVolume');
   handlers(element.render(), 'click')[0].call(element);
   assert.equal(boundValue(element.render(), 'aria-pressed'), true);
+  assert.equal(boundValue(element.render(), 'aria-label'), 'Unmute');
   assert.equal(boundValue(element.render(), 'aria-valuetext'), '100%, muted');
   handlers(element.render(), 'input')[0].call(element, { target: { value: '35' } });
   assert.equal(element.volume, 0.35);

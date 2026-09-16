@@ -219,7 +219,7 @@ export class NikkuMain extends LitElement {
                 ${this.folderFiles.map((file) => html`
                   <li class=${classMap({ selected: file === this.selectedFile, current: file === this.currentFile })}>
                     <button class="folder-item"
-                      aria-label=${`Play ${file.name}`}
+                      aria-label=${`Play ${file.webkitRelativePath.split('/').slice(1).join('/') || file.name}`}
                       aria-current=${file === this.currentFile ? 'true' : 'false'}
                       ?disabled=${this.loading}
                       @click=${() => this.#playFolderFile(file)}>
@@ -297,14 +297,15 @@ export class NikkuMain extends LitElement {
   }
 
   #handleFileInputChange(e: InputEvent) {
-    const files = (e.target as HTMLInputElement).files;
+    const input = e.target as HTMLInputElement;
+    const files = input.files;
     if (!files || !files.length) {
       return;
     }
 
     const file = files[0];
-    void this.#loadFile(file);
-    (e.target as HTMLInputElement).value = '';
+    input.value = '';
+    void this.#loadFile(file).finally(() => input.focus());
   }
 
   #handleFolderInputChange(e: Event) {
@@ -320,14 +321,15 @@ export class NikkuMain extends LitElement {
     this.selectedFile = this.folderFiles[0] || null;
     input.value = '';
     if (this.selectedFile) {
-      void this.#loadFile(this.selectedFile);
+      void this.#loadFile(this.selectedFile).finally(() => input.focus());
     } else {
-      void this.#clearPlayback();
+      void this.#clearPlayback().finally(() => input.focus());
     }
   }
 
   async #clearPlayback() {
     if (this.loading) return;
+    this.#clearError();
     this.loading = true;
     this.disabled = true;
     this.#syncMediaSession();
@@ -425,9 +427,8 @@ export class NikkuMain extends LitElement {
       this.tracksActive = new Array(numberTracks)
         .fill(true)
         .map((_, i) => (i === 0 ? true : false));
-      this.disabled = false;
-
       await this.audioPlayer.play();
+      this.disabled = false;
       this.trackTitle = file.name;
       this.currentFile = file;
     } catch (e) {
