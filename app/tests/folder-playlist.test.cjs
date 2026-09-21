@@ -16,7 +16,7 @@ function loadSource(path, dependencies, globals = {}) {
   runInNewContext(outputText, { exports, require: (name) => {
     assert.ok(name in dependencies, 'Unexpected dependency: ' + name);
     return dependencies[name];
-  }, URL, console: { ...console, error() {} }, ...globals });
+  }, URL, setTimeout, clearTimeout, console: { ...console, error() {} }, ...globals });
   return exports;
 }
 function handlers(result, name) {
@@ -27,7 +27,7 @@ function handlers(result, name) {
     ...handlers(value, name),
   ]);
 }
-function setup() {
+function setup({ play = async () => {} } = {}) {
   const calls = [];
   const focused = [];
   const scrolled = [];
@@ -38,7 +38,7 @@ function setup() {
     setLoop(value) { calls.push(['loop', value]); }
     async setVolume(value) { calls.push(['volume', value]); }
     async start() { calls.push('start'); }
-    async play() { calls.push('play'); }
+    async play() { calls.push('play'); await play(); }
     getCurrrentPlaybackTime() { return 0; }
   }
   class Worker {
@@ -168,6 +168,15 @@ test('selecting a standalone file clears the folder playlist', async () => {
   assert.equal(app.selectedFile, null);
   assert.equal(input.focused, true);
 });
+test('a stalled autoplay attempt does not hold the loading state or disable play', async () => {
+  const { app } = setup({ play: () => new Promise(() => {}) });
+  const selected = file('Music/a.brstm');
+  await chooseFolder(app, [selected]);
+  assert.equal(app.loading, false);
+  assert.equal(app.disabled, false);
+  assert.equal(app.currentFile, selected);
+  assert.equal(app.playPauseIcon, 'play');
+});
 test('destroy closes audio and discards a pending decode after switching files', async () => {
   let closed = 0;
   let resolveDecode;
@@ -206,7 +215,7 @@ test('play resumes a suspended context after initial samples are loaded', async 
       currentTime = 0;
       async suspend() {}
       createGain() { return { gain: {}, connect() {} }; }
-      async resume() { resumed++; }
+      async resume() { resumed++; this.state = 'running'; }
     },
     AudioWorkletNode: class {
       port = { addEventListener() {}, start() {} };
@@ -221,6 +230,32 @@ test('play resumes a suspended context after initial samples are loaded', async 
   await player.play();
   assert.equal(resumed, 1);
   assert.equal(played, 1);
+});
+test('play reports an AudioContext resume that never settles', async () => {
+  const { AudioPlayer } = loadSource('../src/audio-player/audio-player.ts', {
+    '../timer': { Timer }, './worklet/audio-source.js?raw': { default: '' },
+  }, {
+    setTimeout(callback) { callback(); return 1; },
+    clearTimeout() {},
+    AudioContext: class {
+      state = 'suspended';
+      currentTime = 0;
+      destination = {};
+      async suspend() {}
+      createGain() { return { gain: {}, connect() {} }; }
+      resume() { return new Promise(() => {}); }
+    },
+    AudioWorkletNode: class {
+      port = { addEventListener() {}, start() {} };
+      connect() {}
+    },
+  });
+  const player = new AudioPlayer({
+    onPlay() {}, onPause() {}, decodeSamples: async () => [],
+  });
+  await player.init({ totalSamples: 10, sampleRate: 10, numberTracks: 1 });
+  await player.start();
+  await assert.rejects(player.play(), /Tap Play to try again/);
 });
 test('routes playback directly to the audio context destination', async () => {
   const connections = [];
@@ -327,7 +362,10 @@ test('play/pause and loop expose their names, toggle state and honor disabled', 
     else assert.equal(boundValue(element.render(), 'aria-pressed'), true);
     handlers(element.render(), 'click')[0].call(element);
     assert.equal(events[0].type, eventType);
-    if (name === 'play-pause') assert.equal(boundValue(element.render(), 'aria-label'), 'Pause');
+    if (name === 'play-pause') {
+      element.mode = events[0].detail.mode;
+      assert.equal(boundValue(element.render(), 'aria-label'), 'Pause');
+    }
     else assert.equal(boundValue(element.render(), 'aria-pressed'), false);
     element.disabled = true;
     assert.equal(boundValue(element.render(), '?disabled'), true);

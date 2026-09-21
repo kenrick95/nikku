@@ -386,10 +386,10 @@ export class NikkuMain extends LitElement {
       this.tracksActive = new Array(numberTracks)
         .fill(true)
         .map((_, i) => (i === 0 ? true : false));
-      await this.audioPlayer.play();
       this.disabled = false;
       this.trackTitle = file.name;
       this.currentFile = file;
+      void this.#startPlayback();
     } catch (e) {
       this.disabled = true;
       await this.audioPlayer?.destroy();
@@ -409,11 +409,21 @@ export class NikkuMain extends LitElement {
 
   #handlePlayPauseClick(e: CustomEvent) {
     const newMode = e.detail.mode as 'play' | 'pause';
-    this.playPauseIcon = newMode;
     if (newMode === 'play') {
-      this.audioPlayer?.pause();
+      void this.audioPlayer?.pause();
     } else if (newMode === 'pause') {
-      this.audioPlayer?.play();
+      void this.#startPlayback();
+    }
+  }
+
+  async #startPlayback() {
+    try {
+      await this.audioPlayer?.play();
+      this.#clearError();
+    } catch (error) {
+      this.playPauseIcon = 'play';
+      this.timer.stop();
+      this.#showError(error as Error);
     }
   }
 

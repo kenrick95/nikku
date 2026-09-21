@@ -3,6 +3,7 @@ import type { Metadata as BrstmMetadata } from 'brstm';
 import AudioSourceCode from './worklet/audio-source.js?raw';
 
 type Metadata = BrstmMetadata | BfstmMetadata;
+const AUDIO_CONTEXT_RESUME_TIMEOUT_MS = 3000;
 
 export type AudioPlayerOptions = {
   onPlay: () => void;
@@ -289,8 +290,25 @@ export class AudioPlayer {
     }
     const context = this.#audioContext;
     if (this.#hasBufferReachedEnd) await this.seek(0, false);
-    await context.resume();
-    if (context !== this.#audioContext) return;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    let resumed = false;
+    try {
+      resumed = await Promise.race([
+        context.resume().then(() => true),
+        new Promise<boolean>((resolve) => {
+          timeoutId = setTimeout(() => resolve(false), AUDIO_CONTEXT_RESUME_TIMEOUT_MS);
+        }),
+      ]);
+    } catch (error) {
+      if (context !== this.#audioContext) return;
+      throw error;
+    } finally {
+      if (timeoutId !== undefined) clearTimeout(timeoutId);
+    }
+    if (context !== this.#audioContext || this.#isPlaying) return;
+    if (!resumed || context.state !== 'running') {
+      throw new Error('Audio playback did not start. Tap Play to try again.');
+    }
     this.#isPlaying = true;
     this.options.onPlay();
   }
