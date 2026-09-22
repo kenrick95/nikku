@@ -6,6 +6,7 @@ export type DroppedFile = {
 export type DroppedSelection = {
   files: DroppedFile[];
   folderName: string | null;
+  preserveFolderRoots: boolean;
 };
 
 type Handle = {
@@ -79,6 +80,7 @@ export async function readDroppedItems(items: DataTransferItemList): Promise<Dro
   return {
     files,
     folderName: folderNames.length === 1 ? folderNames[0] : folderNames.length > 1 ? 'Dropped folders' : null,
+    preserveFolderRoots: folderNames.length > 1,
   };
 }
 

@@ -27,6 +27,11 @@ function handlers(result, name) {
     ...handlers(value, name),
   ]);
 }
+function renderedValues(result) {
+  if (Array.isArray(result)) return result.flatMap(renderedValues);
+  if (result?.strings) return result.values.flatMap(renderedValues);
+  return [result];
+}
 function setup({ play = async () => {} } = {}) {
   const calls = [];
   const focused = [];
@@ -154,6 +159,98 @@ test('dropping a folder reads every directory batch and starts its first support
   assert.deepEqual(Array.from(app.folderFiles, (item) => item.name), ['track2.brstm', 'track10.bfstm']);
   assert.equal(app.currentFile, second);
   assert.equal(app.selectedFile, second);
+});
+test('multi-folder drops retain each top-level folder in displayed paths', async () => {
+  const { app, windowEvents } = setup();
+  const directory = (name) => ({
+    isFile: false, isDirectory: true, name,
+    createReader() {
+      let complete = false;
+      return { readEntries(success) {
+        success(complete ? [] : [{
+          isFile: true, isDirectory: false, name: 'song.brstm',
+          file(done) { done(file(`${name}/song.brstm`)); },
+        }]);
+        complete = true;
+      } };
+    },
+  });
+  app.firstUpdated();
+  windowEvents.drop({
+    preventDefault() {},
+    dataTransfer: { items: ['A', 'B'].map((name) => ({
+      kind: 'file', getAsFile: () => null, webkitGetAsEntry: () => directory(name),
+    })) },
+  });
+  await new Promise((resolve) => setImmediate(resolve));
+  await new Promise((resolve) => setImmediate(resolve));
+  const values = renderedValues(app.render());
+  assert.equal(app.folderName, 'Dropped folders');
+  assert.ok(values.includes('A/song.brstm'));
+  assert.ok(values.includes('B/song.brstm'));
+});
+test('a completed older folder read cannot replace a newer drop', async () => {
+  const { app, windowEvents } = setup();
+  let resolveOldHandle;
+  const handle = (name) => ({
+    kind: 'directory', name,
+    async *values() {
+      yield { kind: 'file', name: 'song.brstm', getFile: async () => file(`${name}/song.brstm`) };
+    },
+  });
+  app.firstUpdated();
+  windowEvents.drop({
+    preventDefault() {},
+    dataTransfer: { items: [{
+      kind: 'file', getAsFile: () => null,
+      getAsFileSystemHandle: () => new Promise((resolve) => { resolveOldHandle = resolve; }),
+    }] },
+  });
+  windowEvents.drop({
+    preventDefault() {},
+    dataTransfer: { items: [{
+      kind: 'file', getAsFile: () => null, getAsFileSystemHandle: async () => handle('Newer'),
+    }] },
+  });
+  await new Promise((resolve) => setImmediate(resolve));
+  await new Promise((resolve) => setImmediate(resolve));
+  resolveOldHandle(handle('Older'));
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(app.folderName, 'Newer');
+  assert.equal(app.currentFile.name, 'song.brstm');
+  assert.equal(app.folderPaths.get(app.currentFile), 'Newer/song.brstm');
+});
+test('a folder dropped during loading waits before changing the playlist', async () => {
+  const { app, windowEvents } = setup();
+  let finishOldRead;
+  const old = file('Old/song.brstm');
+  old.arrayBuffer = () => new Promise((resolve) => { finishOldRead = resolve; });
+  app.firstUpdated();
+  await chooseFolder(app, [old]);
+  const newer = file('Newer/song.brstm');
+  let complete = false;
+  windowEvents.drop({
+    preventDefault() {},
+    dataTransfer: { items: [{
+      kind: 'file', getAsFile: () => null,
+      webkitGetAsEntry: () => ({
+        isFile: false, isDirectory: true, name: 'Newer',
+        createReader: () => ({ readEntries(success) {
+          success(complete ? [] : [{
+            isFile: true, isDirectory: false, name: newer.name, file(done) { done(newer); },
+          }]);
+          complete = true;
+        } }),
+      }),
+    }] },
+  });
+  await Promise.resolve();
+  assert.equal(app.folderName, 'Old');
+  finishOldRead(new ArrayBuffer(8));
+  await new Promise((resolve) => setImmediate(resolve));
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(app.folderName, 'Newer');
+  assert.equal(app.currentFile, newer);
 });
 test('a non-looping file advances to the next file when playback ends', async () => {
   const { app, focused, scrolled } = setup();
