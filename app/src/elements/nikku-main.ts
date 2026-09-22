@@ -2,6 +2,7 @@ import { html, css, LitElement } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { AudioPlayer } from '../audio-player/audio-player';
+import { readDroppedItems, type DroppedFile, type DroppedSelection } from '../dropped-files';
 import { Timer } from '../timer';
 import { transfer } from 'comlink';
 
@@ -52,6 +53,20 @@ export class NikkuMain extends LitElement {
   private loading = false;
 
   private audioPlayer: AudioPlayer | null = null;
+  private folderPaths = new WeakMap<File, string>();
+  private preserveFolderRoots = false;
+  private selectionGeneration = 0;
+  private loadingFinished: Promise<void> = Promise.resolve();
+  private finishLoading: (() => void) | null = null;
+
+  #fileRelativePath(file: File) {
+    return this.folderPaths.get(file) || file.webkitRelativePath || file.name;
+  }
+
+  #folderItemPath(file: File) {
+    const path = this.#fileRelativePath(file).split('/');
+    return !this.preserveFolderRoots && path.length > 1 ? path.slice(1).join('/') : path.join('/');
+  }
 
   async #playAdjacentFile(direction: -1 | 1) {
     if (!this.currentFile || this.loading) return;
@@ -66,6 +81,7 @@ export class NikkuMain extends LitElement {
 
   async #playFolderFile(file: File) {
     if (this.loading) return;
+    this.selectionGeneration++;
     this.selectedFile = file;
     await this.#loadFile(file);
     await this.updateComplete;
@@ -185,11 +201,11 @@ export class NikkuMain extends LitElement {
                 ${this.folderFiles.map((file) => html`
                   <li class=${classMap({ selected: file === this.selectedFile, current: file === this.currentFile })}>
                     <button class="folder-item"
-                      aria-label=${`Play ${file.webkitRelativePath.split('/').slice(1).join('/') || file.name}`}
+                      aria-label=${`Play ${this.#folderItemPath(file)}`}
                       aria-current=${file === this.currentFile ? 'true' : 'false'}
                       ?disabled=${this.loading}
                       @click=${() => this.#playFolderFile(file)}>
-                      <span class="file-path">${file.webkitRelativePath.split('/').slice(1).join('/') || file.name}</span>
+                      <span class="file-path">${this.#folderItemPath(file)}</span>
                       ${file === this.currentFile ? html`<span class="current-label">${this.playPauseIcon === 'pause' ? 'Playing' : 'Current'}</span>` : ''}
                     </button>
                   </li>
@@ -210,7 +226,7 @@ export class NikkuMain extends LitElement {
           hidden: !this.fileDraggingOver,
         })}
       >
-        Drop BRSTM or BFSTM file to start playback
+        Drop BRSTM or BFSTM files or a folder
       </div>
     `;
   }
@@ -234,24 +250,31 @@ export class NikkuMain extends LitElement {
       // Prevent opening file
       ev.preventDefault();
       this.fileDraggingOver = false;
-      if (
-        !ev.dataTransfer ||
-        !ev.dataTransfer.items ||
-        !ev.dataTransfer.items[0] ||
-        ev.dataTransfer.items[0].kind !== 'file'
-      ) {
+      const generation = ++this.selectionGeneration;
+      if (!ev.dataTransfer?.items?.length) {
         this.#showError(new Error('No file read'));
         return;
       }
-
-      const file = ev.dataTransfer.items[0].getAsFile();
-      if (!file) {
-        this.#showError(new Error('No file read'));
-        return;
-      }
-
-      void this.#loadFile(file);
+      void this.#handleDroppedSelection(readDroppedItems(ev.dataTransfer.items), generation);
     });
+  }
+
+  async #handleDroppedSelection(selectionPromise: Promise<DroppedSelection>, generation: number) {
+    try {
+      const selection = await selectionPromise;
+      if (generation !== this.selectionGeneration) return;
+      await this.loadingFinished;
+      if (generation !== this.selectionGeneration) return;
+      if (selection.folderName) {
+        await this.#loadFolder(selection.files, selection.folderName, selection.preserveFolderRoots);
+      } else if (selection.files[0]) {
+        await this.#loadFile(selection.files[0].file);
+      } else {
+        this.#showError(new Error('No file read'));
+      }
+    } catch (error) {
+      if (generation === this.selectionGeneration) this.#showError(error as Error);
+    }
   }
 
   #showError(error: Error) {
@@ -269,6 +292,7 @@ export class NikkuMain extends LitElement {
       return;
     }
 
+    this.selectionGeneration++;
     const file = files[0];
     input.value = '';
     void this.#loadFile(file).finally(() => input.focus());
@@ -280,23 +304,39 @@ export class NikkuMain extends LitElement {
     if (!files.length) {
       return;
     }
-    this.folderName = files[0].webkitRelativePath.split('/')[0] || 'Selected folder';
-    this.folderFiles = files
-      .filter((file) => /\.(brstm|bfstm)$/i.test(file.name))
-      .sort((a, b) => a.webkitRelativePath.localeCompare(b.webkitRelativePath, undefined, { numeric: true }));
-    this.selectedFile = this.folderFiles[0] || null;
+    this.selectionGeneration++;
+    const folderName = files[0].webkitRelativePath.split('/')[0] || 'Selected folder';
+    const droppedFiles = files.map((file) => ({
+      file,
+      relativePath: file.webkitRelativePath || file.name,
+    }));
     input.value = '';
+    void this.#loadFolder(droppedFiles, folderName).finally(() => input.focus());
+  }
+
+  async #loadFolder(files: DroppedFile[], folderName: string, preserveFolderRoots = false) {
+    this.folderPaths = new WeakMap();
+    for (const { file, relativePath } of files) {
+      this.folderPaths.set(file, relativePath);
+    }
+    this.preserveFolderRoots = preserveFolderRoots;
+    this.folderName = folderName;
+    this.folderFiles = files
+      .map(({ file }) => file)
+      .filter((file) => /\.(brstm|bfstm)$/i.test(file.name))
+      .sort((a, b) => this.#fileRelativePath(a).localeCompare(this.#fileRelativePath(b), undefined, { numeric: true }));
+    this.selectedFile = this.folderFiles[0] || null;
     if (this.selectedFile) {
-      void this.#loadFile(this.selectedFile).finally(() => input.focus());
+      await this.#loadFile(this.selectedFile);
     } else {
-      void this.#clearPlayback().finally(() => input.focus());
+      await this.#clearPlayback();
     }
   }
 
   async #clearPlayback() {
     if (this.loading) return;
     this.#clearError();
-    this.loading = true;
+    this.#beginLoading();
     this.disabled = true;
     this.currentFile = null;
     this.trackTitle = '';
@@ -309,8 +349,21 @@ export class NikkuMain extends LitElement {
       this.playPauseIcon = 'play';
       this.timer.stop();
     } finally {
-      this.loading = false;
+      this.#endLoading();
     }
+  }
+
+  #beginLoading() {
+    this.loading = true;
+    this.loadingFinished = new Promise((resolve) => {
+      this.finishLoading = resolve;
+    });
+  }
+
+  #endLoading() {
+    this.loading = false;
+    this.finishLoading?.();
+    this.finishLoading = null;
   }
 
   async #loadFile(file: File) {
@@ -322,8 +375,10 @@ export class NikkuMain extends LitElement {
       this.folderFiles = [];
       this.folderName = '';
       this.selectedFile = null;
+      this.folderPaths = new WeakMap();
+      this.preserveFolderRoots = false;
     }
-    this.loading = true;
+    this.#beginLoading();
     this.disabled = true;
     this.#clearError();
     this.currentFile = null;
@@ -397,7 +452,7 @@ export class NikkuMain extends LitElement {
       this.trackTitle = '';
       this.#showError(e as Error);
     } finally {
-      this.loading = false;
+      this.#endLoading();
     }
   }
 
