@@ -8,15 +8,15 @@ let instance: Brstm | Bfstm | null = null;
 export function init(receivedBuffer: ArrayBuffer) {
   instance = null;
   if (receivedBuffer.byteLength < 4) {
-    throw new Error('Unsupported file: expected a BRSTM or BFSTM file');
+    throw new Error('Unsupported file: expected a BRSTM, BFSTM, or BCSTM file');
   }
   const magic = String.fromCharCode(...new Uint8Array(receivedBuffer, 0, 4));
   if (magic === 'RSTM') {
     instance = new Brstm(receivedBuffer);
-  } else if (magic === 'FSTM') {
+  } else if (magic === 'FSTM' || magic === 'CSTM') {
     instance = new Bfstm(receivedBuffer);
   } else {
-    throw new Error('Unsupported file: expected a BRSTM or BFSTM file');
+    throw new Error('Unsupported file: expected a BRSTM, BFSTM, or BCSTM file');
   }
 }
 export function destroy() {

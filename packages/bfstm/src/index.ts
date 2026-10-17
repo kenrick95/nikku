@@ -18,7 +18,7 @@ const INFO_BLOCK = 0x4000;
 const SEEK_BLOCK = 0x4001;
 const DATA_BLOCK = 0x4002;
 
-/** Decoder for Nintendo BFSTM streamed-audio files. */
+/** Decoder for Nintendo BFSTM and BCSTM streamed-audio files. */
 export class Bfstm {
   rawData: Uint8Array;
   endianness: Endianness;
@@ -45,8 +45,9 @@ export class Bfstm {
     this.#view = new DataView(arrayBuffer);
 
     this.#assertRange(0, 0x14, 'BFSTM header');
-    if (this.#getString(0, 4) !== 'FSTM') {
-      throw new Error('Not a valid BFSTM file');
+    const magic = this.#getString(0, 4);
+    if (magic !== 'FSTM' && magic !== 'CSTM') {
+      throw new Error('Not a valid BFSTM or BCSTM file');
     }
 
     const bom = this.#view.getUint16(4, false);

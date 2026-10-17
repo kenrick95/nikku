@@ -145,7 +145,7 @@ export class NikkuMain extends LitElement {
             <input
               type="file"
               aria-label="Select file"
-              accept=".brstm,.bfstm"
+              accept=".brstm,.bfstm,.bcstm"
               ?disabled=${this.loading}
               @change=${this.#handleFileInputChange}
             />
@@ -211,7 +211,7 @@ export class NikkuMain extends LitElement {
                   </li>
                 `)}
               </ul>
-          ` : html`<p role="status">No BRSTM or BFSTM files found in this folder.</p>`}
+          ` : html`<p role="status">No BRSTM, BFSTM, or BCSTM files found in this folder.</p>`}
         </section>
       ` : ''}
       <p class="sr-only" role="status" aria-atomic="true">${this.loading
@@ -226,7 +226,7 @@ export class NikkuMain extends LitElement {
           hidden: !this.fileDraggingOver,
         })}
       >
-        Drop BRSTM or BFSTM files or a folder
+        Drop BRSTM, BFSTM, or BCSTM files or a folder
       </div>
     `;
   }
@@ -323,7 +323,7 @@ export class NikkuMain extends LitElement {
     this.folderName = folderName;
     this.folderFiles = files
       .map(({ file }) => file)
-      .filter((file) => /\.(brstm|bfstm)$/i.test(file.name))
+      .filter((file) => /\.(brstm|bfstm|bcstm)$/i.test(file.name))
       .sort((a, b) => this.#fileRelativePath(a).localeCompare(this.#fileRelativePath(b), undefined, { numeric: true }));
     this.selectedFile = this.folderFiles[0] || null;
     if (this.selectedFile) {

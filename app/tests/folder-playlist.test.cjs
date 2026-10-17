@@ -81,15 +81,15 @@ async function chooseFolder(app, files) {
 }
 test('filters and sorts nested files, preserves cancellation, and handles no matches', async () => {
   const { app } = setup();
-  const files = [file('Music/track10.BFSTM'), file('Music/track2.brstm'), file('Music/sub/song.bfstm'), file('Music/readme.txt')];
+  const files = [file('Music/track10.BFSTM'), file('Music/track2.brstm'), file('Music/sub/song.bfstm'), file('Music/sub/3ds.BCSTM'), file('Music/readme.txt')];
   const input = await chooseFolder(app, files);
   assert.equal(input.value, '');
   assert.equal(input.focused, true);
   assert.deepEqual(Array.from(app.folderFiles, (item) => item.webkitRelativePath), [
-    'Music/sub/song.bfstm', 'Music/track2.brstm', 'Music/track10.BFSTM',
+    'Music/sub/3ds.BCSTM', 'Music/sub/song.bfstm', 'Music/track2.brstm', 'Music/track10.BFSTM',
   ]);
   await chooseFolder(app, []);
-  assert.equal(app.folderFiles.length, 3);
+  assert.equal(app.folderFiles.length, 4);
   app.errorMessage = 'Old error';
   await chooseFolder(app, [file('Other/readme.txt')]);
   assert.equal(app.folderFiles.length, 0);
@@ -131,14 +131,14 @@ test('selecting another folder starts its first file', async () => {
 });
 test('dropping a folder reads every directory batch and starts its first supported file', async () => {
   const { app, windowEvents } = setup();
-  const first = file('ignored/track10.bfstm');
+  const first = file('ignored/track10.bcstm');
   const second = file('ignored/track2.brstm');
   const fileEntry = (name, value) => ({
     isFile: true, isDirectory: false, name,
     file(success) { success(value); },
   });
   const batches = [
-    [fileEntry('track10.bfstm', first)],
+    [fileEntry('track10.bcstm', first)],
     [fileEntry('track2.brstm', second), fileEntry('notes.txt', file('ignored/notes.txt'))],
     [],
   ];
@@ -156,7 +156,7 @@ test('dropping a folder reads every directory batch and starts its first support
   await new Promise((resolve) => setImmediate(resolve));
   await new Promise((resolve) => setImmediate(resolve));
   assert.equal(app.folderName, 'Dropped music');
-  assert.deepEqual(Array.from(app.folderFiles, (item) => item.name), ['track2.brstm', 'track10.bfstm']);
+  assert.deepEqual(Array.from(app.folderFiles, (item) => item.name), ['track2.brstm', 'track10.bcstm']);
   assert.equal(app.currentFile, second);
   assert.equal(app.selectedFile, second);
 });

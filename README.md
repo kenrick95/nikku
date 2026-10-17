@@ -1,10 +1,10 @@
 # Nikku
 
-Web-based BRSTM and BFSTM player
+Web-based BRSTM, BFSTM, and BCSTM player
 
-Just open [the demo](https://kenrick95.github.io/nikku/) in a modern browser, select a `.brstm` or `.bfstm` file, and enjoy!
+Just open [the demo](https://kenrick95.github.io/nikku/) in a modern browser, select a `.brstm`, `.bfstm`, or `.bcstm` file, and enjoy!
 
-Use **Select folder…**, or drop a folder onto the page, to show the `.brstm` and `.bfstm` files in a folder and its subfolders. Click a file row, or focus it and press Enter or Space, to play it. Folder selection requires a browser with directory upload support; files stay on your device. Each file follows the loop control; with looping off, playback advances to the next file.
+Use **Select folder…**, or drop a folder onto the page, to show the `.brstm`, `.bfstm`, and `.bcstm` files in a folder and its subfolders. Click a file row, or focus it and press Enter or Space, to play it. Folder selection requires a browser with directory upload support; files stay on your device. Each file follows the loop control; with looping off, playback advances to the next file.
 
 ## Keyboard controls
 
