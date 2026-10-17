@@ -213,46 +213,52 @@ function makeLittleEndianAdpcmBfstm() {
   return writer.buffer;
 }
 
-test('reads section references, track references, and PCM16 blocks', () => {
-  const bfstm = new Bfstm(makePcm16Bfstm());
-  assert.equal(bfstm.metadata.endianness, 1);
-  assert.equal(bfstm.metadata.codec, 1);
-  assert.equal(bfstm.metadata.sampleRate, 32000);
-  assert.equal(bfstm.metadata.loopStartSample, 2);
-  assert.deepEqual(bfstm.metadata.trackDescriptions, [
-    { type: 1, numberChannels: 1, channelIndices: [1] },
-    { type: 1, numberChannels: 1, channelIndices: [0] },
-  ]);
-  assert.deepEqual(
-    bfstm.getAllSamples().map((samples) => Array.from(samples)),
-    [
-      [100, -200, 300, -400, 500, -600],
-      [1000, -2000, 3000, -4000, 5000, -6000],
-    ]
-  );
-  assert.deepEqual(
-    bfstm.getSamples(3, 2).map((samples) => Array.from(samples)),
-    [
-      [-400, 500],
-      [-4000, 5000],
-    ]
-  );
-});
+for (const [format, firstByte] of [['BFSTM', 0x46], ['BCSTM', 0x43]]) {
+  test(`${format}: reads section references, track references, and PCM16 blocks`, () => {
+    const buffer = makePcm16Bfstm();
+    new Uint8Array(buffer)[0] = firstByte;
+    const bfstm = new Bfstm(buffer);
+    assert.equal(bfstm.metadata.endianness, 1);
+    assert.equal(bfstm.metadata.codec, 1);
+    assert.equal(bfstm.metadata.sampleRate, 32000);
+    assert.equal(bfstm.metadata.loopStartSample, 2);
+    assert.deepEqual(bfstm.metadata.trackDescriptions, [
+      { type: 1, numberChannels: 1, channelIndices: [1] },
+      { type: 1, numberChannels: 1, channelIndices: [0] },
+    ]);
+    assert.deepEqual(
+      bfstm.getAllSamples().map((samples) => Array.from(samples)),
+      [
+        [100, -200, 300, -400, 500, -600],
+        [1000, -2000, 3000, -4000, 5000, -6000],
+      ]
+    );
+    assert.deepEqual(
+      bfstm.getSamples(3, 2).map((samples) => Array.from(samples)),
+      [
+        [-400, 500],
+        [-4000, 5000],
+      ]
+    );
+  });
 
-test('decodes little-endian DSP ADPCM using SEEK history', () => {
-  const bfstm = new Bfstm(makeLittleEndianAdpcmBfstm());
-  assert.equal(bfstm.metadata.endianness, 0);
-  assert.deepEqual(bfstm.metadata.trackDescriptions, [
-    { type: 1, numberChannels: 1, channelIndices: [0] },
-  ]);
-  assert.deepEqual(Array.from(bfstm.getAllSamples()[0]), [
-    1, 2, 3, 4, 5, 6, 7, -8, -7, -6, -5, -4, -3, -2,
-    1234, 1234, 1234, 1234,
-  ]);
-  assert.deepEqual(Array.from(bfstm.getSamples(12, 5)[0]), [
-    -3, -2, 1234, 1234, 1234,
-  ]);
-});
+  test(`${format}: decodes little-endian DSP ADPCM using SEEK history`, () => {
+    const buffer = makeLittleEndianAdpcmBfstm();
+    new Uint8Array(buffer)[0] = firstByte;
+    const bfstm = new Bfstm(buffer);
+    assert.equal(bfstm.metadata.endianness, 0);
+    assert.deepEqual(bfstm.metadata.trackDescriptions, [
+      { type: 1, numberChannels: 1, channelIndices: [0] },
+    ]);
+    assert.deepEqual(Array.from(bfstm.getAllSamples()[0]), [
+      1, 2, 3, 4, 5, 6, 7, -8, -7, -6, -5, -4, -3, -2,
+      1234, 1234, 1234, 1234,
+    ]);
+    assert.deepEqual(Array.from(bfstm.getSamples(12, 5)[0]), [
+      -3, -2, 1234, 1234, 1234,
+    ]);
+  });
+}
 
 test('rejects invalid input', () => {
   assert.throws(() => new Bfstm(new ArrayBuffer(4)), /header is out of range/);
