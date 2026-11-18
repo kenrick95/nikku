@@ -125,3 +125,80 @@ test('Mono file whose track declares 2 channels', () => {
   ]);
   assert.equal(brstm.getSamples(0, 100).length, 1);
 });
+
+/** Copy of `file` with one (big-endian) header field overwritten */
+function withField(file, { offset, fromHeadChunk1 = false, size, value }) {
+  const data = new Uint8Array(file);
+  const view = new DataView(data.buffer);
+  let position = offset;
+  if (fromHeadChunk1) {
+    const offsetToHead = view.getUint32(0x10);
+    position += offsetToHead + view.getUint32(offsetToHead + 0x0c) + 0x08;
+  }
+  if (size === 1) view.setUint8(position, value);
+  else if (size === 2) view.setUint16(position, value);
+  else view.setUint32(position, value);
+  return data.buffer;
+}
+
+test('Reject corrupted headers before allocating', () => {
+  const cases = [
+    { name: 'no channels', offset: 0x02, fromHeadChunk1: true, size: 1, value: 0 },
+    { name: 'sample rate 0', offset: 0x04, fromHeadChunk1: true, size: 2, value: 0 },
+    { name: 'no samples', offset: 0x0c, fromHeadChunk1: true, size: 4, value: 0 },
+    { name: 'huge number of samples', offset: 0x0c, fromHeadChunk1: true, size: 4, value: 0xffffffff },
+    { name: 'huge number of blocks', offset: 0x14, fromHeadChunk1: true, size: 4, value: 0xffffffff },
+    { name: 'huge block size', offset: 0x18, fromHeadChunk1: true, size: 4, value: 0xffffffff },
+    { name: 'huge samples per block', offset: 0x1c, fromHeadChunk1: true, size: 4, value: 0xffffffff },
+    { name: 'HEAD outside the file', offset: 0x10, size: 4, value: 0xffffffff },
+    { name: 'DATA outside the file', offset: 0x20, size: 4, value: 0xffffffff },
+    { name: 'ADPC outside the file', offset: 0x18, size: 4, value: 0xffffffff },
+  ];
+  for (const c of cases) {
+    assert.throws(
+      () => new Brstm(withField(testFiles[0], c)),
+      /Not a valid BRSTM file/,
+      c.name
+    );
+  }
+  assert.throws(
+    () => new Brstm(new Uint8Array(testFiles[0]).slice(0, 0x30).buffer),
+    /Not a valid BRSTM file/,
+    'file cut inside the header'
+  );
+});
+
+test('Fuzzed headers either throw or decode within bounds', () => {
+  // mulberry32, seeded so failures are reproducible
+  let seed = 0x5eed;
+  const random = () => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = seed;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const original = new Uint8Array(testFiles[0]);
+  const view = new DataView(original.buffer, original.byteOffset);
+  const offsetToHead = view.getUint32(0x10);
+  const headerEnd = offsetToHead + view.getUint32(0x14);
+
+  for (let i = 0; i < 3000; i++) {
+    const data = original.slice();
+    const mutations = 1 + Math.floor(random() * 4);
+    for (let m = 0; m < mutations; m++) {
+      data[Math.floor(random() * headerEnd)] = Math.floor(random() * 256);
+    }
+    let brstm;
+    try {
+      brstm = new Brstm(data.buffer);
+    } catch (e) {
+      assert.match(e.message, /Not a valid BRSTM file/, `mutation #${i}`);
+      continue;
+    }
+    const { numberChannels, totalSamples, sampleRate } = brstm.metadata;
+    assert.ok(Number.isFinite(totalSamples / sampleRate), `mutation #${i}`);
+    assert.ok(totalSamples * numberChannels <= data.length * 4, `mutation #${i}`);
+    brstm.getSamples(0, 4096);
+  }
+});
