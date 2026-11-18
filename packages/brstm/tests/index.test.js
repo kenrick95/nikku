@@ -102,3 +102,26 @@ test('Little endian file', () => {
     { type: 0, numberChannels: 1 },
   ]);
 });
+
+test('Mono file whose track declares 2 channels', () => {
+  // Same mono file, but its track description says 2 channels, like many
+  // community-made BRSTM files. The player must not look for a second channel.
+  const data = new Uint8Array(testFiles[1]);
+  const view = new DataView(data.buffer);
+  const littleEndian = true;
+  const offsetToHead = view.getUint32(0x10, littleEndian);
+  const offsetToHeadChunk2 =
+    offsetToHead + view.getUint32(offsetToHead + 0x14, littleEndian) + 0x08;
+  const entry = offsetToHeadChunk2 + 0x04;
+  const type = view.getUint8(entry + 0x01);
+  const offsetToTrackDescription =
+    offsetToHead + 0x08 + view.getUint32(entry + 0x04, littleEndian);
+  view.setUint8(offsetToTrackDescription + (type === 1 ? 0x08 : 0), 2);
+
+  const brstm = new Brstm(data.buffer);
+  assert.equal(brstm.metadata.numberChannels, 1);
+  assert.deepEqual(brstm.metadata.trackDescriptions, [
+    { type: 0, numberChannels: 1 },
+  ]);
+  assert.equal(brstm.getSamples(0, 100).length, 1);
+});
