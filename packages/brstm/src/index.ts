@@ -6,6 +6,7 @@ import {
   getEndianness,
 } from './utils';
 import type { Endianness } from './utils';
+import { validateBrstm } from './validate';
 import type {
   ChannelInfo,
   CodecType,
@@ -14,6 +15,7 @@ import type {
 } from './types';
 
 export * from './types';
+export { validateBrstm, BRSTM_LIMITS } from './validate';
 
 declare var console: any;
 
@@ -52,6 +54,11 @@ export class Brstm {
 
     if (getSliceAsString(this.rawData, 0, 4) !== 'RSTM') {
       throw new Error('Not a valid BRSTM file');
+    }
+
+    const invalidReason = validateBrstm(this.rawData);
+    if (invalidReason) {
+      throw new Error(`Not a valid BRSTM file: ${invalidReason}`);
     }
 
     this.endianness = getEndianness(this.rawData);
