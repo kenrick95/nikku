@@ -214,6 +214,7 @@ export class Brstm {
       this.endianness
     );
     const trackDescriptions: Array<TrackDescription> = [];
+    let assignedChannels = 0;
 
     for (let t = 0; t < numberTracks; t++) {
       const offsetToTrackDescriptionEntry =
@@ -249,6 +250,12 @@ export class Brstm {
           this.endianness
         );
       }
+      // Clamp: some mono files say their track has 2 channels
+      numberChannelsInTrack = Math.min(
+        numberChannelsInTrack,
+        Math.max(0, numberChannels - assignedChannels)
+      );
+      assignedChannels += numberChannelsInTrack;
       trackDescriptions.push({
         numberChannels: numberChannelsInTrack,
         type: trackDescriptionType,
