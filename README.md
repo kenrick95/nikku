@@ -47,3 +47,4 @@ Browser needs to support the following features without any vendor prefix:
 
 - [My journey of building this](https://blog.kenrick95.org/2019/04/nikku/) (April 2019)
 - [My talk in Geekcamp Singapore 2019](https://github.com/kenrick95/nikku-talk) (October 2019)
+- [BRSTM Player](https://brstmplayer.com): a free BRSTM player built on Nikku's decoder, with a music library, playlists and playback on phones
